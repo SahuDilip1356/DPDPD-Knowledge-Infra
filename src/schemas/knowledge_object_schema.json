@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KnowledgeObject",
+  "type": "object",
+  "properties": {
+    "urn": {
+      "type": "string",
+      "pattern": "^urn:ki:in:dpdp:[a-z0-9_-]+(:[a-z0-9_-]+)*$",
+      "description": "Unique, deterministic URN matching: urn:ki:in:dpdp:<type>:<id>"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2 },
+        "layer": { 
+          "type": "integer", 
+          "minimum": 1, 
+          "maximum": 8,
+          "description": "Source layer index (1 to 8) representing the trust hierarchy"
+        },
+        "url": { "type": "string", "format": "uri" },
+        "hash": { 
+          "type": "string", 
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "SHA-256 hash of the source document"
+        }
+      },
+      "required": ["name", "layer"]
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "Legal date in format YYYY-MM-DD"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 10
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Act",
+          "Rule",
+          "Notification",
+          "Circular",
+          "Case",
+          "Judgement",
+          "Opinion",
+          "Organization",
+          "Person",
+          "Template",
+          "Risk",
+          "Control",
+          "Purpose",
+          "Consent",
+          "Legal Basis",
+          "Penalty",
+          "Data Category",
+          "Industry",
+          "Business Process",
+          "Software",
+          "Vendor",
+          "Country",
+          "Authority"
+        ]
+      },
+      "description": "Referenced entity types restricted to the 23 constitutional nouns"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_urn": { "type": "string" },
+          "citation_text": { "type": "string" },
+          "coordinates": {
+            "type": "object",
+            "properties": {
+              "page": { "type": "integer", "minimum": 1 },
+              "section": { "type": "string" },
+              "byte_range": { "type": "string" },
+              "hash": { 
+                "type": "string", 
+                "pattern": "^[a-fA-F0-9]{64}$",
+                "description": "SHA-256 hash of the exact source text chunk"
+              }
+            },
+            "required": ["hash"]
+          }
+        },
+        "required": ["source_urn", "citation_text", "coordinates"]
+      }
+    },
+    "business_impact": {
+      "type": "object",
+      "properties": {
+        "impact_summary": { "type": "string", "minLength": 5 },
+        "affected_actors": { 
+          "type": "array", 
+          "items": { "type": "string" } 
+        },
+        "action_required": { "type": "string", "minLength": 5 }
+      },
+      "required": ["impact_summary", "action_required"]
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target_urn": { "type": "string" },
+          "edge_type": {
+            "type": "string",
+            "enum": [
+              "Amends",
+              "Supersedes",
+              "Interprets",
+              "Depends On",
+              "Overrides",
+              "Conflicts With",
+              "Supports",
+              "Implements",
+              "References",
+              "Requires",
+              "Applies To",
+              "Violates",
+              "Explains",
+              "Replaces"
+            ]
+          }
+        },
+        "required": ["target_urn", "edge_type"]
+      }
+    },
+    "linked_objects": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "integer", "minimum": 1 },
+          "system_time": { "type": "string", "format": "date-time" },
+          "commit_message": { "type": "string" },
+          "author_id": { "type": "string" }
+        },
+        "required": ["version", "system_time", "commit_message"]
+      }
+    }
+  },
+  "required": [
+    "urn",
+    "title",
+    "source",
+    "date",
+    "version",
+    "summary",
+    "entities",
+    "evidence",
+    "business_impact",
+    "confidence_score",
+    "relations",
+    "linked_objects",
+    "history"
+  ]
+}
