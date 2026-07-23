@@ -9,5 +9,6 @@ Pygments==2.20.0
 pytest==8.4.2
 referencing==0.36.2
 rpds-py==0.27.1
+SQLAlchemy==2.0.51
 tomli==2.4.1
 typing_extensions==4.16.0
