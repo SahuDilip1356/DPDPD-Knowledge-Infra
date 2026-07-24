@@ -49,14 +49,14 @@ class DatabaseClient:
                 system_time_end=None, # Active in system time
                 legal_time_start=legal_start,
                 legal_time_end=None,
-                body=ko_data.get("body", {}),
+                body=ko_data,
                 business_impact=ko_data["business_impact"],
                 evidence=ko_data["evidence"],
                 linked_objects=ko_data["linked_objects"]
             )
-            # Override type with string mapping
-            db_ko.type = ko_data["relations"][0]["edge_type"] if ko_data["relations"] else "node"
-            db_ko.type = ko_data["type"] # Use standard schema type
+            # Extract type from URN (e.g. urn:ki:in:dpdp:rule:consent-notice -> rule)
+            urn_parts = urn.split(":")
+            db_ko.type = urn_parts[4] if len(urn_parts) > 4 else "node"
 
             session.add(db_ko)
 
