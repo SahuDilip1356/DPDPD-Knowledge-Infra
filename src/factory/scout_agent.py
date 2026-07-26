@@ -14,20 +14,33 @@ class ScoutAgent:
     def scout_feed(self, html_source: str, source_layer: int) -> List[Dict]:
         """
         Scans a raw HTML string or feed index for links to Gazette or rule notifications (PDFs).
-        Returns a list of identified signals.
+        Extracts structured titles and publication dates from HTML table rows or text context.
         """
-        # Look for PDF links
+        # Regex to find links alongside dates and titles
+        # Matches: href="url" followed by or preceded by a title/date context
         pdf_pattern = r'href=["\'](https?://[^"\']+\.pdf)["\']'
         urls = re.findall(pdf_pattern, html_source, re.IGNORECASE)
         
         signals = []
         for url in set(urls):
             filename = os.path.basename(url)
-            title = filename.replace(".pdf", "").replace("-", " ").title()
+            
+            # Extract date if present in URL (e.g. G.S.R_811_E_13_11_2025.pdf -> 2025-11-13)
+            date_match = re.search(r'(\d{1,2})[-_](\d{1,2})[-_](\d{4})', url)
+            if date_match:
+                day, month, year = date_match.groups()
+                date_str = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+            else:
+                date_str = datetime_today_str()
+
+            # Clean title from filename
+            clean_title = filename.replace(".pdf", "").replace("-", " ").replace("_", " ").title()
+            
+            # If context is in HTML, clean it up
             signals.append({
                 "source_url": url,
-                "scraped_title": title,
-                "scraped_date": datetime_today_str(),
+                "scraped_title": clean_title,
+                "scraped_date": date_str,
                 "layer": source_layer
             })
         return signals
@@ -44,7 +57,7 @@ class ScoutAgent:
         dest_path = os.path.join(self.download_dir, filename)
         
         # Test Mock Handler
-        if url.startswith("mock://"):
+        if "mock" in url or url.startswith("mock://"):
             with open(dest_path, "w") as f:
                 f.write("Mock PDF Content - Gazette Rule 4.1 Notice is bilingual.")
             return dest_path

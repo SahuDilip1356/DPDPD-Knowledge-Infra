@@ -11,12 +11,25 @@ class ParsingAgent:
 
     def clean_text_block(self, text: str) -> str:
         """
-        Standardizes spacing and removes page-break formatting artifacts.
+        Standardizes spacing and removes page-break formatting artifacts and Gazette headers.
         """
         text = text.replace("\r", "\n")
-        # Standardize multiple newlines
-        text = "\n".join([line.strip() for line in text.split("\n") if line.strip()])
-        return text
+        lines = []
+        for line in text.split("\n"):
+            line = line.strip()
+            # Skip standard headers & footers
+            if not line:
+                continue
+            if "THE GAZETTE OF INDIA" in line.upper() or "EXTRAORDINARY" in line.upper():
+                continue
+            if "PART II—SECTION" in line.upper() or "MINISTRY OF ELECTRONICS" in line.upper():
+                continue
+            # Skip standalone numbers (usually page numbers)
+            if line.isdigit():
+                continue
+            lines.append(line)
+            
+        return "\n".join(lines)
 
     def parse_pdf(self, filepath: str) -> List[Dict]:
         """

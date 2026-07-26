@@ -1,0 +1,123 @@
+/* ═══════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — UI/UX Specification §27
+   Regulatory Knowledge Infrastructure
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Core Palette ─────────────────────────────────────────────── */
+  --trust-navy:         #121A2E;
+  --verification-green: #07B981;
+  --assurance-teal:     #35B6AE;
+  --signal-gold:        #E8AB42;
+
+  /* ── Surfaces ─────────────────────────────────────────────────── */
+  --bg-cloud:           #F7F9FC;
+  --bg-white:           #FFFFFF;
+  --bg-nav:             #0D1321;
+  --bg-nav-hover:       rgba(255, 255, 255, 0.06);
+  --bg-nav-active:      rgba(7, 185, 129, 0.12);
+  --bg-subtle:          #F1F5F9;
+  --bg-hover:           #EEF2F7;
+  --bg-selected:        #E8F5F0;
+
+  /* ── Text ─────────────────────────────────────────────────────── */
+  --text-primary:       #121A2E;
+  --text-body:          #334155;
+  --text-muted:         #64748B;
+  --text-inverse:       #FFFFFF;
+  --text-nav:           rgba(255, 255, 255, 0.7);
+  --text-nav-active:    #FFFFFF;
+  --text-link:          #35B6AE;
+
+  /* ── Status Colors ────────────────────────────────────────────── */
+  --status-active:      #07B981;
+  --status-active-bg:   #ECFDF5;
+  --status-review:      #E8AB42;
+  --status-review-bg:   #FFFBEB;
+  --status-conflict:    #EF4444;
+  --status-conflict-bg: #FEF2F2;
+  --status-draft:       #64748B;
+  --status-draft-bg:    #F1F5F9;
+  --status-superseded:  #94A3B8;
+  --status-superseded-bg: #F8FAFC;
+
+  /* ── Error ────────────────────────────────────────────────────── */
+  --error:              #B42318;
+  --error-surface:      #FEF3F2;
+  --error-border:       #FECDCA;
+
+  /* ── Success ──────────────────────────────────────────────────── */
+  --success:            #07B981;
+  --success-surface:    #ECFDF5;
+  --success-border:     #A7F3D0;
+
+  /* ── Warning ──────────────────────────────────────────────────── */
+  --warning:            #E8AB42;
+  --warning-surface:    #FFFBEB;
+  --warning-border:     #FDE68A;
+
+  /* ── Borders ──────────────────────────────────────────────────── */
+  --border:             #E2E8F0;
+  --border-strong:      #CBD5E1;
+  --border-focus:       #35B6AE;
+
+  /* ── Typography (§27.3) ───────────────────────────────────────── */
+  --font-sans:          'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono:          'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Scale: size / line-height */
+  --text-display:       2rem;       /* 32px */
+  --lh-display:         2.5rem;     /* 40px */
+  --text-h1:            1.75rem;    /* 28px */
+  --lh-h1:              2.25rem;    /* 36px */
+  --text-h2:            1.375rem;   /* 22px */
+  --lh-h2:              1.875rem;   /* 30px */
+  --text-h3:            1.125rem;   /* 18px */
+  --lh-h3:              1.625rem;   /* 26px */
+  --text-body:          0.9375rem;  /* 15px */
+  --lh-body:            1.5rem;     /* 24px */
+  --text-small:         0.8125rem;  /* 13px */
+  --lh-small:           1.25rem;    /* 20px */
+  --text-meta:          0.75rem;    /* 12px */
+  --lh-meta:            1.125rem;   /* 18px */
+
+  --fw-regular:         400;
+  --fw-medium:          500;
+  --fw-semibold:        600;
+
+  /* ── Spacing (§27.4 — 4px base) ───────────────────────────────── */
+  --space-1:  0.25rem;   /* 4px  */
+  --space-2:  0.5rem;    /* 8px  */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+
+  /* ── Radius (§27.5) ───────────────────────────────────────────── */
+  --radius-sm:    6px;
+  --radius-md:    8px;
+  --radius-lg:    10px;
+  --radius-xl:    12px;
+  --radius-pill:  9999px;
+
+  /* ── Elevation (§27.6 — subtle borders preferred) ─────────────── */
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md:    0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg:    0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-focus: 0 0 0 3px rgba(53, 182, 174, 0.25);
+
+  /* ── Layout ───────────────────────────────────────────────────── */
+  --nav-width:          240px;
+  --nav-collapsed:      72px;
+  --topbar-height:      56px;
+  --content-max:        1600px;
+  --reading-max:        880px;
+  --context-panel:      400px;
+
+  /* ── Transitions ──────────────────────────────────────────────── */
+  --transition-fast:    120ms ease;
+  --transition-normal:  200ms ease;
+  --transition-slow:    300ms ease;
+}

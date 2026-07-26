@@ -1,17 +1,40 @@
+import os
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import create_engine, and_, update
 from sqlalchemy.orm import sessionmaker
 from src.storage.models import Base, KnowledgeObject, GraphEdge
 
+# Import Supabase
+try:
+    from supabase import create_client, Client
+except ImportError:
+    create_client = None
+    Client = None
+
 class DatabaseClient:
     def __init__(self, database_url: str = "sqlite:///:memory:"):
         """
         Initializes the DB Client. Defaults to in-memory SQLite for testing/MVP.
+        Syncs automatically to Supabase if environment variables are provided.
         """
         self.engine = create_engine(database_url)
         Base.metadata.create_create_all = Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
+        
+        # Optional Supabase integration
+        supabase_url = os.environ.get("SUPABASE_URL")
+        supabase_key = os.environ.get("SUPABASE_SERVICE_KEY")
+        
+        if create_client and supabase_url and supabase_key:
+            try:
+                self.supabase = create_client(supabase_url, supabase_key)
+                print("[*] Supabase connection initialized successfully for DB sync.")
+            except Exception as e:
+                print(f"[!] Warning: Failed to init Supabase client: {e}")
+                self.supabase = None
+        else:
+            self.supabase = None
 
     def publish_ko(self, ko_data: dict, system_time: Optional[datetime] = None) -> None:
         """
@@ -27,7 +50,7 @@ class DatabaseClient:
 
         session = self.Session()
         try:
-            # 1. Look for a previous version to supersede in system time
+            # 1. Look for a previous version to supersede in system time (local SQLite)
             if version > 1:
                 prev_version = version - 1
                 stmt = (
@@ -41,7 +64,7 @@ class DatabaseClient:
             db_ko = KnowledgeObject(
                 urn=urn,
                 version=version,
-                type=ko_data["source"]["layer"], # Storing layer for mapping or type
+                type=ko_data.get("type", "node"),
                 title=ko_data["title"],
                 summary=ko_data["summary"],
                 confidence_score=ko_data["confidence_score"],
@@ -54,14 +77,15 @@ class DatabaseClient:
                 evidence=ko_data["evidence"],
                 linked_objects=ko_data["linked_objects"]
             )
-            # Extract type from URN (e.g. urn:ki:in:dpdp:rule:consent-notice -> rule)
-            urn_parts = urn.split(":")
-            db_ko.type = urn_parts[4] if len(urn_parts) > 4 else "node"
+            # Extract type from URN if default
+            if db_ko.type == "node" or not db_ko.type:
+                urn_parts = urn.split(":")
+                db_ko.type = urn_parts[4].capitalize() if len(urn_parts) > 4 else "Node"
 
             session.add(db_ko)
 
-            # 3. Insert new Graph Edges
-            for rel in ko_data["relations"]:
+            # 3. Insert new Graph Edges (local SQLite)
+            for rel in ko_data.get("relations", []):
                 edge = GraphEdge(
                     source_urn=urn,
                     source_version=version,
@@ -71,6 +95,55 @@ class DatabaseClient:
                 session.add(edge)
 
             session.commit()
+            
+            # 4. Mirror to Supabase Cloud if configured
+            if self.supabase:
+                try:
+                    # Update previous version in system time
+                    if version > 1:
+                        prev_version = version - 1
+                        self.supabase.table("knowledge_objects").update({
+                            "system_time_end": system_time.isoformat() + "Z"
+                        }).match({
+                            "urn": urn,
+                            "version": prev_version
+                        }).execute()
+                    
+                    # Upsert current Knowledge Object
+                    self.supabase.table("knowledge_objects").upsert({
+                        "urn": urn,
+                        "version": version,
+                        "type": db_ko.type,
+                        "title": ko_data["title"],
+                        "summary": ko_data["summary"],
+                        "confidence_score": float(ko_data["confidence_score"]),
+                        "source_credibility": ko_data.get("source_credibility"),
+                        "forum_published": ko_data.get("forum_published"),
+                        "interpretation_stance": ko_data.get("interpretation_stance"),
+                        "system_time_start": system_time.isoformat() + "Z",
+                        "system_time_end": None,
+                        "legal_time_start": legal_start.isoformat() + "Z",
+                        "legal_time_end": None,
+                        "body": ko_data,
+                        "business_impact": ko_data["business_impact"],
+                        "evidence": ko_data["evidence"],
+                        "linked_objects": ko_data["linked_objects"],
+                        "entities": ko_data.get("entities", []),
+                        "relations": ko_data.get("relations", [])
+                    }).execute()
+                    
+                    # Upsert graph edges
+                    for rel in ko_data.get("relations", []):
+                        self.supabase.table("graph_edges").upsert({
+                            "source_urn": urn,
+                            "source_version": version,
+                            "target_urn": rel["target_urn"],
+                            "edge_type": rel["edge_type"]
+                        }).execute()
+                    print(f"[+] Successfully synced URN '{urn}' (v{version}) to Supabase cloud.")
+                except Exception as ex:
+                    print(f"[!] Warning: Failed to sync URN '{urn}' to Supabase: {ex}")
+                    
         except Exception as e:
             session.rollback()
             raise e

@@ -251,6 +251,44 @@ class ReasoningAgent:
 
         return patterns
 
+    def detect_split_opinions(self, ko_list: List[dict]) -> List[Dict]:
+        """
+        Scans for objects of type 'Opinion' and checks if multiple independent
+        commentaries voice diverging stances on the same Core Law URN.
+        """
+        opinions = [ko for ko in ko_list if ko.get("type") == "Opinion"]
+        if len(opinions) < 2:
+            return []
+
+        # Map target URN -> list of opinions referencing it
+        references: Dict[str, List[dict]] = {}
+        for op in opinions:
+            for rel in op.get("relations", []):
+                target = rel.get("target_urn")
+                if target:
+                    references.setdefault(target, []).append(op)
+
+        split_insights = []
+        for target_urn, ops in references.items():
+            if len(ops) >= 2:
+                # Check for different stances
+                stances = {op.get("interpretation_stance") for op in ops if op.get("interpretation_stance")}
+                if len(stances) >= 2:
+                    authors = [op.get("authority", "unknown") for op in ops]
+                    split_insights.append({
+                        "type": "SPLIT_OPINION",
+                        "severity": "MEDIUM",
+                        "target_urn": target_urn,
+                        "description": (
+                            f"Diverging legal/industry interpretations detected for Core URN '{target_urn}'. "
+                            f"Commentaries by {', '.join(authors)} express split opinions: "
+                            f"{', '.join(stances)}."
+                        ),
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+
+        return split_insights
+
     def synthesize(self, ko_list: List[dict], expected_entities: List[str] = None) -> Dict:
         """
         Runs the full reasoning pipeline across all detectors and produces
@@ -266,8 +304,9 @@ class ReasoningAgent:
         supersessions = self.detect_supersessions(ko_list)
         gaps = self.detect_coverage_gaps(ko_list, expected_entities)
         patterns = self.detect_emerging_patterns(ko_list)
+        split_opinions = self.detect_split_opinions(ko_list)
 
-        all_insights = conflicts + supersessions + gaps + patterns
+        all_insights = conflicts + supersessions + gaps + patterns + split_opinions
         self._insights = all_insights
 
         report = {
@@ -279,6 +318,7 @@ class ReasoningAgent:
                 "supersessions": len(supersessions),
                 "coverage_gaps": len(gaps),
                 "emerging_patterns": len(patterns),
+                "split_opinions": len(split_opinions)
             },
             "insights": all_insights,
             "severity_breakdown": {
