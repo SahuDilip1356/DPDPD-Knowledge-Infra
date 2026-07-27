@@ -1,0 +1,34 @@
+services:
+  # Python FastAPI Backend Gateway
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dpdpa_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME}
+      - SUBSCRIBER_WEBHOOK_URL=${SUBSCRIBER_WEBHOOK_URL}
+    restart: unless-stopped
+
+  # React Vite Frontend Client
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dpdpa_frontend
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+    depends_on:
+      - backend
