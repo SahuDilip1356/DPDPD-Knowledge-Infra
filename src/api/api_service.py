@@ -12,6 +12,7 @@ import os
 from typing import Dict, List, Optional
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.storage.db_client import DatabaseClient
@@ -23,6 +24,15 @@ app = FastAPI(
     title="Regulatory Knowledge Infrastructure API Gateway",
     description="Bi-temporal API for querying and exploring DPDPA knowledge.",
     version="1.0.0"
+)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Shared clients (can be customized or injected during app startup)

@@ -86,52 +86,41 @@ class GroundedReasoningEngine:
         matched_urns = self._query_pinecone_vectors(query)
         
         if matched_urns and self.db_client:
-            session = self.db_client.Session()
-            try:
-                from src.storage.models import KnowledgeObject
-                # Fetch full records for the URNs returned by Pinecone
-                db_kos = session.query(KnowledgeObject).filter(
-                    KnowledgeObject.urn.in_(matched_urns),
-                    KnowledgeObject.system_time_end == None
-                ).all()
-                
-                # Maintain the order of matches returned by Pinecone (relevance)
-                order_map = {urn: index for index, urn in enumerate(matched_urns)}
-                db_kos = sorted(db_kos, key=lambda k: order_map.get(k.urn, 999))
-                
-                for db_ko in db_kos:
-                    matched_kos.append({
-                        "urn": db_ko.urn,
-                        "title": db_ko.title,
-                        "summary": db_ko.summary,
-                        "entities": db_ko.entities if hasattr(db_ko, 'entities') else db_ko.body.get("entities", []),
-                        "evidence": db_ko.evidence,
-                        "business_impact": db_ko.business_impact,
-                        "confidence_score": float(db_ko.confidence_score),
-                        "version": db_ko.version,
-                        "date": db_ko.legal_time_start.strftime("%Y-%m-%d") if db_ko.legal_time_start else "unknown"
-                    })
-            except Exception as e:
-                print(f"[Database] Error fetching vector search URNs: {str(e)}. Falling back to keyword scan.")
-            finally:
-                session.close()
-
-        # 2. Fallback to SQL keyword search if vector search returned no results
-        if not matched_kos and self.db_client:
-            session = self.db_client.Session()
-            try:
-                from src.storage.models import KnowledgeObject
-                # Fetch all active KOs (system_time_end is Null)
-                active_kos = session.query(KnowledgeObject).filter(
-                    KnowledgeObject.system_time_end == None
-                ).all()
-                
-                # Simple keyword lookup in title/summary
-                words = query.lower().split()
-                for db_ko in active_kos:
-                    entities = db_ko.body.get("entities", []) if db_ko.body else []
-                    ko_text = f"{db_ko.title} {db_ko.summary} {' '.join(entities)}".lower()
-                    if any(word in ko_text for word in words):
+            if getattr(self.db_client, "supabase", None):
+                try:
+                    res = self.db_client.supabase.table("knowledge_objects").select("*").in_("urn", matched_urns).is_("system_time_end", "null").execute()
+                    if res.data:
+                        order_map = {urn: index for index, urn in enumerate(matched_urns)}
+                        sorted_rows = sorted(res.data, key=lambda r: order_map.get(r["urn"], 999))
+                        for row in sorted_rows:
+                            matched_kos.append({
+                                "urn": row["urn"],
+                                "title": row["title"],
+                                "summary": row["summary"],
+                                "entities": row.get("entities") or row.get("body", {}).get("entities", []),
+                                "evidence": row["evidence"],
+                                "business_impact": row["business_impact"],
+                                "confidence_score": float(row["confidence_score"]),
+                                "version": row["version"],
+                                "date": row.get("legal_time_start", "")[:10] if row.get("legal_time_start") else "unknown"
+                            })
+                except Exception as e:
+                    print(f"[Supabase] Error fetching vector search URNs: {str(e)}")
+            else:
+                session = self.db_client.Session()
+                try:
+                    from src.storage.models import KnowledgeObject
+                    # Fetch full records for the URNs returned by Pinecone
+                    db_kos = session.query(KnowledgeObject).filter(
+                        KnowledgeObject.urn.in_(matched_urns),
+                        KnowledgeObject.system_time_end == None
+                    ).all()
+                    
+                    # Maintain the order of matches returned by Pinecone (relevance)
+                    order_map = {urn: index for index, urn in enumerate(matched_urns)}
+                    db_kos = sorted(db_kos, key=lambda k: order_map.get(k.urn, 999))
+                    
+                    for db_ko in db_kos:
                         matched_kos.append({
                             "urn": db_ko.urn,
                             "title": db_ko.title,
@@ -143,8 +132,63 @@ class GroundedReasoningEngine:
                             "version": db_ko.version,
                             "date": db_ko.legal_time_start.strftime("%Y-%m-%d") if db_ko.legal_time_start else "unknown"
                         })
-            finally:
-                session.close()
+                except Exception as e:
+                    print(f"[Database] Error fetching vector search URNs: {str(e)}. Falling back to keyword scan.")
+                finally:
+                    session.close()
+
+        # 2. Fallback to SQL keyword search if vector search returned no results
+        if not matched_kos and self.db_client:
+            if getattr(self.db_client, "supabase", None):
+                try:
+                    res = self.db_client.supabase.table("knowledge_objects").select("*").is_("system_time_end", "null").execute()
+                    if res.data:
+                        words = query.lower().split()
+                        for row in res.data:
+                            entities = row.get("entities") or row.get("body", {}).get("entities", [])
+                            ko_text = f"{row['title']} {row['summary']} {' '.join(entities)}".lower()
+                            if any(word in ko_text for word in words):
+                                matched_kos.append({
+                                    "urn": row["urn"],
+                                    "title": row["title"],
+                                    "summary": row["summary"],
+                                    "entities": entities,
+                                    "evidence": row["evidence"],
+                                    "business_impact": row["business_impact"],
+                                    "confidence_score": float(row["confidence_score"]),
+                                    "version": row["version"],
+                                    "date": row.get("legal_time_start", "")[:10] if row.get("legal_time_start") else "unknown"
+                                })
+                except Exception as e:
+                    print(f"[Supabase] Error running keyword scan: {str(e)}")
+            else:
+                session = self.db_client.Session()
+                try:
+                    from src.storage.models import KnowledgeObject
+                    # Fetch all active KOs (system_time_end is Null)
+                    active_kos = session.query(KnowledgeObject).filter(
+                        KnowledgeObject.system_time_end == None
+                    ).all()
+                    
+                    # Simple keyword lookup in title/summary
+                    words = query.lower().split()
+                    for db_ko in active_kos:
+                        entities = db_ko.body.get("entities", []) if db_ko.body else []
+                        ko_text = f"{db_ko.title} {db_ko.summary} {' '.join(entities)}".lower()
+                        if any(word in ko_text for word in words):
+                            matched_kos.append({
+                                "urn": db_ko.urn,
+                                "title": db_ko.title,
+                                "summary": db_ko.summary,
+                                "entities": db_ko.entities if hasattr(db_ko, 'entities') else db_ko.body.get("entities", []),
+                                "evidence": db_ko.evidence,
+                                "business_impact": db_ko.business_impact,
+                                "confidence_score": float(db_ko.confidence_score),
+                                "version": db_ko.version,
+                                "date": db_ko.legal_time_start.strftime("%Y-%m-%d") if db_ko.legal_time_start else "unknown"
+                            })
+                finally:
+                    session.close()
                 
         # 3. Fallback to GitLedger scanning if database is empty or not configured
         if not matched_kos and self.git_ledger:
