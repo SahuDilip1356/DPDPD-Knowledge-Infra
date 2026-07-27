@@ -46,7 +46,7 @@ def main():
     model_client = ModelClient()
     
     # Initialize Orchestrator
-    orchestrator = FactoryOrchestrator(git_ledger=git_ledger, db_client=db_client)
+    orchestrator = FactoryOrchestrator(git_ledger=git_ledger, db_client=db_client, model_client=model_client)
     structurer = StructuringAgent(model_client=model_client)
 
     # 1. Scout & Collection (Dept 1)

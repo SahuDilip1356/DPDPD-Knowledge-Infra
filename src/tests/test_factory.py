@@ -53,3 +53,60 @@ def test_ingestion_pipeline(clean_staging):
     # The hash should be correct for the text
     expected_hash = citation.compute_sha256(chunk["text"])
     assert chunk["coordinates"]["hash"] == expected_hash
+
+def test_scanned_pdf_vision_ocr(tmp_path):
+    """
+    Verifies that ParsingAgent triggers visual OCR via ModelClient
+    when standard text extraction returns no content.
+    """
+    # 1. Create a dummy scanned PDF with binary header but no extractable text
+    dummy_pdf = tmp_path / "scanned.pdf"
+    with open(dummy_pdf, "wb") as f:
+        f.write(b"%PDF-1.4\n%scanned_images_only_no_text_bytes\n")
+
+    # 2. Mock ModelClient to return structured layout OCR JSON
+    class MockModelClient:
+        def __init__(self):
+            self.calls = []
+
+        def generate_vision(self, prompt: str, mime_type: str, file_bytes: bytes) -> str:
+            self.calls.append({
+                "prompt": prompt,
+                "mime_type": mime_type,
+                "file_bytes": file_bytes
+            })
+            return """
+            [
+              {
+                "page_num": 1,
+                "paragraphs": [
+                  "Visual Page 1 Paragraph 1",
+                  "Visual Page 1 Paragraph 2"
+                ]
+              },
+              {
+                "page_num": 2,
+                "paragraphs": [
+                  "Visual Page 2 Paragraph 1"
+                ]
+              }
+            ]
+            """
+
+    mock_client = MockModelClient()
+    parser = ParsingAgent(model_client=mock_client)
+
+    # 3. Execute visual parsing
+    results = parser.parse_pdf(str(dummy_pdf))
+
+    # 4. Verify OCR pipeline triggered
+    assert len(mock_client.calls) == 1
+    assert mock_client.calls[0]["mime_type"] == "application/pdf"
+    
+    # 5. Verify results structured correctly
+    assert len(results) == 2
+    assert results[0]["page_num"] == 1
+    assert results[0]["paragraphs"][0] == "Visual Page 1 Paragraph 1"
+    assert results[1]["page_num"] == 2
+    assert results[1]["paragraphs"][0] == "Visual Page 2 Paragraph 1"
+

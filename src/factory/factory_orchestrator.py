@@ -24,6 +24,7 @@ from src.factory.deduplication_agent import DeduplicationAgent
 from src.factory.reasoning_agent import ReasoningAgent
 from src.factory.business_translation_agent import BusinessTranslationAgent
 from src.factory.publishing_agent import PublishingAgent
+from src.reasoning.model_client import ModelClient
 
 
 class FactoryOrchestrator:
@@ -33,20 +34,23 @@ class FactoryOrchestrator:
     and produces a comprehensive pipeline execution report.
     """
 
-    def __init__(self, git_ledger=None, db_client=None):
+    def __init__(self, git_ledger=None, db_client=None, model_client=None):
         """
         Initializes all department agents and wires them together.
 
         Args:
             git_ledger: Optional GitLedger for file-based persistence.
             db_client: Optional DatabaseClient for indexed storage.
+            model_client: Optional ModelClient for visual document OCR.
         """
+        self.model_client = model_client or ModelClient()
+
         # Department 1: Research (Scout & Collection)
         self.scout = ScoutAgent()
         # Department 2: Verification (Citation & Evidence)
         self.citation = CitationAgent()
         # Department 3: Knowledge Engineering (Parsing & Extraction)
-        self.parser = ParsingAgent()
+        self.parser = ParsingAgent(model_client=self.model_client)
         # Department 4: Ontology (Vocabulary Governance)
         self.ontology = OntologyAgent()
         # Department 5: Relationship Engineering (Link Creation)
