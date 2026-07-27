@@ -9,6 +9,8 @@ Purpose:
 """
 
 import json
+import os
+import requests
 from typing import Dict, List, Optional, Tuple
 
 class GroundedReasoningEngine:
@@ -26,16 +28,96 @@ class GroundedReasoningEngine:
         self.git_ledger = git_ledger
         self.model_client = model_client
 
+    def _query_pinecone_vectors(self, query: str) -> List[str]:
+        """
+        Queries Pinecone REST API for matching KO URNs.
+        """
+        pinecone_key = os.getenv("PINECONE_API_KEY")
+        index_name = os.getenv("PINECONE_INDEX_NAME", "dpdpa-knowledge")
+        
+        if not pinecone_key or not self.model_client:
+            return []
+            
+        try:
+            # 1. Get host/endpoint from Pinecone Control Plane
+            headers = {
+                "Api-Key": pinecone_key,
+                "Content-Type": "application/json"
+            }
+            status_url = f"https://api.pinecone.io/indexes/{index_name}"
+            status_res = requests.get(status_url, headers=headers, timeout=10)
+            if status_res.status_code != 200:
+                print(f"[Pinecone] Warning: Index '{index_name}' status check returned {status_res.status_code}.")
+                return []
+                
+            host = status_res.json().get("host")
+            if not host:
+                return []
+
+            # 2. Embed the search query
+            query_vector = self.model_client.embed(query)
+
+            # 3. Query the index
+            query_url = f"https://{host}/query"
+            payload = {
+                "vector": query_vector,
+                "topK": 5,
+                "includeMetadata": False
+            }
+            query_res = requests.post(query_url, headers=headers, json=payload, timeout=15)
+            query_res.raise_for_status()
+            
+            matches = query_res.json().get("matches", [])
+            # Return matching URNs (which we set as the vector IDs)
+            return [match["id"] for match in matches if match.get("score", 0.0) >= 0.35]
+            
+        except Exception as e:
+            print(f"[Pinecone] Search failed: {str(e)}. Falling back to keyword search.")
+            return []
+
     def retrieve_context(self, query: str) -> List[Dict]:
         """
-        Scans active Knowledge Objects in the database or ledger matching keywords in the query.
-        For production, this would perform hybrid vector/keyword search.
-        For the MVP, we scan database objects/JSONs for term matches.
+        Retrieves relevant Knowledge Objects using Pinecone semantic search,
+        falling back to database keyword matching and GitLedger scanning if offline.
         """
         matched_kos = []
         
-        # 1. Fetch from Database if available
-        if self.db_client:
+        # 1. Try Pinecone semantic search if available
+        matched_urns = self._query_pinecone_vectors(query)
+        
+        if matched_urns and self.db_client:
+            session = self.db_client.Session()
+            try:
+                from src.storage.models import KnowledgeObject
+                # Fetch full records for the URNs returned by Pinecone
+                db_kos = session.query(KnowledgeObject).filter(
+                    KnowledgeObject.urn.in_(matched_urns),
+                    KnowledgeObject.system_time_end == None
+                ).all()
+                
+                # Maintain the order of matches returned by Pinecone (relevance)
+                order_map = {urn: index for index, urn in enumerate(matched_urns)}
+                db_kos = sorted(db_kos, key=lambda k: order_map.get(k.urn, 999))
+                
+                for db_ko in db_kos:
+                    matched_kos.append({
+                        "urn": db_ko.urn,
+                        "title": db_ko.title,
+                        "summary": db_ko.summary,
+                        "entities": db_ko.entities if hasattr(db_ko, 'entities') else db_ko.body.get("entities", []),
+                        "evidence": db_ko.evidence,
+                        "business_impact": db_ko.business_impact,
+                        "confidence_score": float(db_ko.confidence_score),
+                        "version": db_ko.version,
+                        "date": db_ko.legal_time_start.strftime("%Y-%m-%d") if db_ko.legal_time_start else "unknown"
+                    })
+            except Exception as e:
+                print(f"[Database] Error fetching vector search URNs: {str(e)}. Falling back to keyword scan.")
+            finally:
+                session.close()
+
+        # 2. Fallback to SQL keyword search if vector search returned no results
+        if not matched_kos and self.db_client:
             session = self.db_client.Session()
             try:
                 from src.storage.models import KnowledgeObject
@@ -50,7 +132,6 @@ class GroundedReasoningEngine:
                     entities = db_ko.body.get("entities", []) if db_ko.body else []
                     ko_text = f"{db_ko.title} {db_ko.summary} {' '.join(entities)}".lower()
                     if any(word in ko_text for word in words):
-                        # Convert back to standard KO dict format
                         matched_kos.append({
                             "urn": db_ko.urn,
                             "title": db_ko.title,
@@ -65,7 +146,7 @@ class GroundedReasoningEngine:
             finally:
                 session.close()
                 
-        # 2. Fallback to GitLedger scanning if database is empty or not configured
+        # 3. Fallback to GitLedger scanning if database is empty or not configured
         if not matched_kos and self.git_ledger:
             # Recursively walk git ledger objects folder
             obj_dir = os.path.join(self.git_ledger.base_dir, "objects")

@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from src.storage.db_client import DatabaseClient
 from src.reasoning.reasoning_engine import GroundedReasoningEngine
+from src.reasoning.model_client import ModelClient
 
 # Initialize FastAPI App
 app = FastAPI(
@@ -27,7 +28,8 @@ app = FastAPI(
 # Shared clients (can be customized or injected during app startup)
 db_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
 db_client = DatabaseClient(db_url)
-reasoning_engine = GroundedReasoningEngine(db_client=db_client)
+model_client = ModelClient()
+reasoning_engine = GroundedReasoningEngine(db_client=db_client, model_client=model_client)
 
 
 # ─── Pydantic Schemas ────────────────────────────────────────────────────────
