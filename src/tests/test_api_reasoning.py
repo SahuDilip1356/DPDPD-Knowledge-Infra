@@ -21,6 +21,10 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from src.api.api_service import app, db_client, reasoning_engine
+reasoning_engine.model_client = None
+db_client.supabase = None
+if reasoning_engine.db_client:
+    reasoning_engine.db_client.supabase = None
 from src.tests.test_reasoning_pipeline import make_ko
 
 
