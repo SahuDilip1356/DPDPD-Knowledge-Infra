@@ -16,8 +16,6 @@ class ScoutAgent:
         Scans a raw HTML string or feed index for links to Gazette or rule notifications (PDFs).
         Extracts structured titles and publication dates from HTML table rows or text context.
         """
-        # Regex to find links alongside dates and titles
-        # Matches: href="url" followed by or preceded by a title/date context
         pdf_pattern = r'href=["\'](https?://[^"\']+\.pdf)["\']'
         urls = re.findall(pdf_pattern, html_source, re.IGNORECASE)
         
@@ -36,13 +34,62 @@ class ScoutAgent:
             # Clean title from filename
             clean_title = filename.replace(".pdf", "").replace("-", " ").replace("_", " ").title()
             
-            # If context is in HTML, clean it up
             signals.append({
                 "source_url": url,
                 "scraped_title": clean_title,
                 "scraped_date": date_str,
                 "layer": source_layer
             })
+        return signals
+
+    def poll_meity_notifications(self) -> List[Dict]:
+        """
+        Polls the official MeitY notifications index page and extracts matching DPDPA / Privacy notifications.
+        """
+        url = "https://www.meity.gov.in/notifications"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        
+        print(f"[*] ScoutAgent: Polling MeitY Notifications at '{url}'...")
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
+            html = response.text
+        except Exception as e:
+            print(f"[!] ScoutAgent: Failed to connect to MeitY Notifications page: {e}")
+            return []
+
+        # Find all PDF links alongside their text
+        link_pattern = r'<a[^>]+href=["\']([^"\']+\.pdf)["\'][^>]*>(.*?)</a>'
+        matches = re.findall(link_pattern, html, re.IGNORECASE | re.DOTALL)
+
+        signals = []
+        keywords = ["personal data", "privacy", "dpdp", "protection", "consent", "rules", "gazette"]
+        
+        for href, anchor_text in matches:
+            # Strip inner HTML tags from anchor text
+            clean_text = re.sub(r'<[^>]+>', '', anchor_text).strip()
+            clean_text = " ".join(clean_text.split())
+            
+            # Combine href and title to check keywords
+            combined = f"{href} {clean_text}".lower()
+            if any(kw in combined for kw in keywords):
+                # Build absolute URL if relative
+                absolute_url = href
+                if href.startswith("/"):
+                    absolute_url = "https://www.meity.gov.in" + href
+                
+                # Clean up title if empty
+                title = clean_text if clean_text else "MeitY Notification " + os.path.basename(href).replace(".pdf", "")
+                
+                if not any(s["source_url"] == absolute_url for s in signals):
+                    signals.append({
+                        "source_url": absolute_url,
+                        "scraped_title": title,
+                        "scraped_date": datetime_today_str(),
+                        "layer": 3  # Trust Layer 3 = Regulator/MeitY Circulars
+                    })
+                    
+        print(f"[+] ScoutAgent: Found {len(signals)} matching notifications.")
         return signals
 
     def download_document(self, url: str) -> str:

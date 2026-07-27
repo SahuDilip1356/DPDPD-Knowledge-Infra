@@ -110,3 +110,62 @@ def test_scanned_pdf_vision_ocr(tmp_path):
     assert results[1]["page_num"] == 2
     assert results[1]["paragraphs"][0] == "Visual Page 2 Paragraph 1"
 
+def test_scout_poll_meity(monkeypatch):
+    """
+    Verifies that ScoutAgent.poll_meity_notifications extracts matching
+    data protection/privacy PDFs from MeitY page HTML.
+    """
+    scout = ScoutAgent()
+
+    # Mock HTML source simulating the MeitY notifications page
+    mock_html = """
+    <html>
+      <body>
+        <table>
+          <tr>
+            <td>
+              <a href="/writereaddata/files/dpdp_rules_notification_2026.pdf"><b>Notification for Digital Personal Data Protection Rules 2026</b></a>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <a href="/writereaddata/files/quantum_computing_advisory.pdf">Advisory on Quantum Technology Standards</a>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <a href="https://www.meity.gov.in/writereaddata/files/consent_manager_specification_v1.pdf">Consent Manager Specifications</a>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+    class MockResponse:
+        def __init__(self):
+            self.text = mock_html
+            self.status_code = 200
+        def raise_for_status(self):
+            pass
+
+    # Monkeypatch requests.get to return our mock page instead of hit MeitY
+    import requests
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: MockResponse())
+
+    signals = scout.poll_meity_notifications()
+    
+    # Check that we extracted the 2 notifications matching privacy keywords:
+    # 1. dpdp_rules_notification_2026.pdf (matches "dpdp" and "rules")
+    # 2. consent_manager_specification_v1.pdf (matches "consent")
+    # And we filtered out quantum_computing_advisory.pdf
+    assert len(signals) == 2
+    
+    assert signals[0]["source_url"] == "https://www.meity.gov.in/writereaddata/files/dpdp_rules_notification_2026.pdf"
+    assert "Digital Personal Data Protection Rules 2026" in signals[0]["scraped_title"]
+    assert signals[0]["layer"] == 3
+    
+    assert signals[1]["source_url"] == "https://www.meity.gov.in/writereaddata/files/consent_manager_specification_v1.pdf"
+    assert "Consent Manager Specifications" in signals[1]["scraped_title"]
+
+

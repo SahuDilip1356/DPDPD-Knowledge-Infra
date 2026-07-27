@@ -24,9 +24,10 @@ load_dotenv()
 
 def main():
     parser = argparse.ArgumentParser(description="Ingest regulatory documents into DPDPA Knowledge Graph.")
-    parser.add_argument("source_url", help="URL or local path to the regulatory PDF/document.")
-    parser.add_argument("--urn", required=True, help="Canonical source URN (e.g. urn:ki:in:dpdp:source:gazette-rule-xyz)")
-    parser.add_argument("--layer", type=int, default=1, help="Trust Layer of the source (1=Primary, 2=Courts, 3=Regulator, etc.)")
+    parser.add_argument("source_url", nargs="?", help="URL or local path to the regulatory PDF/document.")
+    parser.add_argument("--poll", action="store_true", help="Poll MeitY notifications and select a document to ingest.")
+    parser.add_argument("--urn", help="Canonical source URN (e.g. urn:ki:in:dpdp:source:gazette-rule-xyz)")
+    parser.add_argument("--layer", type=int, help="Trust Layer of the source (1=Primary, 2=Courts, 3=Regulator, etc.)")
     parser.add_argument("--ledger-dir", default="staging/temp_ledger", help="Path to temp Git Ledger.")
     args = parser.parse_args()
 
@@ -34,6 +35,11 @@ def main():
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         print("[!] ERROR: DATABASE_URL is missing from environment/env.")
+        sys.exit(1)
+
+    if not args.poll and not args.source_url:
+        print("[!] ERROR: Must specify either a source_url or --poll flag.")
+        parser.print_help()
         sys.exit(1)
 
     print("\n" + "═" * 70)
@@ -50,9 +56,45 @@ def main():
     structurer = StructuringAgent(model_client=model_client)
 
     # 1. Scout & Collection (Dept 1)
-    print(f"\n[*] Stage 1: Scouting & downloading '{args.source_url}'...")
+    source_url = args.source_url
+    source_layer = args.layer or 1
+    source_urn = args.urn
+
+    if args.poll:
+        notifications = orchestrator.scout.poll_meity_notifications()
+        if not notifications:
+            print("[!] No matching privacy or data protection notifications found on MeitY.")
+            sys.exit(0)
+            
+        print("\n📥 RECENT MEITY PRIVACY NOTIFICATIONS:")
+        for idx, n in enumerate(notifications):
+            print(f"  [{idx}] {n['scraped_title']}")
+            print(f"      URL:  {n['source_url']}")
+            print(f"      Date: {n['scraped_date']}")
+            
+        try:
+            choice = input(f"\nSelect notification index to ingest (0-{len(notifications)-1}) [or 'q' to quit]: ").strip()
+            if choice.lower() == 'q':
+                sys.exit(0)
+            choice_idx = int(choice)
+            selected = notifications[choice_idx]
+            source_url = selected["source_url"]
+            source_layer = selected["layer"]
+            # Auto-generate a clean URN based on filename if not provided
+            if not source_urn:
+                filename_clean = os.path.basename(source_url).replace(".pdf", "").replace("-", "_").lower()
+                source_urn = f"urn:ki:in:meity:source:{filename_clean}"
+        except Exception as e:
+            print(f"[!] Invalid selection: {e}")
+            sys.exit(1)
+
+    if not source_urn:
+        print("[!] ERROR: Must specify a URN using --urn when passing a direct URL.")
+        sys.exit(1)
+
+    print(f"\n[*] Stage 1: Scouting & downloading '{source_url}'...")
     try:
-        local_path = orchestrator.scout.download_document(args.source_url)
+        local_path = orchestrator.scout.download_document(source_url)
         print(f"[+] Downloaded successfully to: {local_path}")
     except Exception as e:
         print(f"[!] Error downloading document: {e}")
@@ -70,8 +112,8 @@ def main():
     # 3. Citation & Evidence Coordinates (Dept 2)
     print(f"\n[*] Stage 3: Generating bitemporal evidence packets (SHA-256 coordinates)...")
     evidence_packet = orchestrator.process_evidence_packet(
-        source_urn=args.urn,
-        source_layer=args.layer,
+        source_urn=source_urn,
+        source_layer=source_layer,
         parsed_pages=parsed_pages
     )
     print(f"[+] Created {len(evidence_packet['chunks'])} evidence coordinate chunks.")
@@ -80,8 +122,8 @@ def main():
     print(f"\n[*] Stage 4: AI structuring of raw paragraphs into Knowledge Objects...")
     draft_kos = structurer.structure_document(
         filename=os.path.basename(local_path),
-        source_urn=args.urn,
-        source_layer=args.layer,
+        source_urn=source_urn,
+        source_layer=source_layer,
         evidence_packet=evidence_packet
     )
     if not draft_kos:
