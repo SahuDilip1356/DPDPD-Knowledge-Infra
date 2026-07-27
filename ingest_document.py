@@ -100,6 +100,25 @@ def main():
         print(f"[!] Error downloading document: {e}")
         sys.exit(1)
 
+    # Upload downloaded document to Supabase Storage if in cloud mode
+    public_doc_url = source_url
+    if getattr(db_client, "supabase", None):
+        print(f"[*] Uploading downloaded PDF to Supabase Storage bucket 'gazette-pdfs'...")
+        try:
+            filename = os.path.basename(local_path)
+            with open(local_path, "rb") as f:
+                file_bytes = f.read()
+                
+            db_client.supabase.storage.from_("gazette-pdfs").upload(
+                path=filename,
+                file=file_bytes,
+                file_options={"content-type": "application/pdf", "upsert": "true"}
+            )
+            public_doc_url = db_client.supabase.storage.from_("gazette-pdfs").get_public_url(filename)
+            print(f"[+] Document uploaded to storage bucket. Public URL: {public_doc_url}")
+        except Exception as se:
+            print(f"[!] Warning: Supabase Storage upload failed: {se}. Retaining original source link.")
+
     # 2. Parsing & Chunking (Dept 3)
     print(f"\n[*] Stage 2: Parsing PDF layout...")
     try:
@@ -129,6 +148,13 @@ def main():
     if not draft_kos:
         print("[!] No draft Knowledge Objects were structured. Aborting Ingestion.")
         sys.exit(1)
+
+    # Update draft KOs to use the Supabase public CDN URL for source URLs
+    if public_doc_url != source_url:
+        print(f"[*] Overwriting source document URLs with public storage bucket URL...")
+        for ko in draft_kos:
+            if "source" in ko:
+                ko["source"]["url"] = public_doc_url
 
     # 5. Core Factory Orchestrator Run (Depts 4-8)
     print(f"\n[*] Stage 5: Executing relationship engineering, bitemporal checks, and publishing...")
