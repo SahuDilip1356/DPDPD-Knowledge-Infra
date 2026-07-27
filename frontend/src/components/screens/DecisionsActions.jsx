@@ -8,7 +8,7 @@ import {
   ObjectTypeBadge
 } from "../ui/SharedComponents";
 
-export default function DecisionsActions() {
+export default function DecisionsActions({ user }) {
   const [actionItems, setActionItems] = useState([]);
   const [selectedActionId, setSelectedActionId] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -57,6 +57,10 @@ export default function DecisionsActions() {
 
   const handleUpdateStatus = async (status) => {
     if (!selectedAction) return;
+    if (!user) {
+      alert("⚠️ Access Denied: You must be logged in as an administrator to change compliance action item status.");
+      return;
+    }
     
     try {
       if (supabase) {

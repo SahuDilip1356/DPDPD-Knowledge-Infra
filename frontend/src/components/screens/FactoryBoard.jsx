@@ -2,12 +2,17 @@ import React, { useState } from "react";
 import { FACTORY_DEPARTMENTS, PIPELINE_ITEMS } from "../../data/mockData";
 import { PriorityBadge, EmptyState, StatusBadge } from "../ui/SharedComponents";
 
-export default function FactoryBoard() {
+export default function FactoryBoard({ user, onSignInClick }) {
   const [selectedItemId, setSelectedItemId] = useState(PIPELINE_ITEMS[0]?.id || "");
   const selectedItem = PIPELINE_ITEMS.find(i => i.id === selectedItemId);
 
   const handleApproveStage = () => {
     if (!selectedItem) return;
+    if (!user) {
+      alert("⚠️ Access Denied: You must be logged in as an administrator to approve and advance stages in the Ingestion pipeline.");
+      onSignInClick();
+      return;
+    }
     if (selectedItem.current_stage >= 8) {
       alert(`Published! Committed to database and Git Ledger: ${selectedItem.title}`);
       return;

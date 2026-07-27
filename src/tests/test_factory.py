@@ -168,4 +168,73 @@ def test_scout_poll_meity(monkeypatch):
     assert signals[1]["source_url"] == "https://www.meity.gov.in/writereaddata/files/consent_manager_specification_v1.pdf"
     assert "Consent Manager Specifications" in signals[1]["scraped_title"]
 
+def test_publishing_webhook(monkeypatch):
+    """
+    Verifies that PublishingAgent triggers a webhook POST alert
+    when a new Knowledge Object is successfully published.
+    """
+    from src.factory.publishing_agent import PublishingAgent
+    from src.tests.test_reasoning_pipeline import make_ko
+
+    webhook_url = "http://mock-webhook.org/alert"
+    monkeypatch.setenv("SUBSCRIBER_WEBHOOK_URL", webhook_url)
+
+    post_calls = []
+
+    class MockResponse:
+        def raise_for_status(self):
+            pass
+
+    import requests
+    def mock_post(url, json=None, timeout=None):
+        post_calls.append({"url": url, "json": json, "timeout": timeout})
+        return MockResponse()
+
+    monkeypatch.setattr(requests, "post", mock_post)
+
+    publishing = PublishingAgent()
+    ko_data = {
+        "urn": "urn:ki:in:dpdp:rule:new-notification",
+        "title": "Consent Notice Rules 2026",
+        "source": {
+            "name": "DPDP Rules 2026 Gazette",
+            "layer": 1
+        },
+        "date": "2026-07-27",
+        "version": 1,
+        "summary": "Detailed consent forms must specify all target categories.",
+        "entities": ["Rule", "Consent"],
+        "evidence": [{
+            "source_urn": "urn:ki:in:dpdp:source:rules-2026",
+            "citation_text": "Detailed consent forms must specify all target categories.",
+            "coordinates": {
+                "page": 1,
+                "section": "Paragraph 1",
+                "hash": "a" * 64
+            }
+        }],
+        "business_impact": {
+            "impact_summary": "Requires update to data consent templates.",
+            "action_required": "Redesign UI screens to capture detailed consent categories."
+        },
+        "confidence_score": 0.9,
+        "relations": [{
+            "target_urn": "urn:ki:in:dpdp:act:sec-6",
+            "edge_type": "Implements"
+        }],
+        "linked_objects": ["urn:ki:in:dpdp:act:sec-6"],
+        "history": [{
+            "version": 1,
+            "system_time": "2026-07-27T12:00:00Z",
+            "commit_message": "initial rules notification"
+        }]
+    }
+ 
+    receipt = publishing.publish(ko_data)
+ 
+    assert receipt["status"] == "PUBLISHED"
+    assert len(post_calls) == 1
+    assert post_calls[0]["url"] == webhook_url
+    assert post_calls[0]["json"]["urn"] == "urn:ki:in:dpdp:rule:new-notification"
+
 

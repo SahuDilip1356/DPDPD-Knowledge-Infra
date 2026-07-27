@@ -4,7 +4,7 @@ import "../styles/global.css";
 import "../styles/components.css";
 
 
-export default function AppShell({ children, apiOnline, loadingHealth, onSearchClick }) {
+export default function AppShell({ children, apiOnline, loadingHealth, onSearchClick, user, onSignInClick, onSignOutClick }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
@@ -83,11 +83,34 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
             </button>
           </div>
 
-          <div className="topbar-right">
+          <div className="topbar-right" style={{ display: "flex", gap: "var(--space-md)", alignItems: "center" }}>
             <div className={`api-indicator-badge ${apiOnline ? "online" : ""}`}>
               <span className="api-dot"></span>
               <span>{loadingHealth ? "Checking status..." : apiOnline ? "Live API Online" : "Sandbox Mode"}</span>
             </div>
+
+            {user ? (
+              <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
+                <span className="text-meta" style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)", padding: "4px 8px", background: "rgba(16, 185, 129, 0.1)", color: "var(--color-success)", borderRadius: "var(--radius-sm)", fontWeight: 600 }}>
+                  👤 {user.email.split("@")[0]}
+                </span>
+                <button 
+                  className="btn-secondary" 
+                  onClick={onSignOutClick}
+                  style={{ padding: "4px 8px", fontSize: "12px", border: "1px solid rgba(255, 74, 74, 0.3)", color: "#ff4a4a" }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button 
+                className="btn-primary" 
+                onClick={onSignInClick}
+                style={{ padding: "6px 12px", fontSize: "12px", gap: "6px" }}
+              >
+                🔐 Admin Login
+              </button>
+            )}
 
             <button className="btn-icon" aria-label="Notifications">
               🔔

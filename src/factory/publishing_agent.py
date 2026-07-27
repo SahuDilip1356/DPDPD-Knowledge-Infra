@@ -178,8 +178,40 @@ class PublishingAgent:
             "version": ko_data["version"],
             "timestamp": datetime.utcnow().isoformat()
         })
+ 
+        # Dispatch webhook alert notifications to subscribers
+        self._dispatch_webhook(ko_data)
 
         return receipt
+ 
+    def _dispatch_webhook(self, ko_data: dict):
+        """
+        Sends a JSON POST alert containing the new regulatory change metadata 
+        to the configured SUBSCRIBER_WEBHOOK_URL.
+        """
+        webhook_url = os.getenv("SUBSCRIBER_WEBHOOK_URL")
+        if not webhook_url:
+            return
+            
+        print(f"[*] PublishingAgent: Dispatching webhook alert to '{webhook_url}'...")
+        import requests
+        payload = {
+            "event": "regulatory_change_detected",
+            "timestamp": datetime.utcnow().isoformat(),
+            "urn": ko_data["urn"],
+            "version": ko_data["version"],
+            "title": ko_data.get("title", ""),
+            "summary": ko_data.get("summary", ""),
+            "business_impact": ko_data.get("business_impact", {}),
+            "evidence": ko_data.get("evidence", [])
+        }
+        try:
+            res = requests.post(webhook_url, json=payload, timeout=5)
+            res.raise_for_status()
+            print("[+] Webhook alert successfully delivered.")
+        except Exception as e:
+            # Non-fatal: log error and continue
+            print(f"[!] Warning: Webhook delivery failed: {e}")
 
     def publish_batch(self, ko_list: List[dict]) -> Dict:
         """

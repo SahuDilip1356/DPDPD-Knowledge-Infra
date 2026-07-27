@@ -6,6 +6,8 @@ import "./styles/components.css";
 
 import AppShell from "./components/AppShell";
 import SearchOverlay from "./components/ui/SearchOverlay";
+import AuthModal from "./components/ui/AuthModal";
+import { supabase } from "./data/supabaseClient";
 
 // Screens
 import CommandCenter from "./components/screens/CommandCenter";
@@ -22,6 +24,8 @@ export default function App() {
   const [apiOnline, setApiOnline] = useState(false);
   const [loadingHealth, setLoadingHealth] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
   // Check API health status
   useEffect(() => {
@@ -42,6 +46,32 @@ export default function App() {
     checkHealth();
   }, []);
 
+  // Supabase Auth Listener
+  useEffect(() => {
+    if (!supabase) return;
+    
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+      }
+    });
+
+    // Listen for state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
+  };
+
   // Listen for Cmd+K to trigger global search
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -60,6 +90,9 @@ export default function App() {
         apiOnline={apiOnline} 
         loadingHealth={loadingHealth} 
         onSearchClick={() => setSearchOpen(true)}
+        user={user}
+        onSignInClick={() => setAuthModalOpen(true)}
+        onSignOutClick={handleSignOut}
       >
         <Routes>
           <Route path="/" element={<Navigate to="/today" replace />} />
@@ -67,8 +100,8 @@ export default function App() {
           <Route path="/changes" element={<ChangesFeed />} />
           <Route path="/changes/:id" element={<ChangeWorkspace />} />
           <Route path="/knowledge" element={<KnowledgeExplorer />} />
-          <Route path="/actions" element={<DecisionsActions />} />
-          <Route path="/factory" element={<FactoryBoard />} />
+          <Route path="/actions" element={<DecisionsActions user={user} />} />
+          <Route path="/factory" element={<FactoryBoard user={user} onSignInClick={() => setAuthModalOpen(true)} />} />
           <Route path="/ask" element={
             <AskIntelligence apiOnline={apiOnline} apiBaseUrl={API_BASE_URL} />
           } />
@@ -77,6 +110,11 @@ export default function App() {
       </AppShell>
 
       <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+        onAuthSuccess={(u) => setUser(u)} 
+      />
     </BrowserRouter>
   );
 }
