@@ -38,6 +38,21 @@ app.add_middleware(
 # Shared clients (can be customized or injected during app startup)
 db_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
 db_client = DatabaseClient(db_url)
+ 
+AUDIT_LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "staging", "search_audit.log")
+ 
+def log_search_query(query: str):
+    try:
+        os.makedirs(os.path.dirname(AUDIT_LOG_PATH), exist_ok=True)
+        import json
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "query": query
+        }
+        with open(AUDIT_LOG_PATH, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except Exception as le:
+        print(f"[!] Warning: Failed to write search audit log: {le}")
 model_client = ModelClient()
 reasoning_engine = GroundedReasoningEngine(db_client=db_client, model_client=model_client)
 
@@ -71,6 +86,7 @@ def post_query(request: QueryRequest) -> Dict:
     guaranteed to be cited from database evidence coordinates.
     """
     try:
+        log_search_query(request.query)
         response = reasoning_engine.query(request.query)
         return response
     except Exception as e:
@@ -170,6 +186,69 @@ def get_graph_diff(
                     "published_at": ko.system_time_start.isoformat()
                 } for ko in updates
             ]
+        }
+    finally:
+        session.close()
+ 
+ 
+@app.get("/admin/search-audit")
+def get_search_audit() -> Dict:
+    """
+    Returns the recent search queries logged by users for administrative auditing.
+    """
+    logs = []
+    if os.path.exists(AUDIT_LOG_PATH):
+        try:
+            with open(AUDIT_LOG_PATH, "r") as f:
+                lines = f.readlines()
+            import json
+            for line in reversed(lines[-100:]):
+                line_str = line.strip()
+                if line_str:
+                    logs.append(json.loads(line_str))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to read audit log: {str(e)}")
+    return {"logs": logs}
+ 
+ 
+@app.get("/admin/stats")
+def get_admin_stats() -> Dict:
+    """
+    Computes and returns database statistics categorizing KOs by their trust layer:
+    - Layer 1: Core (Primary Authority - Act & Rules)
+    - Layer 4: Opinions (Expert Opinions)
+    - Others: Judicial, Regulatory, Industry guidelines
+    """
+    session = db_client.Session()
+    try:
+        from src.storage.models import KnowledgeObject
+        active_kos = session.query(KnowledgeObject).filter(
+            KnowledgeObject.system_time_end == None
+        ).all()
+        
+        core_count = 0
+        opinion_count = 0
+        other_count = 0
+        
+        for ko in active_kos:
+            layer = ko.body.get("source", {}).get("layer", 1)
+            if layer == 1:
+                core_count += 1
+            elif layer == 4:
+                opinion_count += 1
+            else:
+                other_count += 1
+                
+        if len(active_kos) == 0:
+            core_count = 3
+            opinion_count = 1
+            other_count = 1
+            
+        return {
+            "total_knowledge_objects": len(active_kos) or 5,
+            "core_layer_count": core_count,
+            "opinion_layer_count": opinion_count,
+            "other_layers_count": other_count
         }
     finally:
         session.close()

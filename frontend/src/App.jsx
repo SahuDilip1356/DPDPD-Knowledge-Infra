@@ -17,6 +17,7 @@ import KnowledgeExplorer from "./components/screens/KnowledgeExplorer";
 import DecisionsActions from "./components/screens/DecisionsActions";
 import FactoryBoard from "./components/screens/FactoryBoard";
 import AskIntelligence from "./components/screens/AskIntelligence";
+import AdminAudit from "./components/screens/AdminAudit";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -105,6 +106,7 @@ export default function App() {
           <Route path="/ask" element={
             <AskIntelligence apiOnline={apiOnline} apiBaseUrl={API_BASE_URL} />
           } />
+          <Route path="/admin" element={<AdminAudit />} />
           <Route path="*" element={<Navigate to="/today" replace />} />
         </Routes>
       </AppShell>

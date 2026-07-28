@@ -15,6 +15,7 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
     { path: "/actions", label: "Decisions & Actions", icon: "💼", description: "Operational Response" },
     { path: "/factory", label: "Research Factory", icon: "🏗️", description: "Ingestion Pipeline" },
     { path: "/ask", label: "Ask Intelligence", icon: "🧠", description: "Grounded Q&A" },
+    ...(user ? [{ path: "/admin", label: "Admin Audit", icon: "🛡️", description: "Audit & Analytics" }] : [])
   ];
 
   return (
