@@ -2,7 +2,15 @@
 __pycache__/
 .pytest_cache/
 *.pyc
+# Secrets — never commit. Covers .env, .env.local, .env.backup-*, .env.production
+# and any other variant. The .example templates are the only ones tracked.
 .env
+.env.*
+!.env.example
+
 staging/
 .DS_Store
+node_modules/
+dist/
 
+.vite/
