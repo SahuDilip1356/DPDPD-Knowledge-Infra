@@ -17,10 +17,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code and ingestion scripts
+# Copy source code
 COPY src /app/src
-COPY ingest_document.py run_mock_ingestion.py seed_supabase.py /app/
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.api.api_service:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form so $PORT expands at runtime — Render, Railway and Cloud Run all
+# inject their own port and expect the process to bind to it. Falls back to
+# 8000 for local `docker run`.
+CMD uvicorn src.api.api_service:app --host 0.0.0.0 --port ${PORT:-8000}

@@ -27,10 +27,41 @@ app = FastAPI(
 )
 
 # Enable CORS
+#
+# Origins are configurable so the same image serves local dev, Vercel preview
+# builds and production. Set ALLOWED_ORIGINS to a comma-separated list, or to
+# "*" to allow any origin.
+#
+# Note: the CORS spec forbids pairing a "*" origin with credentialed requests —
+# browsers reject the response. So credentials are only enabled when an explicit
+# origin allow-list is configured.
+DEFAULT_ALLOWED_ORIGINS = [
+    "https://dpdpa.wiki",
+    "https://www.dpdpa.wiki",
+    "https://dpdpa.shiksha",
+    "https://www.dpdpa.shiksha",
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "http://localhost:4174",
+    "http://localhost:4180",
+]
+
+_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
+if _origins_env == "*":
+    allowed_origins: List[str] = ["*"]
+elif _origins_env:
+    allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
+else:
+    allowed_origins = DEFAULT_ALLOWED_ORIGINS
+
+# Vercel preview deployments get a generated subdomain per build.
+allow_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_origin_regex=None if allowed_origins == ["*"] else allow_origin_regex,
+    allow_credentials=allowed_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
