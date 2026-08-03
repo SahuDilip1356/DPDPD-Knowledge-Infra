@@ -1,0 +1,42 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Circular Geodesic Ring -->
+  <circle cx="60" cy="60" r="46" stroke="#0F172A" stroke-width="2.5" />
+  
+  <!-- Sector Lines -->
+  <path d="M14 60 L20 37 M14 60 L20 83 M14 60 L38 52 M20 83 L38 52" stroke="#F97316" stroke-width="1.4" />
+  <path d="M20 37 L37 20 M37 20 L60 14 M60 14 L83 20 M37 20 L44 38 M60 14 L44 38 M60 14 L76 38" stroke="#2563EB" stroke-width="1.4" />
+  <path d="M83 20 L100 37 M100 37 L106 60 M106 60 L100 83 M100 37 L82 52 M106 60 L82 52 M100 83 L82 52" stroke="#138808" stroke-width="1.4" />
+  <path d="M100 83 L83 100 M83 100 L60 106 M60 106 L37 100 M37 100 L20 83 M60 106 L72 80 M60 106 L48 80 M83 100 L72 80 M37 100 L48 80" stroke="#0F172A" stroke-width="1.4" />
+
+  <!-- Inner Mesh -->
+  <path d="M44 38 L76 38 M76 38 L82 52 M82 52 L72 80 M72 80 L48 80 M48 80 L38 52 M38 52 L44 38" stroke="#0F172A" stroke-width="1.2" opacity="0.6" />
+
+  <!-- Outer Nodes -->
+  <circle cx="60" cy="14" r="5" fill="#2563EB" />
+  <circle cx="83" cy="20" r="4" fill="#2563EB" />
+  <circle cx="100" cy="37" r="5" fill="#0D9488" />
+  <circle cx="106" cy="60" r="5" fill="#138808" />
+  <circle cx="100" cy="83" r="5" fill="#138808" />
+  <circle cx="83" cy="100" r="4.5" fill="#0F172A" />
+  <circle cx="60" cy="106" r="5.5" fill="#0F172A" />
+  <circle cx="37" cy="100" r="4.5" fill="#2563EB" />
+  <circle cx="20" cy="83" r="4" fill="#F97316" />
+  <circle cx="14" cy="60" r="5.5" fill="#F97316" />
+  <circle cx="20" cy="37" r="5" fill="#2563EB" />
+  <circle cx="37" cy="20" r="4" fill="#2563EB" />
+
+  <!-- Inner Nodes -->
+  <circle cx="44" cy="38" r="4" fill="#2563EB" />
+  <circle cx="76" cy="38" r="4" fill="#0F172A" />
+  <circle cx="38" cy="52" r="4" fill="#2563EB" />
+  <circle cx="82" cy="52" r="4" fill="#138808" />
+  <circle cx="72" cy="80" r="4" fill="#0F172A" />
+  <circle cx="48" cy="80" r="4" fill="#0F172A" />
+
+  <!-- Central Hub with Green S and Navy P -->
+  <circle cx="60" cy="60" r="20" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.2" />
+  <text x="60" y="67" text-anchor="middle" font-size="21" font-weight="800" font-family="'Inter', system-ui, sans-serif" letter-spacing="-0.5px">
+    <tspan fill="#138808">S</tspan>
+    <tspan fill="#0F172A">P</tspan>
+  </text>
+</svg>
