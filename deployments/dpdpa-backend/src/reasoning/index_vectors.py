@@ -70,17 +70,70 @@ def create_index(index_name, dimension):
     except Exception as e:
         raise RuntimeError(f"Failed to create Pinecone index: {str(e)}")
 
+def fetch_active_kos(db_client):
+    """
+    Returns active Knowledge Objects as plain dicts.
+
+    Prefers the Supabase REST client — that is how the reasoning engine and the
+    frontends read data, so indexing stays consistent with query time and needs
+    no direct Postgres credentials. Falls back to SQLAlchemy when DATABASE_URL
+    is configured.
+    """
+    if getattr(db_client, "supabase", None):
+        res = (
+            db_client.supabase.table("knowledge_objects")
+            .select("*")
+            .is_("system_time_end", "null")
+            .execute()
+        )
+        rows = res.data or []
+        return [
+            {
+                "urn": r.get("urn"),
+                "title": r.get("title") or "",
+                "type": r.get("type") or "",
+                "version": r.get("version") or 1,
+                "summary": r.get("summary") or "",
+                "entities": (r.get("entities") or (r.get("body") or {}).get("entities") or []),
+            }
+            for r in rows
+        ]
+
+    from src.storage.models import KnowledgeObject
+    session = db_client.Session()
+    try:
+        kos = session.query(KnowledgeObject).filter(
+            KnowledgeObject.system_time_end == None  # noqa: E711
+        ).all()
+        return [
+            {
+                "urn": ko.urn,
+                "title": ko.title or "",
+                "type": ko.type or "",
+                "version": ko.version or 1,
+                "summary": ko.summary or "",
+                "entities": (ko.body or {}).get("entities", []),
+            }
+            for ko in kos
+        ]
+    finally:
+        session.close()
+
+
 def main():
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        print("[!] ERROR: DATABASE_URL is missing from environment.")
-        sys.exit(1)
-        
+    # DATABASE_URL is optional — without it the Supabase client is used, which
+    # only needs SUPABASE_URL + SUPABASE_SERVICE_KEY.
+    db_url = os.getenv("DATABASE_URL") or "sqlite:///:memory:"
+
     index_name = os.getenv("PINECONE_INDEX_NAME", "dpdpa-knowledge")
-    
+
     print("[*] Initializing Database & Model Clients...")
     db_client = DatabaseClient(db_url)
     model_client = ModelClient()
+
+    if not getattr(db_client, "supabase", None) and not os.getenv("DATABASE_URL"):
+        print("[!] ERROR: Need either SUPABASE_URL + SUPABASE_SERVICE_KEY, or DATABASE_URL.")
+        sys.exit(1)
     
     # 1. Determine dimension
     # Gemini (text-embedding-004) has 768 dimensions. OpenAI (text-embedding-3-small) has 1536.
@@ -97,39 +150,38 @@ def main():
         
     # 3. Fetch Knowledge Objects from Supabase
     print("[*] Fetching active Knowledge Objects from Supabase...")
-    session = db_client.Session()
     try:
-        from src.storage.models import KnowledgeObject
-        active_kos = session.query(KnowledgeObject).filter(
-            KnowledgeObject.system_time_end == None
-        ).all()
-        
+        active_kos = fetch_active_kos(db_client)
+
         print(f"[+] Found {len(active_kos)} active Knowledge Objects.")
         if not active_kos:
             print("[*] No active Knowledge Objects to index.")
             return
-            
+
         # 4. Generate embeddings and upsert
         vectors = []
         for i, ko in enumerate(active_kos, 1):
-            entities_str = ", ".join(ko.body.get("entities", [])) if ko.body else ""
-            text_to_embed = f"Title: {ko.title}. Type: {ko.type}. Summary: {ko.summary}. Entities: {entities_str}"
-            
-            print(f"  [{i}/{len(active_kos)}] Embedding KO: {ko.title[:60]}...")
+            entities_str = ", ".join(ko["entities"]) if ko["entities"] else ""
+            text_to_embed = (
+                f"Title: {ko['title']}. Type: {ko['type']}. "
+                f"Summary: {ko['summary']}. Entities: {entities_str}"
+            )
+
+            print(f"  [{i}/{len(active_kos)}] Embedding KO: {ko['title'][:60]}...")
             try:
                 embedding = model_client.embed(text_to_embed)
                 vectors.append({
-                    "id": ko.urn,
+                    "id": ko["urn"],
                     "values": embedding,
                     "metadata": {
-                        "title": ko.title,
-                        "type": ko.type,
-                        "version": ko.version,
-                        "summary": ko.summary
+                        "title": ko["title"],
+                        "type": ko["type"],
+                        "version": ko["version"],
+                        "summary": ko["summary"]
                     }
                 })
             except Exception as e:
-                print(f"  [!] Failed to embed '{ko.urn}': {str(e)}")
+                print(f"  [!] Failed to embed '{ko['urn']}': {str(e)}")
                 continue
                 
         # Batch upload to Pinecone
@@ -140,9 +192,10 @@ def main():
             response = requests.post(upsert_url, headers=get_pinecone_headers(), json=payload, timeout=30)
             response.raise_for_status()
             print("[+] Pinecone indexing operation completed successfully!")
-            
-    finally:
-        session.close()
+
+    except Exception as e:
+        print(f"[!] Indexing failed: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

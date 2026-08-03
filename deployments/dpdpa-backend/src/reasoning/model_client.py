@@ -7,16 +7,65 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class ModelClient:
+    """
+    Provider chain: Gemini -> OpenAI -> OpenRouter.
+
+    OpenRouter speaks the OpenAI wire format for both /chat/completions and
+    /embeddings, so it reuses the same transport — only the base URL, key and
+    model identifiers differ. That keeps one code path for two providers.
+    """
+
     def __init__(self):
         self.gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
-        
+        self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
+
+        # NOTE: use `os.getenv(X) or default`, never `os.getenv(X, default)`.
+        # A key present-but-blank in .env (e.g. "EMBED_MODEL=") returns "" from
+        # the two-arg form, which would send an empty model name to the API.
+        def cfg(name, default):
+            return (os.getenv(name) or "").strip() or default
+
+        # Resolve the OpenAI-compatible transport (direct OpenAI, else OpenRouter).
+        if self.openai_key:
+            self.oai_key = self.openai_key
+            self.oai_base = cfg("OPENAI_BASE_URL", "https://api.openai.com/v1")
+            self.oai_chat_model = cfg("CHAT_MODEL", "gpt-4o-mini")
+            self.oai_embed_model = cfg("EMBED_MODEL", "text-embedding-3-small")
+            self.oai_provider = "OpenAI"
+        elif self.openrouter_key:
+            self.oai_key = self.openrouter_key
+            self.oai_base = cfg("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            # OpenRouter namespaces models by vendor. text-embedding-3-small is
+            # 1536-dimensional either way, so the vector index stays compatible
+            # when switching between OpenAI and OpenRouter.
+            self.oai_chat_model = cfg("CHAT_MODEL", "openai/gpt-4o-mini")
+            self.oai_embed_model = cfg("EMBED_MODEL", "openai/text-embedding-3-small")
+            self.oai_provider = "OpenRouter"
+        else:
+            self.oai_key = None
+            self.oai_base = None
+            self.oai_chat_model = None
+            self.oai_embed_model = None
+            self.oai_provider = None
+
         if self.gemini_key:
             print("[ModelClient] Active: Gemini API client initialized.")
-        elif self.openai_key:
-            print("[ModelClient] Active: OpenAI API client initialized (Gemini Key missing).")
+        elif self.oai_key:
+            print(f"[ModelClient] Active: {self.oai_provider} client initialized (Gemini key missing).")
         else:
             print("[ModelClient] Warning: No API keys found in environment. Grounded queries will fall back to mock solver.")
+
+    def _oai_headers(self) -> dict:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.oai_key}"
+        }
+        if self.oai_provider == "OpenRouter":
+            # Optional attribution headers OpenRouter uses for usage dashboards.
+            headers["HTTP-Referer"] = os.getenv("OPENROUTER_SITE_URL", "https://dpdpa.wiki")
+            headers["X-Title"] = os.getenv("OPENROUTER_SITE_NAME", "DPDPA Knowledge Infra")
+        return headers
 
     def generate(self, prompt: str) -> str:
         """
@@ -92,15 +141,12 @@ class ModelClient:
             print("[ModelClient] Warning: OpenAI does not support direct PDF visual uploads in completions. Falling back to text extraction.")
             return "ERROR: OpenAI does not support raw PDF Vision OCR."
             
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.openai_key}"
-        }
+        url = f"{self.oai_base}/chat/completions"
+        headers = self._oai_headers()
         base64_data = base64.b64encode(file_bytes).decode("utf-8")
-        
+
         payload = {
-            "model": "gpt-4o-mini",
+            "model": self.oai_chat_model,
             "messages": [
                 {
                     "role": "user",
@@ -170,13 +216,10 @@ class ModelClient:
             return f"ERROR: Gemini API execution failed: {str(e)}"
 
     def _generate_openai(self, prompt: str) -> str:
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.openai_key}"
-        }
+        url = f"{self.oai_base}/chat/completions"
+        headers = self._oai_headers()
         payload = {
-            "model": "gpt-4o-mini",
+            "model": self.oai_chat_model,
             "messages": [
                 {"role": "system", "content": "You are a precise legal reasoning assistant."},
                 {"role": "user", "content": prompt}
@@ -205,11 +248,12 @@ class ModelClient:
         """
         if self.gemini_key:
             return self._embed_gemini(text)
-        elif self.openai_key:
+        elif self.oai_key:
             return self._embed_openai(text)
         else:
             raise ValueError(
-                "No API Key found. Please add GEMINI_API_KEY or OPENAI_API_KEY to your .env file."
+                "No API Key found. Add GEMINI_API_KEY, OPENAI_API_KEY or "
+                "OPENROUTER_API_KEY to your .env file."
             )
 
     def _embed_gemini(self, text: str) -> list:
@@ -230,14 +274,11 @@ class ModelClient:
             raise RuntimeError(f"Gemini embedding failed: {str(e)}")
 
     def _embed_openai(self, text: str) -> list:
-        url = "https://api.openai.com/v1/embeddings"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.openai_key}"
-        }
+        url = f"{self.oai_base}/embeddings"
+        headers = self._oai_headers()
         payload = {
             "input": text,
-            "model": "text-embedding-3-small"
+            "model": self.oai_embed_model
         }
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=20)
@@ -245,4 +286,4 @@ class ModelClient:
             result = response.json()
             return result["data"][0]["embedding"]
         except Exception as e:
-            raise RuntimeError(f"OpenAI embedding failed: {str(e)}")
+            raise RuntimeError(f"{self.oai_provider} embedding failed: {str(e)}")
