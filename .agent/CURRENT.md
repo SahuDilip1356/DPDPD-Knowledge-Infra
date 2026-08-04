@@ -1,6 +1,6 @@
 # Current State
 
-_Last updated: 2026-08-04 20:24 · mid-session checkpoint_
+_Last updated: 2026-08-04 21:04 · mid-session checkpoint_
 
 ## Handoff (auto-summary — no explicit block found)
 
@@ -11,26 +11,16 @@ _Last updated: 2026-08-04 20:24 · mid-session checkpoint_
 - /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-backend/Dockerfile
 - /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-backend/railway.json
 - /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-backend/.dockerignore
-
-**git diff --stat:**
-```
-.agent/CURRENT.md | 46 +++++++++++++++++++---------------------------
- 1 file changed, 19 insertions(+), 27 deletions(-)
- 1 file changed, 19 insertions(+), 27 deletions(-)
-```
+- /Users/sahudilip/Desktop/Product Dev/DPDPA Shiksha/README.md
+[REDACTED — secret-like content removed by mem_capture]
+- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/DEPLOYMENT_ARCHITECTURE.md
 
 **Topics this session:**
-- 181 files uncommitted — the largest risk on the board
-- pls proceed with item 1 to 3, I believe this will not crack anything in these 2 applicatio
 - could we proceed now
 - Lets use Railway, what details you need from me
+- Before this I want a fundamental change , separate the Both wiki and shikha partion it and
 
 **Key points / decisions:**
-- The fix: close all rows with the same URN where `version < current` and `system_time_end I
-- Note on the count: after the fix there will still be 49 vectors, and that's now correct — 
-- 4️⃣ Vercel deployment — **1–2 hrs, mostly you** 🟢
-- Recommended sequence
-- Items 1 & 2 done. Working tree clean, 139 files across 4 commits. Now item 3 — fixing the 
 - What got done
 - The versioning bug went deeper than I first thought. My initial fix — close all versions b
 - What I need from you — one decision, then one action
@@ -38,10 +28,19 @@ _Last updated: 2026-08-04 20:24 · mid-session checkpoint_
 - 🔴 Now: permission to push to GitHub
 - 🟡 After deploy: the Railway URL
 - What I've already prepared
+- Result
+- Verified before deleting anything
+- Docs corrected
+- Two things to know
+- Still need from you
 
 **Last assistant note:**
-the Dockerfile builder and sets `/health` as the healthcheck, so a container that boots but can't serve won't be promoted. `.dockerignore` keeps `.env` out of the image and strips tests and caches from the build context.
+as independent copies. A logo change must be made twice, deliberately. That's the cost of the separation you asked for — noted in both READMEs so it isn't a surprise later.
 
-The three Dockerfile bugs I fixed earlier — phantom `COPY`, hardcoded port, missing bible file — would each have failed this deploy. They're already fixed and committed.
+---
 
-**Heads up on cost:** Railway has no free tier — it's usage-based, roughly $5/month minimum. If that's unwelcome, Render does have a free tier (with cold starts). Your call, but Railway is the smoother path.
+## Still need from you
+
+**Permission to push this repo.** Shiksha is on GitHub; `DPDPD-Knowledge-Infra` is not. It has **7 commits** on `feat/wiki-shiksha-partition` that exist only on your disk. Railway can't deploy until they're pushed.
+
+Say go and I'll merge to `main` and push. Then your Railway steps are unchanged — root directory `deployments/dpdpa-backend`, the variables list, generate a domain, send me the URL.
