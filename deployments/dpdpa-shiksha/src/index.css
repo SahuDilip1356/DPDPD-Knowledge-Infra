@@ -1,5 +1,0 @@
-/* index.css — Reset and global overrides are now managed under src/styles/global.css and design-tokens.css */
-body {
-  margin: 0;
-  padding: 0;
-}

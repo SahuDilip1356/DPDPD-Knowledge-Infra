@@ -130,9 +130,13 @@ Only needed if you want to change providers. **You do not need these today.**
 
 **In VS Code** — the files are in your project. Press `Cmd+P` and type the filename:
 
-- `.env` — root, server-side secrets
+- `.env` — root of this repo, server-side secrets
 - `deployments/dpdpa-wiki/.env` — wiki public config
-- `deployments/dpdpa-shiksha/.env` — shiksha public config
+
+The course app now lives in its own repository and its config sits there:
+
+- `../DPDPA Shiksha/.env` — shiksha public config
+  (repo: https://github.com/SahuDilip1356/dpdpa-shiksha)
 
 > If `.env` does not appear in the VS Code sidebar, that is normal — hidden files
 > starting with `.` are often filtered. `Cmd+P` finds them anyway.

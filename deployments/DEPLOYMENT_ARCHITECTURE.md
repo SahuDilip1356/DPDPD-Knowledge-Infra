@@ -32,6 +32,22 @@ This document outlines the multi-site production deployment plan to split the DP
 
 ---
 
+## 📍 Repository layout
+
+The two frontends live in **separate repositories** and deploy independently.
+
+| Repo | Contains | Vercel root directory |
+| :--- | :--- | :--- |
+| [`DPDPD-Knowledge-Infra`](https://github.com/SahuDilip1356/DPDPD-Knowledge-Infra) *(this repo)* | `dpdpa.wiki` frontend + FastAPI backend | `deployments/dpdpa-wiki` |
+| [`dpdpa-shiksha`](https://github.com/SahuDilip1356/dpdpa-shiksha) | `dpdpa.shiksha` certification course | *(repo root — leave empty)* |
+
+On disk: `Product Dev/DPDPD Knowldge Infra/` and `Product Dev/DPDPA Shiksha/`.
+
+The backend deploys to **Railway** from this repo with root directory
+`deployments/dpdpa-backend`.
+
+---
+
 ## 🧭 Ownership Partition
 
 Each frontend owns its screens outright — no shared screen code, no dead routes.
@@ -113,7 +129,7 @@ The project has been split into three distinct directories under **`deployments/
    - **Cross-Domain Hand-off:** Links pointing to `/course` automatically redirect to `https://dpdpa.shiksha`.
    - **Vercel Routing:** Custom `vercel.json` SPA configuration included.
 
-2. **`deployments/dpdpa-shiksha/`**
+2. **`dpdpa-shiksha` (separate repository)**
    - **Target Host:** Vercel (bind to custom domain `dpdpa.shiksha`)
    - **Vite Client Routing:** Root `/` directly serves the personalized Certification onboarding, diagnostic, syllabus workouts, simulations, and final exam.
    - **Cross-Domain Hand-off:** Links pointing to Today, Visuals, Ingestion, Ask Q&A, etc. automatically redirect to `https://dpdpa.wiki/...`.
@@ -126,42 +142,16 @@ The project has been split into three distinct directories under **`deployments/
 
 ---
 
-## ⚡ Step-by-Step GitHub Setup Instructions
+## ⚡ Repository status
 
-To push these to their respective repositories:
+| Repo | State |
+| :--- | :--- |
+| `DPDPD-Knowledge-Infra` | Hosts `dpdpa.wiki` **and** the backend. No further split needed — Vercel and Railway both point at subdirectories of this repo. |
+| `dpdpa-shiksha` | ✅ Created and pushed: https://github.com/SahuDilip1356/dpdpa-shiksha |
 
-### 1. Initialize & Push `dpdpa.wiki`
-```bash
-cd "deployments/dpdpa-wiki"
-git init
-git add .
-git commit -m "feat: initial commit for dpdpa.wiki knowledge infra"
-git branch -M main
-git remote add origin https://github.com/SahuDilip1356/dpdpa-wiki.git # Create this repo on GitHub
-git push -u origin main
-```
-
-### 2. Initialize & Push `dpdpa.shiksha`
-```bash
-cd "deployments/dpdpa-shiksha"
-git init
-git add .
-git commit -m "feat: initial commit for dpdpa.shiksha certification course"
-git branch -M main
-git remote add origin https://github.com/SahuDilip1356/dpdpa-shiksha.git # Create this repo on GitHub
-git push -u origin main
-```
-
-### 3. Initialize & Push `dpdpa-backend`
-```bash
-cd "deployments/dpdpa-backend"
-git init
-git add .
-git commit -m "feat: initial commit for dpdpa backend gateway"
-git branch -M main
-git remote add origin https://github.com/SahuDilip1356/dpdpa-backend.git # Create this repo on GitHub
-git push -u origin main
-```
+`dpdpa-wiki` and `dpdpa-backend` intentionally do **not** get their own
+repositories. Both Vercel and Railway support a root-directory setting, so a
+third and fourth repo would add synchronisation work with no benefit.
 
 ---
 
