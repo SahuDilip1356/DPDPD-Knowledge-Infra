@@ -50,15 +50,33 @@ class DatabaseClient:
 
         session = self.Session()
         try:
-            # 1. Look for a previous version to supersede in system time (local SQLite)
-            if version > 1:
-                prev_version = version - 1
-                stmt = (
-                    update(KnowledgeObject)
-                    .where(and_(KnowledgeObject.urn == urn, KnowledgeObject.version == prev_version))
-                    .values(system_time_end=system_time)
-                )
-                session.execute(stmt)
+            # 1. Close every still-open earlier version in system time (local SQLite).
+            #
+            # Must not target `version - 1` alone: that leaves rows open when
+            # versions arrive out of order (v1 written after v2 never closes
+            # anything, because `version > 1` is false) or when a version number
+            # is skipped. Either case leaves two rows claiming to be current,
+            # so a bi-temporal "what was true then" query returns superseded
+            # law as if it were in force.
+            stmt = (
+                update(KnowledgeObject)
+                .where(and_(
+                    KnowledgeObject.urn == urn,
+                    KnowledgeObject.version < version,
+                    KnowledgeObject.system_time_end == None,  # noqa: E711
+                ))
+                .values(system_time_end=system_time)
+            )
+            session.execute(stmt)
+
+            # 1b. A late-arriving OLD version must be born already closed.
+            # If a higher version is still open, this row was superseded before
+            # it was ever recorded, so it never becomes the current one.
+            superseded_at_birth = session.query(KnowledgeObject).filter(and_(
+                KnowledgeObject.urn == urn,
+                KnowledgeObject.version > version,
+                KnowledgeObject.system_time_end == None,  # noqa: E711
+            )).first() is not None
 
             # 2. Construct the DB object
             db_ko = KnowledgeObject(
@@ -69,7 +87,7 @@ class DatabaseClient:
                 summary=ko_data["summary"],
                 confidence_score=ko_data["confidence_score"],
                 system_time_start=system_time,
-                system_time_end=None, # Active in system time
+                system_time_end=system_time if superseded_at_birth else None,
                 legal_time_start=legal_start,
                 legal_time_end=None,
                 body=ko_data,
@@ -99,17 +117,19 @@ class DatabaseClient:
             # 4. Mirror to Supabase Cloud if configured
             if self.supabase:
                 try:
-                    # Update previous version in system time
-                    if version > 1:
-                        prev_version = version - 1
-                        self.supabase.table("knowledge_objects").update({
-                            "system_time_end": system_time.isoformat() + "Z"
-                        }).match({
-                            "urn": urn,
-                            "version": prev_version
-                        }).execute()
-                    
-                    # Upsert current Knowledge Object
+                    # Close every still-open earlier version in system time.
+                    # Mirrors the SQLAlchemy path above — see the note there on
+                    # why `version - 1` is not sufficient.
+                    self.supabase.table("knowledge_objects").update({
+                        "system_time_end": system_time.isoformat() + "Z"
+                    }).eq("urn", urn) \
+                      .lt("version", version) \
+                      .is_("system_time_end", "null") \
+                      .execute()
+
+                    # Upsert current Knowledge Object. `superseded_at_birth` is
+                    # resolved above against local state and applies identically
+                    # here — a late-arriving old version is never current.
                     self.supabase.table("knowledge_objects").upsert({
                         "urn": urn,
                         "version": version,
@@ -121,7 +141,7 @@ class DatabaseClient:
                         "forum_published": ko_data.get("forum_published"),
                         "interpretation_stance": ko_data.get("interpretation_stance"),
                         "system_time_start": system_time.isoformat() + "Z",
-                        "system_time_end": None,
+                        "system_time_end": (system_time.isoformat() + "Z") if superseded_at_birth else None,
                         "legal_time_start": legal_start.isoformat() + "Z",
                         "legal_time_end": None,
                         "body": ko_data,

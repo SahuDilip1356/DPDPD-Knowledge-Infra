@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
+# Copy source code and the reference document served by /knowledge/bible
 COPY src /app/src
+COPY DPDPA_BIBLE.md /app/DPDPA_BIBLE.md
 
 EXPOSE 8000
 

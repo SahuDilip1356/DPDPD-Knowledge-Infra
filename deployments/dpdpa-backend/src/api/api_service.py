@@ -67,7 +67,11 @@ app.add_middleware(
 )
 
 # Shared clients (can be customized or injected during app startup)
-db_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+#
+# `or` rather than a getenv default: a blank DATABASE_URL= line in .env yields
+# "" from the two-arg form, which SQLAlchemy cannot parse — the API would then
+# crash on import rather than fall back to the in-memory database.
+db_url = os.getenv("DATABASE_URL") or "sqlite:///:memory:"
 db_client = DatabaseClient(db_url)
  
 AUDIT_LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "staging", "search_audit.log")
