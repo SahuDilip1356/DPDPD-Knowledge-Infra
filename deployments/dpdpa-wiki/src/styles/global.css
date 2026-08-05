@@ -3,7 +3,9 @@
    Regulatory Knowledge Infrastructure
    ═══════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Fonts are loaded via <link> in index.html, not @import.
+   An @import inside CSS is fetched only after the stylesheet itself
+   parses, serialising two round-trips before first paint. */
 
 /* ── Reset ──────────────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -25,11 +27,64 @@ body {
   line-height: var(--lh-body);
   color: var(--text-body);
   background-color: var(--bg-cloud);
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Headings take the serif — the document speaking, not the interface.
+   Sizes live in the Typography section below; this only sets the
+   properties that section does not, so the two never compete. */
+h1, h2, h3, h4, h5, h6,
+.text-display, .text-h1, .text-h2, .text-h3 {
+  font-family: var(--font-heading);
+  letter-spacing: var(--tracking-heading);
+  text-wrap: balance;
+}
+.text-display, h1, .text-h1 { letter-spacing: var(--tracking-display); }
+
+p { text-wrap: pretty; }
+
+/* Figures in data contexts must align in columns. */
+table, .tabular, [class*="metric"], [class*="stat"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keyboard focus must always be visible — accessibility, not styling. */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Keyboard users need a way past the navigation. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: var(--z-toast);
+  padding: var(--space-3) var(--space-4);
+  background: var(--brand-navy);
+  color: var(--text-inverse);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  border-radius: 0 0 var(--radius-md) 0;
+}
+.skip-link:focus {
+  left: 0;
 }
 
 a {
@@ -318,4 +373,83 @@ h3, .text-h3 {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIGNATURE — the citation
+   Every claim in this system resolves to a URN, a section, and a
+   content hash. That triple is the most characteristic object in the
+   product's world, so it gets a designed treatment rather than being
+   dropped into body copy as a grey string.
+
+   Structure encodes meaning: a left rule in the trust-layer colour,
+   the URN in mono at full contrast, provenance beneath it in meta.
+   ═══════════════════════════════════════════════════════════════════ */
+.citation {
+  --citation-accent: var(--brand-blue);
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  border-left: 2px solid var(--citation-accent);
+  background: var(--bg-white);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-family: var(--font-mono);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.citation:hover {
+  background: var(--bg-subtle);
+}
+
+/* The URN itself — full contrast, tight, unmistakably an identifier. */
+.citation-urn {
+  display: block;
+  font-size: var(--text-small);
+  line-height: var(--lh-small);
+  color: var(--text-primary);
+  font-weight: var(--fw-medium);
+  word-break: break-all;
+}
+
+/* Provenance: hash, version, page. Quiet, but present. */
+.citation-provenance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--text-meta);
+  line-height: var(--lh-meta);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.citation-provenance > * + *::before {
+  content: "·";
+  margin-right: var(--space-3);
+  color: var(--border-strong);
+}
+
+/* Trust layer determines the rule colour — the state, not decoration. */
+.citation[data-layer="statute"]    { --citation-accent: var(--brand-navy); }
+.citation[data-layer="rule"]       { --citation-accent: var(--brand-blue); }
+.citation[data-layer="case"]       { --citation-accent: #7C3AED; }
+.citation[data-layer="opinion"]    { --citation-accent: var(--brand-saffron); }
+.citation[data-layer="superseded"] { --citation-accent: var(--status-superseded); opacity: 0.7; }
+
+/* ── Reading surface for statutory text ─────────────────────────── */
+.prose-statute {
+  font-family: var(--font-serif);
+  font-size: var(--text-read);
+  line-height: var(--lh-read);
+  color: var(--text-primary);
+  max-width: var(--measure);
+}
+.prose-statute p + p { margin-top: var(--space-4); }
+
+/* ── Section eyebrow: "SECTION 5 · IN FORCE" ────────────────────── */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-meta);
+  line-height: var(--lh-meta);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
 }

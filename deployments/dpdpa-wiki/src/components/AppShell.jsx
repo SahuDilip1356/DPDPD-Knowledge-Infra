@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { SaralPrivacyLogo, SaralPrivacyMark } from "./ui/SaralPrivacyLogo";
+import NavIcon from "./ui/NavIcon";
 import "../styles/global.css";
 import "../styles/components.css";
 
@@ -9,16 +10,16 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
   const location = useLocation();
 
   const navItems = [
-    { path: "/today", label: "Today", icon: "📅", description: "Command Center" },
-    { path: "/course", label: "DPDPA Certification", icon: "🎓", description: "Masterclass & Exam" },
-    { path: "/infographic", label: "Architecture Visual", icon: "📊", description: "Interactive Blueprint" },
-    { path: "/changes", label: "Changes", icon: "🔄", description: "Regulatory Changes" },
-    { path: "/knowledge", label: "Knowledge", icon: "📚", description: "Explorer & Graph" },
-    { path: "/actions", label: "Decisions & Actions", icon: "💼", description: "Operational Response" },
-    { path: "/factory", label: "Research Factory", icon: "🏗️", description: "Ingestion Pipeline" },
-    { path: "/ask", label: "Ask Intelligence", icon: "🧠", description: "Grounded Q&A" },
-    { path: "/bible", label: "DPDPA Bible", icon: "📖", description: "Legal Reference" },
-    ...(user ? [{ path: "/admin", label: "Admin Audit", icon: "🛡️", description: "Audit & Analytics" }] : [])
+    { path: "/today", label: "Today", icon: "today", description: "Command Center" },
+    { path: "/course", label: "DPDPA Certification", icon: "certification", description: "Masterclass & Exam" },
+    { path: "/infographic", label: "Architecture Visual", icon: "architecture", description: "Interactive Blueprint" },
+    { path: "/changes", label: "Changes", icon: "changes", description: "Regulatory Changes" },
+    { path: "/knowledge", label: "Knowledge", icon: "knowledge", description: "Explorer & Graph" },
+    { path: "/actions", label: "Decisions & Actions", icon: "actions", description: "Operational Response" },
+    { path: "/factory", label: "Research Factory", icon: "factory", description: "Ingestion Pipeline" },
+    { path: "/ask", label: "Ask Intelligence", icon: "ask", description: "Grounded Q&A" },
+    { path: "/bible", label: "DPDPA Bible", icon: "bible", description: "Legal Reference" },
+    ...(user ? [{ path: "/admin", label: "Admin Audit", icon: "admin", description: "Audit & Analytics" }] : [])
   ];
 
   return (
@@ -59,7 +60,7 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
                   className="nav-link-item"
                   title={collapsed ? item.label : ""}
                 >
-                  <span className="nav-icon">{item.icon}</span>
+                  <span className="nav-icon"><NavIcon name={item.icon} /></span>
                   {!collapsed && (
                     <div className="nav-label-group">
                       <span className="nav-label">{item.label}</span>
