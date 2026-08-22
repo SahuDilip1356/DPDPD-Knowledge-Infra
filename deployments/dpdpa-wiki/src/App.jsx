@@ -10,6 +10,7 @@ import AuthModal from "./components/ui/AuthModal";
 import { supabase } from "./data/supabaseClient";
 
 // Screens
+import Home from "./components/screens/Home";
 import CommandCenter from "./components/screens/CommandCenter";
 import InfographicDashboard from "./components/screens/InfographicDashboard";
 import ChangesFeed from "./components/screens/ChangesFeed";
@@ -99,40 +100,55 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  /* Working surfaces share the sidebar shell. The public homepage does not —
+     it carries its own header and footer, because a visitor arriving from a
+     search result needs a way in, not a way around. */
+  const workspace = (element) => (
+    <AppShell
+      apiOnline={apiOnline}
+      loadingHealth={loadingHealth}
+      onSearchClick={() => setSearchOpen(true)}
+      user={user}
+      onSignInClick={() => setAuthModalOpen(true)}
+      onSignOutClick={handleSignOut}
+    >
+      {element}
+    </AppShell>
+  );
+
   return (
     <BrowserRouter>
-      <AppShell 
-        apiOnline={apiOnline} 
-        loadingHealth={loadingHealth} 
-        onSearchClick={() => setSearchOpen(true)}
-        user={user}
-        onSignInClick={() => setAuthModalOpen(true)}
-        onSignOutClick={handleSignOut}
-      >
-        <Routes>
-          <Route path="/" element={<Navigate to="/today" replace />} />
-          <Route path="/today" element={<CommandCenter />} />
-          <Route path="/course" element={<CourseRedirect />} />
-          <Route path="/infographic" element={<InfographicDashboard />} />
-          <Route path="/changes" element={<ChangesFeed />} />
-          <Route path="/changes/:id" element={<ChangeWorkspace />} />
-          <Route path="/knowledge" element={<KnowledgeExplorer />} />
-          <Route path="/actions" element={<DecisionsActions user={user} />} />
-          <Route path="/factory" element={<FactoryBoard user={user} onSignInClick={() => setAuthModalOpen(true)} />} />
-          <Route path="/ask" element={
-            <AskIntelligence apiOnline={apiOnline} apiBaseUrl={API_BASE_URL} />
-          } />
-          <Route path="/bible" element={<Bible />} />
-          <Route path="/admin" element={<AdminAudit />} />
-          <Route path="*" element={<Navigate to="/today" replace />} />
-        </Routes>
-      </AppShell>
+      <Routes>
+        {/* Public, indexable */}
+        <Route path="/" element={<Home />} />
+
+        {/* Workspace */}
+        <Route path="/today" element={workspace(<CommandCenter />)} />
+        <Route path="/course" element={<CourseRedirect />} />
+        <Route path="/infographic" element={workspace(<InfographicDashboard />)} />
+        <Route path="/changes" element={workspace(<ChangesFeed />)} />
+        <Route path="/changes/:id" element={workspace(<ChangeWorkspace />)} />
+        <Route path="/knowledge" element={workspace(<KnowledgeExplorer />)} />
+        <Route path="/actions" element={workspace(<DecisionsActions user={user} />)} />
+        <Route path="/factory" element={workspace(
+          <FactoryBoard user={user} onSignInClick={() => setAuthModalOpen(true)} />
+        )} />
+        <Route path="/ask" element={workspace(
+          <AskIntelligence apiOnline={apiOnline} apiBaseUrl={API_BASE_URL} />
+        )} />
+        <Route path="/bible" element={workspace(<Bible />)} />
+        <Route path="/admin" element={workspace(<AdminAudit />)} />
+
+        {/* Unknown paths land on the homepage rather than the workspace, so a
+            stale inbound link still gives a stranger somewhere to start. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)} 
-        onAuthSuccess={(u) => setUser(u)} 
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onAuthSuccess={(u) => setUser(u)}
       />
     </BrowserRouter>
   );

@@ -24,11 +24,28 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  // A question arriving from the homepage search runs once on mount, so the
+  // reader lands on an answer rather than an empty box they must retype into.
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current) return;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (!q) return;
+    seeded.current = true;
+    handleSend(null, q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const userText = input.trim();
+  /**
+   * `overrideText` lets a caller send a question that is not yet in `input` —
+   * the homepage hero hands its query over through ?q=, and reading state set
+   * in the same tick would still see the previous value.
+   */
+  const handleSend = async (e, overrideText) => {
+    e?.preventDefault();
+    const userText = (overrideText ?? input).trim();
+    if (!userText || loading) return;
+
     setInput("");
     setMessages((prev) => [...prev, { id: `msg-user-${Date.now()}`, sender: "user", text: userText }]);
     setLoading(true);
