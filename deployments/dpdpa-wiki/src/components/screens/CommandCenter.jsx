@@ -18,56 +18,108 @@ export default function CommandCenter() {
 
   return (
     <div className="command-center flex flex-col gap-6" style={{ paddingBottom: "var(--space-8)" }}>
-      {/* ── Enterprise Hero Banner ──────────────────────────────────── */}
-      <div className="hero-banner flex items-center justify-between gap-6" style={{ background: "linear-gradient(135deg, #14213D 0%, #0F172A 100%)", borderRadius: "16px", padding: "28px 32px", color: "#FFFFFF", boxShadow: "0 10px 25px -5px rgba(20, 33, 61, 0.3)" }}>
-        <div className="flex flex-col gap-2" style={{ maxWidth: "780px" }}>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px" }}>
-            <span style={{ background: "rgba(19, 136, 8, 0.2)", border: "1px solid #138808", color: "#34D399", padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              🇮🇳 India DPDPA Framework
+      {/* ── Editorial Statute-Book Hero Banner ─────────────────────────── */}
+      <div 
+        className="hero-banner flex flex-col gap-5" 
+        style={{ 
+          background: "linear-gradient(135deg, #0F172A 0%, #090D16 100%)", 
+          borderRadius: "20px", 
+          padding: "32px 36px", 
+          color: "#FFFFFF", 
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 16px 40px -10px rgba(15, 23, 42, 0.5)",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        {/* Monospace statutory watermark */}
+        <div style={{ position: "absolute", right: "20px", top: "15px", fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
+          DPDP.ACT.2023 // GAZETTE.NO.44 // MEITY.FEED.LIVE
+        </div>
+
+        <div className="flex flex-col gap-2" style={{ maxWidth: "820px" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px", flexWrap: "wrap" }}>
+            <span style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid #10B981", color: "#34D399", padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", fontFamily: "monospace" }}>
+              🇮🇳 GAZETTE OF INDIA · DPDP ACT 2023
             </span>
-            <span style={{ background: "rgba(26, 79, 163, 0.2)", stroke: "#1A4FA3", color: "#93C5FD", padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
+            <span style={{ background: "rgba(59, 130, 246, 0.15)", border: "1px solid #3B82F6", color: "#93C5FD", padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
               Live Knowledge Graph v1.0
+            </span>
+            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", fontFamily: "monospace" }}>
+              UPDATED DAILY
             </span>
           </div>
 
-          <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.2, margin: 0 }}>
-            SaralPrivacy Knowledge Infra
+          <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.15, margin: "4px 0 0 0", letterSpacing: "-0.02em" }}>
+            The Authoritative DPDPA Legal Engine
           </h1>
-          <p style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.8)", lineHeight: 1.5, margin: 0 }}>
-            India’s authoritative, real-time Privacy Knowledge Engine — tracking statutory DPDPA rules, MeitY notifications, judicial precedents & operational playbooks.
+          <p style={{ fontSize: "15px", color: "rgba(248, 250, 252, 0.82)", lineHeight: 1.5, margin: 0, maxWidth: "740px" }}>
+            Instant sourced regulatory answers, gazetted DPDP rules, MeitY notifications & operational DPO playbooks — mapped section by section.
           </p>
+        </div>
 
-          <div style={{ display: "flex", gap: "16px", marginTop: "12px", fontSize: "12px", color: "rgba(255,255,255,0.7)" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34D399", boxShadow: "0 0 8px #34D399" }}></span>
-              Statutory Graph Online
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#60A5FA" }}></span>
-              MeitY & Judicial Feeds Active
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#FF9933" }}></span>
-              Zero Unmapped Obligations
-            </span>
+        {/* ── Interactive Hero Search Bar (Zero-Click Value) ────────── */}
+        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "12px", padding: "14px 18px", marginTop: "4px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+            ⚡ Instant Statutory Query
+          </div>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <input 
+                type="text" 
+                placeholder="Ask any DPDPA query... e.g. What is the 72h breach rule under Sec 8(6)?"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target.value) {
+                    navigate(`/ask?q=${encodeURIComponent(e.target.value)}`);
+                  }
+                }}
+                style={{ width: "100%", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", padding: "10px 14px", color: "#FFFFFF", fontSize: "13px", outline: "none" }}
+              />
+            </div>
+            <button 
+              onClick={() => navigate("/ask")}
+              style={{ padding: "10px 20px", fontSize: "13px", background: "#10B981", color: "#064E3B", border: "none", borderRadius: "8px", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 4px 14px rgba(16, 185, 129, 0.3)" }}
+            >
+              Search Database — Free →
+            </button>
+          </div>
+
+          {/* Quick Statutory Tag Chips */}
+          <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: "11px", color: "#64748B", fontWeight: 600 }}>Trending:</span>
+            {[
+              { label: "Sec 8(6) Breach 72h", q: "Section 8(6) breach notification requirement" },
+              { label: "Notice Sec 6(1)", q: "Section 6(1) consent notice requirements" },
+              { label: "Children Data Sec 9", q: "Section 9 processing data of children" },
+              { label: "Penalties Schedule", q: "DPDPA Schedule penalties breakdown" }
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                onClick={() => navigate(`/ask?q=${encodeURIComponent(chip.q)}`)}
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#E2E8F0", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", cursor: "pointer", transition: "all 150ms ease" }}
+                onMouseOver={(e) => e.currentTarget.style.borderColor = "#10B981"}
+                onMouseOut={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: "200px" }}>
-          <button 
-            className="btn btn-primary" 
-            onClick={() => navigate("/knowledge")}
-            style={{ padding: "10px 18px", fontSize: "13px", background: "#138808", color: "#FFFFFF", borderRadius: "8px", fontWeight: 700, boxShadow: "0 4px 12px rgba(19, 136, 8, 0.3)" }}
-          >
-            Explore Knowledge Graph →
-          </button>
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => navigate("/ask")}
-            style={{ padding: "10px 18px", fontSize: "13px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#FFFFFF", borderRadius: "8px" }}
-          >
-            🧠 Ask Intelligence Q&A
-          </button>
+        {/* Telemetry Strip */}
+        <div style={{ display: "flex", gap: "24px", fontSize: "12px", color: "rgba(255,255,255,0.7)", flexWrap: "wrap" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10B981", boxShadow: "0 0 8px #10B981" }}></span>
+            44 Statutory Sections Mapped
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#60A5FA" }}></span>
+            12 Gazetted Rules & MeitY Feeds
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#F59E0B" }}></span>
+            18 Sector Operational Playbooks
+          </span>
         </div>
       </div>
 
