@@ -24,9 +24,9 @@ export default function PublicShell({ children }) {
           </Link>
 
           <nav className="pub-nav" aria-label="Primary">
+            <Link to="/guide">Guides</Link>
             <Link to="/bible">The Act</Link>
             <Link to="/knowledge">Knowledge</Link>
-            <Link to="/changes">Changes</Link>
             <Link to="/ask">Ask</Link>
             <a href={SHIKSHA_URL}>Certification&nbsp;↗</a>
           </nav>
@@ -52,6 +52,7 @@ export default function PublicShell({ children }) {
           <nav className="pub-footer-cols" aria-label="Footer">
             <div>
               <h2 className="pub-footer-heading">Reference</h2>
+              <Link to="/guide">Guides</Link>
               <Link to="/bible">The Act</Link>
               <Link to="/knowledge">Definitions</Link>
               <Link to="/changes">Changes</Link>

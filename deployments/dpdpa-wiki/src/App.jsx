@@ -11,6 +11,8 @@ import { supabase } from "./data/supabaseClient";
 
 // Screens
 import Home from "./components/screens/Home";
+import GuideIndex from "./components/screens/GuideIndex";
+import Guide from "./components/screens/Guide";
 import CommandCenter from "./components/screens/CommandCenter";
 import InfographicDashboard from "./components/screens/InfographicDashboard";
 import ChangesFeed from "./components/screens/ChangesFeed";
@@ -121,6 +123,8 @@ export default function App() {
       <Routes>
         {/* Public, indexable */}
         <Route path="/" element={<Home />} />
+        <Route path="/guide" element={<GuideIndex />} />
+        <Route path="/guide/:slug" element={<Guide />} />
 
         {/* Workspace */}
         <Route path="/today" element={workspace(<CommandCenter />)} />
