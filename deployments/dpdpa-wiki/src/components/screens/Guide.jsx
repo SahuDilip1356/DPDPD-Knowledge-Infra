@@ -92,6 +92,40 @@ function useReadingProgress() {
   return pct;
 }
 
+/* Highlights the section currently in view. Without this the contents list
+   shows where you can go but never where you are, which in a 7,000-word
+   document is most of its value. */
+function useActiveHeading(ids) {
+  const [active, setActive] = useState(null);
+  useEffect(() => {
+    if (!ids.length) return;
+    const seen = new Map();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) seen.set(e.target.id, e);
+        // The topmost heading that is above the fold wins, so the highlight
+        // follows reading position rather than jumping to whatever intersects.
+        const visible = ids
+          .map((id) => seen.get(id))
+          .filter((e) => e && e.isIntersecting);
+        if (visible.length) {
+          setActive(visible[0].target.id);
+          return;
+        }
+        const above = ids
+          .map((id) => seen.get(id))
+          .filter((e) => e && e.boundingClientRect.top < 0);
+        if (above.length) setActive(above.at(-1).target.id);
+      },
+      { rootMargin: "-100px 0px -70% 0px", threshold: 0 }
+    );
+    const els = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [ids]);
+  return active;
+}
+
 function Directive({ block }) {
   const Figure = INFOGRAPHICS[block.name];
   if (Figure) return <Figure />;
@@ -123,6 +157,11 @@ export default function Guide() {
   const { slug } = useParams();
   const guide = useMemo(() => getGuide(slug), [slug]);
   const progress = useReadingProgress();
+  const tocIds = useMemo(
+    () => (guide?.headings || []).filter((h) => h.depth === 2).map((h) => h.id),
+    [guide]
+  );
+  const active = useActiveHeading(tocIds);
   useGuideHead(guide);
 
   if (!guide) return <Navigate to="/guide" replace />;
@@ -167,7 +206,15 @@ export default function Guide() {
               <p className="g-toc-h">On this page</p>
               <ol>
                 {guide.headings.filter((h) => h.depth === 2).map((h) => (
-                  <li key={h.id}><a href={`#${h.id}`}>{h.text}</a></li>
+                  <li key={h.id}>
+                    <a
+                      href={`#${h.id}`}
+                      className={active === h.id ? "is-active" : ""}
+                      aria-current={active === h.id ? "true" : undefined}
+                    >
+                      {h.text}
+                    </a>
+                  </li>
                 ))}
               </ol>
             </nav>

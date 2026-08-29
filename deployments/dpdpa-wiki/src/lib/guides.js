@@ -1,4 +1,4 @@
-import { marked } from "marked";
+import { Marked } from "marked";
 
 /**
  * Guide loading and parsing.
@@ -87,6 +87,52 @@ function parseFrontmatter(source) {
   return { data, body: source.slice(match[0].length) };
 }
 
+/** Heading text to anchor id. One function, used only by the renderer below. */
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+}
+
+/**
+ * A markdown renderer that gives every heading an id and records it.
+ *
+ * marked no longer adds heading ids — they moved out of core into an
+ * extension — so anchors have to be produced here, or the table of contents
+ * links to fragments that do not exist and clicking one changes the URL
+ * without moving the page.
+ *
+ * Headings are collected as they render rather than by re-scanning the
+ * source, so a table-of-contents entry can never point at an id the document
+ * does not actually contain. The instance is per-document, which keeps the
+ * duplicate-slug counter from leaking between guides.
+ */
+function createRenderer() {
+  const seen = new Map();
+  const headings = [];
+
+  const md = new Marked({
+    renderer: {
+      heading(token) {
+        const inline = this.parser.parseInline(token.tokens);
+        const plain = token.text.replace(/[*_`\[\]]/g, "").trim();
+
+        let id = slugify(plain);
+        const n = seen.get(id) ?? 0;
+        seen.set(id, n + 1);
+        if (n > 0) id = `${id}-${n}`;
+
+        headings.push({ depth: token.depth, text: plain, id });
+        return `<h${token.depth} id="${id}">${inline}</h${token.depth}>\n`;
+      }
+    }
+  });
+
+  return { md, headings };
+}
+
 /**
  * Splits the body into an ordered list of blocks.
  *
@@ -97,7 +143,7 @@ function parseFrontmatter(source) {
  * Directive bodies use `key: value` lines when they carry fields (the cta
  * block), otherwise the raw text is passed through as markdown.
  */
-function parseBlocks(body) {
+function parseBlocks(body, md) {
   const blocks = [];
   const lines = body.split(/\r?\n/);
   let prose = [];
@@ -105,7 +151,7 @@ function parseBlocks(body) {
 
   const flushProse = () => {
     const text = prose.join("\n").trim();
-    if (text) blocks.push({ type: "html", html: marked.parse(text) });
+    if (text) blocks.push({ type: "html", html: md.parse(text) });
     prose = [];
   };
 
@@ -130,7 +176,7 @@ function parseBlocks(body) {
         type: "directive",
         name: directive.name,
         fields: hasFields ? fields : null,
-        html: marked.parse(raw)
+        html: md.parse(raw)
       });
       directive = null;
       continue;
@@ -144,37 +190,20 @@ function parseBlocks(body) {
   return blocks;
 }
 
-/** Heading list for the table of contents, with ids matching what marked emits. */
-function parseHeadings(body) {
-  const headings = [];
-  const seen = new Map();
-  for (const line of body.split(/\r?\n/)) {
-    const m = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
-    if (!m) continue;
-    const text = m[2].replace(/[*_`]/g, "");
-    let id = text.toLowerCase().trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-");
-    // marked appends -1, -2 … to repeated slugs; mirror that so links resolve.
-    const n = seen.get(id) ?? 0;
-    seen.set(id, n + 1);
-    if (n > 0) id = `${id}-${n}`;
-    headings.push({ depth: m[1].length, text, id });
-  }
-  return headings;
-}
-
 function build(path, source) {
   const { data, body } = parseFrontmatter(source);
   const slug = data.slug || path.split("/").pop().replace(/\.md$/, "");
   // The H1 is rendered from frontmatter, so drop it from the body to avoid two.
   const withoutH1 = body.replace(/^\s*#\s+.+?(\r?\n|$)/, "");
 
+  const { md, headings } = createRenderer();
+  const blocks = parseBlocks(withoutH1, md);
+
   return {
     slug,
     ...data,
-    blocks: parseBlocks(withoutH1),
-    headings: parseHeadings(withoutH1),
+    blocks,
+    headings,
     wordCount: withoutH1.split(/\s+/).filter(Boolean).length
   };
 }

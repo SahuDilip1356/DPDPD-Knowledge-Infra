@@ -429,3 +429,16 @@
   .pen-bar { display: none; }
   .g-pullquote { font-size: 1.1875rem; padding-left: 16px; }
 }
+
+/* Active section in the contents list. The rule on the left edge marks
+   position; colour alone would not read for someone who cannot see it. */
+.g-toc a {
+  border-left: 2px solid transparent;
+  margin-left: -18px;
+  padding-left: 16px;
+}
+.g-toc a.is-active {
+  color: var(--ink);
+  font-weight: 600;
+  border-left-color: var(--saffron);
+}
