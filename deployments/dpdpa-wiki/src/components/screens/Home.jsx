@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
 import { supabase } from "../../data/supabaseClient";
@@ -183,22 +183,9 @@ export default function Home() {
     navigate(q ? `/ask?q=${encodeURIComponent(q)}` : "/ask");
   };
 
-  // FAQPage structured data — the visible FAQ below is the same source.
-  useEffect(() => {
-    const el = document.createElement("script");
-    el.type = "application/ld+json";
-    el.text = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: FAQ.map(({ q, a }) => ({
-        "@type": "Question",
-        name: q,
-        acceptedAnswer: { "@type": "Answer", text: a }
-      }))
-    });
-    document.head.appendChild(el);
-    return () => { document.head.removeChild(el); };
-  }, []);
+  // FAQPage structured data is emitted into the HTML by the prerender step
+  // (see lib/seo.js), so it is present before any script runs. Injecting it
+  // again here would duplicate the block for anyone with JavaScript on.
 
   return (
     <PublicShell>

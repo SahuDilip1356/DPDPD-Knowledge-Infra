@@ -38,7 +38,11 @@ function CourseRedirect() {
   );
 }
 
-export default function App() {
+/**
+ * `Router` is injectable so the prerender step can pass StaticRouter. In the
+ * browser it stays BrowserRouter and nothing about the app changes.
+ */
+export default function App({ Router = BrowserRouter, routerProps = {} }) {
   const [apiOnline, setApiOnline] = useState(false);
   const [loadingHealth, setLoadingHealth] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -119,7 +123,7 @@ export default function App() {
   );
 
   return (
-    <BrowserRouter>
+    <Router {...routerProps}>
       <Routes>
         {/* Public, indexable */}
         <Route path="/" element={<Home />} />
@@ -154,6 +158,6 @@ export default function App() {
         onClose={() => setAuthModalOpen(false)}
         onAuthSuccess={(u) => setUser(u)}
       />
-    </BrowserRouter>
+    </Router>
   );
 }
