@@ -1,52 +1,34 @@
 # Current State
 
-_Last updated: 2026-08-22 08:52 · mid-session checkpoint_
+_Last updated: 2026-08-29 20:25 · mid-session checkpoint_
 
 ## Handoff (auto-summary — no explicit block found)
 
 
-**Files touched:**
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/src/data/homeContent.js
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/src/components/marketing/PublicShell.jsx
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/src/components/screens/Home.jsx
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/src/styles/home.css
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/src/App.jsx
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/index.html
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/deployments/dpdpa-wiki/src/components/screens/AskIntelligence.jsx
-- /Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/PLAN.md
-
 **git diff --stat:**
 ```
-.agent/CURRENT.md                                  |  64 ++++++----
- .agent/DECISIONS.md                                |   3 +
- deployments/dpdpa-wiki/.gitignore                  |   1 +
- deployments/dpdpa-wiki/index.html                  |  32 ++++-
- deployments/dpdpa-wiki/src/App.jsx                 |  76 +++++++-----
- .../src/components/screens/AskIntelligence.jsx     |  25 +++-
- .../src/components/screens/CommandCenter.jsx       | 130 ++++++++++++++-------
- 7 files changed, 235 insertions(+), 96 deletions(-)
- 7 files changed, 235 insertions(+), 96 deletions(-)
+.agent/CURRENT.md                      | 65 +++++++++++++--------------------
+ .agent/sessions/2026-08-22-90c6538c.md | 67 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 92 insertions(+), 40 deletions(-)
+ 2 files changed, 92 insertions(+), 40 deletions(-)
 ```
 
 **Topics this session:**
-- Recommended DPDPA.wiki structure
-- Give me a comprehensive plan
-- what you need form me?
-- Open http://localhost:5173/ —  its not running
+- Sidebar hyperlink is not aligned with the subject
 
 **Key points / decisions:**
-- Not done
-- Where you actually are
-- The one thing that matters most
-- Four phases
-- Four decisions from you
-- Still unverified
-- 1. Look at the homepage — 5 minutes 🔴
-- 2. Two yes/no answers
-- 3. Railway — when you want Ask Intelligence working live
-- Not needed now: the email-delivery decision (nothing sends the checklist yet) — that only 
-- What to look at
-- Two known gaps before you judge them
+- What was wrong
+- The fix
+- Also added
 
 **Last assistant note:**
-Let me start it for you and confirm it's actually up.
+rights-do-your-customers-employees-and-candidates-have  emitted=true
+```
+
+## Also added
+
+The sidebar now **tracks your scroll position** — the active section is marked as you read. Previously it showed where you could go but never where you were, which in a 7,000-word document is most of what a contents list is for. Marked with a saffron rule on the left edge plus weight, not colour alone.
+
+Pushed as `5f7265c`; I'm watching for the deploy and will confirm.
+
+Once it's up, reload and click a few TOC entries — they should now jump to the right section, and the sidebar should follow as you scroll.
