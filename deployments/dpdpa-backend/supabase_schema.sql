@@ -138,3 +138,38 @@ USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow public read access to action_items" 
 ON public.action_items FOR SELECT USING (true);
+
+-- 8. COMPETITOR KNOWLEDGE CARDS (discovery only — never public, never canonical)
+CREATE TABLE IF NOT EXISTS public.competitor_knowledge_cards (
+    card_id VARCHAR(64) PRIMARY KEY,
+    source VARCHAR(64) NOT NULL,
+    source_class VARCHAR(32) NOT NULL DEFAULT 'COMPETITOR',
+    source_url TEXT NOT NULL,
+    content_type VARCHAR(32) NOT NULL,
+    title TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    subtopics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    dpdpa_sections JSONB NOT NULL DEFAULT '[]'::jsonb,
+    dpdp_rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+    audience JSONB NOT NULL DEFAULT '[]'::jsonb,
+    claims JSONB NOT NULL DEFAULT '[]'::jsonb,
+    statistics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    examples JSONB NOT NULL DEFAULT '[]'::jsonb,
+    tools_mentioned JSONB NOT NULL DEFAULT '[]'::jsonb,
+    primary_sources_cited JSONB NOT NULL DEFAULT '[]'::jsonb,
+    verification_required BOOLEAN NOT NULL DEFAULT TRUE,
+    authority_level VARCHAR(8) NOT NULL,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    notes TEXT,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+    CONSTRAINT competitor_cards_unpublished CHECK (publication_eligible = FALSE),
+    CONSTRAINT competitor_cards_must_verify CHECK (verification_required = TRUE),
+    CONSTRAINT competitor_cards_source_class CHECK (source_class = 'COMPETITOR')
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_competitor_cards_url
+ON public.competitor_knowledge_cards (source_url);
+
+ALTER TABLE public.competitor_knowledge_cards ENABLE ROW LEVEL SECURITY;
+-- No public SELECT policy: these cards are competitive discovery, not Setu truth.

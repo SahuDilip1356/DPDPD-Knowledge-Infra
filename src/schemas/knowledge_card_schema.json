@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CompetitorKnowledgeCard",
+  "description": "Discovery card from a competitor page. Never a Setu canonical Knowledge Object.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "card_id",
+    "source",
+    "source_class",
+    "source_url",
+    "content_type",
+    "title",
+    "topic",
+    "subtopics",
+    "dpdpa_sections",
+    "dpdp_rules",
+    "audience",
+    "claims",
+    "statistics",
+    "examples",
+    "tools_mentioned",
+    "primary_sources_cited",
+    "verification_required",
+    "authority_level",
+    "publication_eligible"
+  ],
+  "properties": {
+    "card_id": {
+      "type": "string",
+      "pattern": "^KC-DPDPA-COM-[0-9]{6}$"
+    },
+    "source": {
+      "type": "string",
+      "const": "DPDPA.com"
+    },
+    "source_class": {
+      "type": "string",
+      "const": "COMPETITOR"
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "LAW / RULES",
+        "INTERPRETATION",
+        "FAQ",
+        "BLOG",
+        "TEMPLATE",
+        "CASE LAW",
+        "TOOL",
+        "COURSE",
+        "COMMERCIAL"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3
+    },
+    "topic": {
+      "type": "string",
+      "minLength": 2
+    },
+    "subtopics": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dpdpa_sections": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^Section [0-9]{1,2}$"
+      }
+    },
+    "dpdp_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^Rule [0-9]{1,2}$"
+      }
+    },
+    "audience": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "business",
+          "privacy professional",
+          "data principal",
+          "student"
+        ]
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "claim_type"],
+        "properties": {
+          "text": { "type": "string", "minLength": 8, "maxLength": 220 },
+          "claim_type": {
+            "type": "string",
+            "enum": ["LEGAL", "STATISTIC", "MARKET", "OPINION"]
+          }
+        }
+      }
+    },
+    "statistics": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "examples": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tools_mentioned": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "primary_sources_cited": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verification_required": {
+      "type": "boolean",
+      "const": true
+    },
+    "authority_level": {
+      "type": "string",
+      "enum": ["L4", "L5", "L6"]
+    },
+    "publication_eligible": {
+      "type": "boolean",
+      "const": false
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}
