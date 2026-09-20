@@ -282,6 +282,11 @@ def build_card(url: str, title: str, markdown: str) -> dict[str, Any]:
     notes = []
     if re.search(r"/chapter\d+\.html$", normalized):
         notes.append("Thin chapter hub.")
+    if "faq-comprehensive_1" in normalized:
+        notes.append(
+            "Duplicate FAQ hub. Same HTML as dpdpa-faq-comprehensive.html. "
+            "Canonical points at dpdpa-faq.html. robots.txt Disallowed; fetched on request."
+        )
     if content_type in {"TEMPLATE", "COURSE", "TOOL"}:
         notes.append("Tier B product intelligence. Do not reproduce the offering.")
     if "controller" in (markdown or "").lower():

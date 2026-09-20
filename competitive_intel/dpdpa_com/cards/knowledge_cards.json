@@ -5016,6 +5016,53 @@
     "publication_eligible": false
   },
   {
+    "card_id": "KC-DPDPA-COM-565586",
+    "source": "DPDPA.com",
+    "source_class": "COMPETITOR",
+    "source_url": "https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html",
+    "content_type": "FAQ",
+    "title": "DPDPA 2023 & DPDP Rules 2025 FAQ | Complete Guide to India's Data Protection Law | www.dpdpa.com",
+    "topic": "FAQ universe",
+    "subtopics": [
+      "consent",
+      "withdrawal",
+      "notice",
+      "legitimate use",
+      "children",
+      "breach",
+      "cross-border transfer",
+      "SDF"
+    ],
+    "dpdpa_sections": [],
+    "dpdp_rules": [],
+    "audience": [
+      "student",
+      "data principal"
+    ],
+    "claims": [
+      {
+        "text": "The exact penalty depends on the nature and severity of the breach.",
+        "claim_type": "LEGAL"
+      }
+    ],
+    "statistics": [
+      "\u20b9250",
+      "\u20b910,000",
+      "\u20b9250 crore"
+    ],
+    "examples": [],
+    "tools_mentioned": [
+      "Privacy Notice Generator",
+      "Legitimate Interest Assessment",
+      "Consent Manager"
+    ],
+    "primary_sources_cited": [],
+    "verification_required": true,
+    "authority_level": "L5",
+    "publication_eligible": false,
+    "notes": "Duplicate FAQ hub. Same HTML as dpdpa-faq-comprehensive.html. Canonical points at dpdpa-faq.html. robots.txt Disallowed; fetched on request."
+  },
+  {
     "card_id": "KC-DPDPA-COM-093105",
     "source": "DPDPA.com",
     "source_class": "COMPETITOR",

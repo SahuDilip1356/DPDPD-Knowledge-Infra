@@ -1,6 +1,6 @@
 {
   "cards": {
-    "count": 197,
+    "count": 198,
     "skipped": {
       "cloudflare_interstitial": 1,
       "not_found": 2
@@ -8,11 +8,11 @@
     "publication_eligible": false
   },
   "claims": {
-    "count": 822,
+    "count": 823,
     "by_status": {
       "CONTESTED": 1,
       "INCORRECT": 7,
-      "NEEDS_REVIEW": 239,
+      "NEEDS_REVIEW": 240,
       "SUPPORTED_INTERPRETATION": 215,
       "UNSUPPORTED": 299,
       "VERIFIED_PRIMARY": 61
@@ -56,15 +56,15 @@
     "headline": "26 article briefs ready. 4 write first, 10 next, 12 later. Every brief cites the Act, not DPDPA.com."
   },
   "counsel": {
-    "queue_count": 247,
+    "queue_count": 248,
     "by_status": {
       "CONTESTED": 1,
       "INCORRECT": 7,
-      "NEEDS_REVIEW": 239
+      "NEEDS_REVIEW": 240
     },
     "counsel_signed": 0,
     "machine_only": true,
     "publication_eligible": false,
-    "headline": "247 claims still need a human lawyer. The machine rechecked the easy myths. It did not sign as counsel."
+    "headline": "248 claims still need a human lawyer. The machine rechecked the easy myths. It did not sign as counsel."
   }
 }

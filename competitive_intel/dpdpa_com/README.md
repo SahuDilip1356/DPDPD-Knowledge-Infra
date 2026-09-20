@@ -27,10 +27,10 @@ That rebuilds cards from `raw/`, then Source Truth, the question universe, artic
 ## Sitemap coverage
 
 - Sitemap HTML pages: 197
-- Fetched and usable: includes the two remaining allowed misses
+- Fetched, including the two later misses and the robots-disallowed FAQ copy:
   - `https://www.dpdpa.com/ccl.html` (course / commercial certification)
   - `https://www.dpdpa.com/dpdpa-faq-comprehensive.html` (FAQ hub; canonical points at `dpdpa-faq.html`)
-- Not fetched: `https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html` — `robots.txt` Disallow
+  - `https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html` (fetched on request; **byte-identical** stub of the hub above; `robots.txt` Disallow)
 - Public HTML only. No PDFs. No login or admin.
 
 ## Guardrails

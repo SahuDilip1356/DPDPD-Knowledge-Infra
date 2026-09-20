@@ -1,11 +1,11 @@
 # Counsel review worksheet
 
-247 claims still need a human lawyer. The machine rechecked the easy myths. It did not sign as counsel.
+248 claims still need a human lawyer. The machine rechecked the easy myths. It did not sign as counsel.
 
 This list is a factory queue. It is **not** a legal opinion and not a sign-off.
 Do not publish any row until counsel_signed is true and the Act citation is attached.
 
-Rows: 247. Signed: 0.
+Rows: 248. Signed: 0.
 
 | ID | Stamp | Claim | What to check | Section |
 |---|---|---|---|---|
@@ -129,6 +129,7 @@ Rows: 247. Signed: 0.
 | CLM-425108 | NEEDS_REVIEW | Furthermore, as technology continues to advance and the volume of data generated grows exponentially, India must adopt a dynamic approach... | No catalog match. Read the sentence against the Act or Gazette. | — |
 | CLM-426507 | NEEDS_REVIEW | Since phone contact list is not necessary for making available telemedicine services, her consent shall be limited to the processing of h... | No catalog match. Read the sentence against the Act or Gazette. | — |
 | CLM-439313 | NEEDS_REVIEW | Data principals must actively request erasure, which could lead to data retention beyond necessity. | No catalog match. Read the sentence against the Act or Gazette. | — |
+| CLM-441636 | NEEDS_REVIEW | The exact penalty depends on the nature and severity of the breach. | No catalog match. Read the sentence against the Act or Gazette. | — |
 | CLM-442741 | NEEDS_REVIEW | X shall itself cease, and shall cause Y to cease, the processing of the personal data of Z for emailing bills. | No catalog match. Read the sentence against the Act or Gazette. | — |
 | CLM-443295 | NEEDS_REVIEW | Board would consider scale, revenue, and transparency in determining actual penalty. | No catalog match. Read the sentence against the Act or Gazette. | — |
 | CLM-455755 | NEEDS_REVIEW | The DPDPA has set the stage for a robust data protection regime in India, and organizations must proactively adapt their practices to rem... | No catalog match. Read the sentence against the Act or Gazette. | — |

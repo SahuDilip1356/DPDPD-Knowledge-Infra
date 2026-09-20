@@ -2280,6 +2280,25 @@
     "counsel_signed": false
   },
   {
+    "claim_id": "CLM-441636",
+    "claim_text": "The exact penalty depends on the nature and severity of the breach.",
+    "found_on": "DPDPA.com",
+    "card_id": "KC-DPDPA-COM-565586",
+    "original_url": "https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html",
+    "claim_type": "LEGAL",
+    "dpdpa_section": null,
+    "dpdp_rule": null,
+    "primary_source": null,
+    "verification_status": "NEEDS_REVIEW",
+    "confidence": 0.3,
+    "verdict_note": "No catalog match. A reviewer must check the Act or Gazette.",
+    "publication_allowed": false,
+    "used_by_saralprivacy": true,
+    "review_state": "AWAITING_HUMAN_COUNSEL",
+    "review_bucket": "counsel_queue",
+    "counsel_signed": false
+  },
+  {
     "claim_id": "CLM-442741",
     "claim_text": "X shall itself cease, and shall cause Y to cease, the processing of the personal data of Z for emailing bills.",
     "found_on": "DPDPA.com",

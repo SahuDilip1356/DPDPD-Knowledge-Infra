@@ -36,6 +36,7 @@ def test_classify_trays():
     assert classify_dpdpa_com("https://www.dpdpa.com/dpdpa-module-2.html") == "COURSE"
     assert classify_dpdpa_com("https://www.dpdpa.com/ccl.html") == "COURSE"
     assert classify_dpdpa_com("https://www.dpdpa.com/dpdpa-faq-comprehensive.html") == "FAQ"
+    assert classify_dpdpa_com("https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html") == "FAQ"
     assert classify_dpdpa_com("https://www.dpdpa.com/tools/privacy-notice-generator.html") == "TOOL"
     assert classify_dpdpa_com("https://www.dpdpa.com/") == "COMMERCIAL"
 
@@ -87,6 +88,18 @@ def test_card_is_unpublished_competitor_record():
     assert "Section 6" in card["dpdpa_sections"]
     assert card["claims"]
     assert "MeitY" in card["primary_sources_cited"]
+
+
+def test_duplicate_faq_copy_is_flagged():
+    card = build_card(
+        "https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html",
+        "DPDPA FAQ copy",
+        "What is consent? A Data Fiduciary shall obtain consent before processing personal data. "
+        "This FAQ hub lists categories and points at the main FAQ.",
+    )
+    assert card["content_type"] == "FAQ"
+    assert card["publication_eligible"] is False
+    assert "Duplicate FAQ hub" in (card.get("notes") or "")
 
 
 def test_validator_rejects_publication():

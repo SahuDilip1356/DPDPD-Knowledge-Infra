@@ -1680,6 +1680,20 @@
     "publication_allowed": false
   },
   {
+    "claim_id": "CLM-441636",
+    "claim_text": "The exact penalty depends on the nature and severity of the breach.",
+    "verification_status": "NEEDS_REVIEW",
+    "confidence": 0.3,
+    "verdict_note": "No catalog match. A reviewer must check the Act or Gazette.",
+    "dpdpa_section": null,
+    "dpdp_rule": null,
+    "original_url": "https://www.dpdpa.com/dpdpa-faq-comprehensive_1.html",
+    "card_id": "KC-DPDPA-COM-565586",
+    "look_for": "No catalog match. Read the sentence against the Act or Gazette.",
+    "counsel_signed": false,
+    "publication_allowed": false
+  },
+  {
     "claim_id": "CLM-442741",
     "claim_text": "X shall itself cease, and shall cause Y to cease, the processing of the personal data of Z for emailing bills.",
     "verification_status": "NEEDS_REVIEW",
