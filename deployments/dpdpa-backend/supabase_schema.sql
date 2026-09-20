@@ -173,3 +173,40 @@ ON public.competitor_knowledge_cards (source_url);
 
 ALTER TABLE public.competitor_knowledge_cards ENABLE ROW LEVEL SECURITY;
 -- No public SELECT policy: these cards are competitive discovery, not Setu truth.
+
+-- 9. CLAIMS REGISTRY + TOPIC MATRIX (Source Truth — still not public)
+CREATE TABLE IF NOT EXISTS public.competitor_claims_registry (
+    claim_id VARCHAR(16) PRIMARY KEY,
+    claim_text TEXT NOT NULL,
+    found_on VARCHAR(64) NOT NULL DEFAULT 'DPDPA.com',
+    card_id VARCHAR(64),
+    original_url TEXT NOT NULL,
+    claim_type VARCHAR(16) NOT NULL,
+    dpdpa_section VARCHAR(32),
+    dpdp_rule VARCHAR(32),
+    primary_source TEXT,
+    verification_status VARCHAR(32) NOT NULL,
+    confidence NUMERIC(3,2) NOT NULL,
+    verdict_note TEXT,
+    publication_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+    used_by_saralprivacy BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.competitor_topic_matrix (
+    topic_id VARCHAR(16) PRIMARY KEY,
+    topic VARCHAR(128) NOT NULL,
+    dpdpa_com VARCHAR(16) NOT NULL,
+    saralprivacy VARCHAR(16) NOT NULL,
+    primary_evidence VARCHAR(8) NOT NULL,
+    gap VARCHAR(32) NOT NULL,
+    competitor_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    saralprivacy_evidence JSONB NOT NULL DEFAULT '[]'::jsonb,
+    primary_citation TEXT,
+    note TEXT,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT topic_matrix_unpublished CHECK (publication_eligible = FALSE)
+);
+
+ALTER TABLE public.competitor_claims_registry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.competitor_topic_matrix ENABLE ROW LEVEL SECURITY;

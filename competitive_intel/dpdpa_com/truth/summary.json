@@ -1,0 +1,29 @@
+{
+  "claims": {
+    "count": 821,
+    "by_status": {
+      "CONTESTED": 2,
+      "INCORRECT": 3,
+      "NEEDS_REVIEW": 247,
+      "SUPPORTED_INTERPRETATION": 224,
+      "UNSUPPORTED": 311,
+      "VERIFIED_PRIMARY": 34
+    },
+    "publication_allowed": 34
+  },
+  "matrix": {
+    "topic_count": 30,
+    "both_cover": 22,
+    "competitor_only": 4,
+    "saralprivacy_only": 3,
+    "by_gap": {
+      "none": 15,
+      "sp_advantage": 3,
+      "differentiate": 7,
+      "investigate": 4,
+      "sp_opportunity": 1
+    },
+    "publication_eligible": false,
+    "headline": "We compared 30 concepts: 22 both cover, 7 where SaralPrivacy can differentiate, 5 genuine gaps or opportunities, 3 already stronger on the SaralPrivacy side."
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ClaimRegistryRow",
+  "description": "A competitor claim with a Source Truth verdict. Publishing the fact must cite the primary source, not DPDPA.com.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claim_id",
+    "claim_text",
+    "found_on",
+    "original_url",
+    "claim_type",
+    "verification_status",
+    "confidence",
+    "publication_allowed",
+    "used_by_saralprivacy"
+  ],
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "pattern": "^CLM-[0-9]{6}$"
+    },
+    "claim_text": { "type": "string", "minLength": 8 },
+    "found_on": { "type": "string", "const": "DPDPA.com" },
+    "card_id": { "type": "string" },
+    "original_url": { "type": "string", "format": "uri" },
+    "claim_type": {
+      "type": "string",
+      "enum": ["LEGAL", "STATISTIC", "MARKET", "OPINION"]
+    },
+    "dpdpa_section": { "type": ["string", "null"] },
+    "dpdp_rule": { "type": ["string", "null"] },
+    "primary_source": { "type": ["string", "null"] },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "VERIFIED_PRIMARY",
+        "SUPPORTED_INTERPRETATION",
+        "CONTESTED",
+        "OUTDATED",
+        "UNSUPPORTED",
+        "INCORRECT",
+        "NEEDS_REVIEW"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "verdict_note": { "type": "string" },
+    "publication_allowed": { "type": "boolean" },
+    "used_by_saralprivacy": { "type": "boolean" }
+  }
+}
