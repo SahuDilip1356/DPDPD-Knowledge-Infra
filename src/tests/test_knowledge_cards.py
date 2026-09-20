@@ -34,6 +34,8 @@ def test_classify_trays():
     )
     assert classify_dpdpa_com("https://www.dpdpa.com/dpdpacases/case1/case-d.html") == "CASE LAW"
     assert classify_dpdpa_com("https://www.dpdpa.com/dpdpa-module-2.html") == "COURSE"
+    assert classify_dpdpa_com("https://www.dpdpa.com/ccl.html") == "COURSE"
+    assert classify_dpdpa_com("https://www.dpdpa.com/dpdpa-faq-comprehensive.html") == "FAQ"
     assert classify_dpdpa_com("https://www.dpdpa.com/tools/privacy-notice-generator.html") == "TOOL"
     assert classify_dpdpa_com("https://www.dpdpa.com/") == "COMMERCIAL"
 

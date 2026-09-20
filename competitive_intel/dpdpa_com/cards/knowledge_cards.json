@@ -4247,6 +4247,34 @@
     "publication_eligible": false
   },
   {
+    "card_id": "KC-DPDPA-COM-515030",
+    "source": "DPDPA.com",
+    "source_class": "COMPETITOR",
+    "source_url": "https://www.dpdpa.com/ccl.html",
+    "content_type": "COURSE",
+    "title": "Certified Cyber Lawyer (CCL) | Cyber Law Academy",
+    "topic": "Certified Cyber Lawyer (CCL)",
+    "subtopics": [
+      "breach",
+      "AI"
+    ],
+    "dpdpa_sections": [],
+    "dpdp_rules": [],
+    "audience": [
+      "student",
+      "privacy professional"
+    ],
+    "claims": [],
+    "statistics": [],
+    "examples": [],
+    "tools_mentioned": [],
+    "primary_sources_cited": [],
+    "verification_required": true,
+    "authority_level": "L5",
+    "publication_eligible": false,
+    "notes": "Tier B product intelligence. Do not reproduce the offering."
+  },
+  {
     "card_id": "KC-DPDPA-COM-082153",
     "source": "DPDPA.com",
     "source_class": "COMPETITOR",
@@ -4940,6 +4968,52 @@
     "authority_level": "L5",
     "publication_eligible": false,
     "notes": "Tier B product intelligence. Do not reproduce the offering. Page uses Controller language. Verify against Data Fiduciary."
+  },
+  {
+    "card_id": "KC-DPDPA-COM-273494",
+    "source": "DPDPA.com",
+    "source_class": "COMPETITOR",
+    "source_url": "https://www.dpdpa.com/dpdpa-faq-comprehensive.html",
+    "content_type": "FAQ",
+    "title": "DPDPA 2023 & DPDP Rules 2025 FAQ | Complete Guide to India's Data Protection Law | www.dpdpa.com",
+    "topic": "FAQ universe",
+    "subtopics": [
+      "consent",
+      "withdrawal",
+      "notice",
+      "legitimate use",
+      "children",
+      "breach",
+      "cross-border transfer",
+      "SDF"
+    ],
+    "dpdpa_sections": [],
+    "dpdp_rules": [],
+    "audience": [
+      "student",
+      "data principal"
+    ],
+    "claims": [
+      {
+        "text": "The exact penalty depends on the nature and severity of the breach.",
+        "claim_type": "LEGAL"
+      }
+    ],
+    "statistics": [
+      "\u20b9250",
+      "\u20b910,000",
+      "\u20b9250 crore"
+    ],
+    "examples": [],
+    "tools_mentioned": [
+      "Privacy Notice Generator",
+      "Legitimate Interest Assessment",
+      "Consent Manager"
+    ],
+    "primary_sources_cited": [],
+    "verification_required": true,
+    "authority_level": "L5",
+    "publication_eligible": false
   },
   {
     "card_id": "KC-DPDPA-COM-093105",

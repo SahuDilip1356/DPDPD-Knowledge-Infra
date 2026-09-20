@@ -15,6 +15,7 @@ from src.competitive_intel.primary_facts import (
     INCORRECT_OR_CONTESTED,
     PRIMARY_FACTS,
     first_section,
+    is_denial_of,
 )
 
 SCHEMA_PATH = os.path.join(
@@ -44,16 +45,31 @@ def judge_claim(
     blob = text.strip()
 
     for pattern, status, section, note in INCORRECT_OR_CONTESTED:
-        if pattern.search(blob):
+        match = pattern.search(blob)
+        if not match:
+            continue
+        if is_denial_of(blob, match):
             return {
-                "verification_status": status,
-                "confidence": 0.85 if status == "INCORRECT" else 0.7,
+                "verification_status": "SUPPORTED_INTERPRETATION",
+                "confidence": 0.7,
                 "primary_source": None,
                 "dpdpa_section": section or first_section(sections),
                 "dpdp_rule": first_section(rules),
-                "verdict_note": note,
+                "verdict_note": (
+                    "Sentence rejects a GDPR-style label. Keep the Act wording; "
+                    "do not publish the competitor page."
+                ),
                 "publication_allowed": False,
             }
+        return {
+            "verification_status": status,
+            "confidence": 0.85 if status == "INCORRECT" else 0.7,
+            "primary_source": None,
+            "dpdpa_section": section or first_section(sections),
+            "dpdp_rule": first_section(rules),
+            "verdict_note": note,
+            "publication_allowed": False,
+        }
 
     for fact in PRIMARY_FACTS:
         if fact.pattern.search(blob):
@@ -134,6 +150,8 @@ def register_claims(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 extract_sections(text),
                 extract_rules(text),
             )
+            status = judged["verification_status"]
+            needs_counsel = status in {"NEEDS_REVIEW", "CONTESTED", "INCORRECT"}
             row = {
                 "claim_id": row_id,
                 "claim_text": text[:400],
@@ -144,11 +162,16 @@ def register_claims(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "dpdpa_section": judged["dpdpa_section"],
                 "dpdp_rule": judged["dpdp_rule"],
                 "primary_source": judged["primary_source"],
-                "verification_status": judged["verification_status"],
+                "verification_status": status,
                 "confidence": judged["confidence"],
                 "verdict_note": judged["verdict_note"],
                 "publication_allowed": bool(judged["publication_allowed"]),
                 "used_by_saralprivacy": False,
+                "review_state": (
+                    "AWAITING_HUMAN_COUNSEL" if needs_counsel else "MACHINE_RECHECKED"
+                ),
+                "review_bucket": "counsel_queue" if needs_counsel else "auto_clear",
+                "counsel_signed": False,
             }
             validate(instance=row, schema=_schema())
             rows.append(row)

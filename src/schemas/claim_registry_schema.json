@@ -50,6 +50,19 @@
     },
     "verdict_note": { "type": "string" },
     "publication_allowed": { "type": "boolean" },
-    "used_by_saralprivacy": { "type": "boolean" }
+    "used_by_saralprivacy": { "type": "boolean" },
+    "review_state": {
+      "type": "string",
+      "enum": [
+        "MACHINE_RECHECKED",
+        "AWAITING_HUMAN_COUNSEL",
+        "COUNSEL_SIGNED"
+      ]
+    },
+    "review_bucket": {
+      "type": "string",
+      "enum": ["auto_clear", "counsel_queue"]
+    },
+    "counsel_signed": { "type": "boolean" }
   }
 }

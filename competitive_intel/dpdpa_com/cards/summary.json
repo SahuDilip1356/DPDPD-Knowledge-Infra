@@ -1,19 +1,19 @@
 {
   "source": "DPDPA.com",
   "source_class": "COMPETITOR",
-  "card_count": 195,
+  "card_count": 197,
   "publication_eligible": false,
   "by_content_type": {
     "BLOG": 58,
     "CASE LAW": 16,
     "COMMERCIAL": 6,
-    "COURSE": 10,
-    "FAQ": 1,
+    "COURSE": 11,
+    "FAQ": 2,
     "INTERPRETATION": 54,
     "LAW / RULES": 34,
     "TEMPLATE": 13,
     "TOOL": 3
   },
-  "cards_with_claims": 147,
+  "cards_with_claims": 148,
   "cards_citing_primary": 59
 }

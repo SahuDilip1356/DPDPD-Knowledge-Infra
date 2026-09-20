@@ -79,6 +79,7 @@ def classify_dpdpa_com(url: str, title: str = "") -> str:
             "dpdpa-examination",
             "interview-questions",
             "verify-certificate",
+            "/ccl.html",
         )
     ):
         return "COURSE"

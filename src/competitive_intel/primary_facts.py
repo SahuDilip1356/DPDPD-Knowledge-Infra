@@ -148,9 +148,63 @@ PRIMARY_FACTS: tuple[PrimaryFact, ...] = (
         "SUPPORTED_INTERPRETATION",
         "Confirm the exact Gazette citation before treating dates as operational law.",
     ),
+    PrimaryFact(
+        "consent-withdrawal",
+        re.compile(r"(withdraw(al)? of consent|consent.{0,30}withdraw|withdraw.{0,20}consent)", re.I),
+        "DPDPA 2023 Section 6",
+        "Section 6",
+        None,
+        "VERIFIED_PRIMARY",
+        "Section 6 lets a Data Principal withdraw consent as easily as it was given.",
+    ),
+    PrimaryFact(
+        "erasure-correction",
+        re.compile(r"(right to.{0,20}(correct|eras|complet)|correct.{0,20}inaccurate|eras\w+.{0,20}personal data)", re.I),
+        "DPDPA 2023 Section 12",
+        "Section 12",
+        None,
+        "VERIFIED_PRIMARY",
+        "Section 12 is correction, completion, updating, and erasure — not a GDPR right to be forgotten.",
+    ),
+    PrimaryFact(
+        "access-summary",
+        re.compile(r"(right to access|summary of.{0,30}personal data|access request)", re.I),
+        "DPDPA 2023 Section 11",
+        "Section 11",
+        None,
+        "VERIFIED_PRIMARY",
+        "Section 11 is the right to a summary of personal data and of sharing.",
+    ),
+    PrimaryFact(
+        "grievance-first",
+        re.compile(r"(grievance redressal|complain.{0,30}(board|fiduciary)|internal complaint)", re.I),
+        "DPDPA 2023 Section 13",
+        "Section 13",
+        None,
+        "VERIFIED_PRIMARY",
+        "Section 13 requires a readily available grievance mechanism before the Board.",
+    ),
+    PrimaryFact(
+        "nominate",
+        re.compile(r"(right to nominate|nominee).{0,40}(death|incapacit|behalf)", re.I),
+        "DPDPA 2023 Section 14",
+        "Section 14",
+        None,
+        "VERIFIED_PRIMARY",
+        "Section 14 is the right to nominate someone to exercise rights on death or incapacity.",
+    ),
+    PrimaryFact(
+        "transfer-not-localisation",
+        re.compile(r"(transfer.{0,40}outside india|section 16|restricted countr)", re.I),
+        "DPDPA 2023 Section 16",
+        "Section 16",
+        None,
+        "VERIFIED_PRIMARY",
+        "Section 16 is a Government blacklist of countries, not a data-localisation mandate.",
+    ),
 )
 
-INCORRECT_OR_CONTESTED: tuple[tuple[re.Pattern[str], str, str, str], ...] = (
+INCORRECT_OR_CONTESTED: tuple[tuple[re.Pattern[str], str, str | None, str], ...] = (
     (
         re.compile(r"\bcontroller\b", re.I),
         "CONTESTED",
@@ -175,7 +229,42 @@ INCORRECT_OR_CONTESTED: tuple[tuple[re.Pattern[str], str, str, str], ...] = (
         "Section 12",
         "DPDPA does not name a GDPR-style right to be forgotten. Closest duty is correction/erasure under Section 12.",
     ),
+    (
+        re.compile(
+            r"(india-only datacent|data locali[sz]ation|"
+            r"must.{0,30}(store|keep|maintain|host).{0,40}(only in india|india only))",
+            re.I,
+        ),
+        "INCORRECT",
+        "Section 16",
+        "DPDPA does not require India-only data centres. Section 16 lets the Government restrict transfer to named countries.",
+    ),
+    (
+        re.compile(
+            r"(january\s*3,?\s*2025|3\s*january\s*2025).{0,50}(rule|notif)|"
+            r"(dpdp rules|rules 2025).{0,50}(january\s*3|3\s*january)",
+            re.I,
+        ),
+        "CONTESTED",
+        None,
+        "Confirm the Gazette date. SaralPrivacy primary notes use 13 November 2025, not 3 January 2025.",
+    ),
 )
+
+
+DENIAL_RE = re.compile(
+    r"\b(no|not|never|does not|do not|doesn't|don't|has no|have no|"
+    r"there is no|without a|is not|are not|no such)\b",
+    re.I,
+)
+
+
+def is_denial_of(text: str, match: re.Match[str]) -> bool:
+    """True when the sentence is rejecting the matched myth, not asserting it."""
+    if not text:
+        raise ValueError("text is required")
+    window = text[max(0, match.start() - 90) : match.end() + 40]
+    return bool(DENIAL_RE.search(window))
 
 
 def first_section(values: list[str] | None) -> str | None:

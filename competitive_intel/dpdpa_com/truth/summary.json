@@ -1,15 +1,23 @@
 {
-  "claims": {
-    "count": 821,
-    "by_status": {
-      "CONTESTED": 2,
-      "INCORRECT": 3,
-      "NEEDS_REVIEW": 247,
-      "SUPPORTED_INTERPRETATION": 224,
-      "UNSUPPORTED": 311,
-      "VERIFIED_PRIMARY": 34
+  "cards": {
+    "count": 197,
+    "skipped": {
+      "cloudflare_interstitial": 1,
+      "not_found": 2
     },
-    "publication_allowed": 34
+    "publication_eligible": false
+  },
+  "claims": {
+    "count": 822,
+    "by_status": {
+      "CONTESTED": 1,
+      "INCORRECT": 7,
+      "NEEDS_REVIEW": 239,
+      "SUPPORTED_INTERPRETATION": 215,
+      "UNSUPPORTED": 299,
+      "VERIFIED_PRIMARY": 61
+    },
+    "publication_allowed": 61
   },
   "matrix": {
     "topic_count": 30,
@@ -25,5 +33,38 @@
     },
     "publication_eligible": false,
     "headline": "We compared 30 concepts: 22 both cover, 7 where SaralPrivacy can differentiate, 5 genuine gaps or opportunities, 3 already stronger on the SaralPrivacy side."
+  },
+  "questions": {
+    "count": 109,
+    "by_gap": {
+      "both_ask": 1,
+      "they_ask_we_dont": 66,
+      "we_ask_they_dont": 42
+    },
+    "they_ask_we_dont": 66,
+    "publication_eligible": false,
+    "headline": "109 customer questions collected. 66 they ask and we do not, 42 we ask and they do not, 1 both already ask."
+  },
+  "gaps": {
+    "count": 26,
+    "by_priority": {
+      "P0": 4,
+      "P1": 10,
+      "P2": 12
+    },
+    "publication_eligible": false,
+    "headline": "26 article briefs ready. 4 write first, 10 next, 12 later. Every brief cites the Act, not DPDPA.com."
+  },
+  "counsel": {
+    "queue_count": 247,
+    "by_status": {
+      "CONTESTED": 1,
+      "INCORRECT": 7,
+      "NEEDS_REVIEW": 239
+    },
+    "counsel_signed": 0,
+    "machine_only": true,
+    "publication_eligible": false,
+    "headline": "247 claims still need a human lawyer. The machine rechecked the easy myths. It did not sign as counsel."
   }
 }

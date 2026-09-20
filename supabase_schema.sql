@@ -210,3 +210,42 @@ CREATE TABLE IF NOT EXISTS public.competitor_topic_matrix (
 
 ALTER TABLE public.competitor_claims_registry ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.competitor_topic_matrix ENABLE ROW LEVEL SECURITY;
+
+-- 10. QUESTION UNIVERSE + ARTICLE BRIEFS (factory lists — never public)
+CREATE TABLE IF NOT EXISTS public.competitor_question_universe (
+    question_id VARCHAR(16) PRIMARY KEY,
+    question_text TEXT NOT NULL,
+    audience JSONB NOT NULL DEFAULT '[]'::jsonb,
+    topic VARCHAR(128) NOT NULL,
+    dpdpa_section VARCHAR(32),
+    dpdp_rule VARCHAR(32),
+    asked_on_competitor BOOLEAN NOT NULL DEFAULT FALSE,
+    competitor_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    asked_on_saralprivacy BOOLEAN NOT NULL DEFAULT FALSE,
+    saralprivacy_surfaces JSONB NOT NULL DEFAULT '[]'::jsonb,
+    primary_citation TEXT,
+    gap VARCHAR(32) NOT NULL,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT question_universe_unpublished CHECK (publication_eligible = FALSE)
+);
+
+CREATE TABLE IF NOT EXISTS public.competitor_content_gaps (
+    brief_id VARCHAR(16) PRIMARY KEY,
+    title TEXT NOT NULL,
+    priority VARCHAR(8) NOT NULL,
+    gap_type VARCHAR(32) NOT NULL,
+    why_write TEXT NOT NULL,
+    audience TEXT NOT NULL,
+    primary_citations JSONB NOT NULL DEFAULT '[]'::jsonb,
+    never_cite JSONB NOT NULL DEFAULT '["DPDPA.com"]'::jsonb,
+    questions_answered JSONB NOT NULL DEFAULT '[]'::jsonb,
+    competitor_covers BOOLEAN NOT NULL DEFAULT FALSE,
+    competitor_urls_discovery_only JSONB NOT NULL DEFAULT '[]'::jsonb,
+    outline JSONB NOT NULL DEFAULT '[]'::jsonb,
+    cite_instruction TEXT,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT content_gaps_unpublished CHECK (publication_eligible = FALSE)
+);
+
+ALTER TABLE public.competitor_question_universe ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.competitor_content_gaps ENABLE ROW LEVEL SECURITY;
