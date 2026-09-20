@@ -1,0 +1,655 @@
+[
+  {
+    "topic_id": "TOP-001",
+    "topic": "Consent",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blog.html",
+      "https://www.dpdpa.com/blogs/Challenges_Implications_of_india's_dpdpa.html",
+      "https://www.dpdpa.com/blogs/DPDP Rules 2025- Analysis of Industry implications.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/Detecting_and_Monitoring_Unauthorized_Use_of_Personal_Data.html",
+      "https://www.dpdpa.com/blogs/Impact of India's DPDPA on AI with Examples and Global Comparisons.html",
+      "https://www.dpdpa.com/blogs/Privacy_in_India_Was_it_There_Will_It_Be_There.html",
+      "https://www.dpdpa.com/blogs/The_DPDPA_Conundrum_for_Indian_SMEs.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 6",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 6",
+    "note": "Competitor hits=144 across 108 pages; SaralPrivacy hits=158.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-002",
+    "topic": "Notice",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/DPDP Rules 2025- Analysis of Industry implications.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/Detecting_and_Monitoring_Unauthorized_Use_of_Personal_Data.html",
+      "https://www.dpdpa.com/blogs/The_DPDPA_Conundrum_for_Indian_SMEs.html",
+      "https://www.dpdpa.com/blogs/Understanding_Role_of_a_Consent_Manager_Under_DPDPA_and_DPDP_Rules.html",
+      "https://www.dpdpa.com/blogs/childrens_of_illiterate_parents_banned_from_social_media.html",
+      "https://www.dpdpa.com/blogs/dataprincipalrightsunderdpdpa.html",
+      "https://www.dpdpa.com/blogs/dpdpa_banks_nbfcs_financial_data_protection.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 5",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 5",
+    "note": "Competitor hits=57 across 47 pages; SaralPrivacy hits=50.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-003",
+    "topic": "Children",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/childrens_of_illiterate_parents_banned_from_social_media.html",
+      "https://www.dpdpa.com/blogs/demystifying_dpia_in_dpdpa.html",
+      "https://www.dpdpa.com/blogs/dpdpa_edtech_platforms_student_data_protection.html",
+      "https://www.dpdpa.com/blogs/gdpr_vs_dpdpa_vs_ccpa_comprehensive_comparison.html",
+      "https://www.dpdpa.com/blogs/opportunities_small_business_dpdpa.html",
+      "https://www.dpdpa.com/blogs/righttonominatedpdpadigitalafterlife.html",
+      "https://www.dpdpa.com/blogs/vendor_data_processing_agreement_dpa_dpdpa_template.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 9",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 9",
+    "note": "Competitor hits=38 across 31 pages; SaralPrivacy hits=80.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-004",
+    "topic": "Legitimate uses",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/Challenges_Implications_of_india's_dpdpa.html",
+      "https://www.dpdpa.com/blogs/DPDP Rules 2025- Analysis of Industry implications.html",
+      "https://www.dpdpa.com/blogs/chatgpt_generative_ai_dpdpa_data_protection_risks.html",
+      "https://www.dpdpa.com/blogs/consent_management_platform_cmp_dpdpa_selection_guide.html",
+      "https://www.dpdpa.com/blogs/data_protection_audit_dpdpa_sdf_requirements.html",
+      "https://www.dpdpa.com/blogs/gdpr_judgements_dpbi_india_learnings.html",
+      "https://www.dpdpa.com/postersofdpdpa.html",
+      "https://www.dpdpa.com/dpdpa-certificate-course.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 7",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 7",
+    "note": "Competitor hits=33 across 20 pages; SaralPrivacy hits=31.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-005",
+    "topic": "Data Fiduciary obligations",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/dataerasureandcertificationunderdpdpa.html",
+      "https://www.dpdpa.com/blogs/dpdpa_compliance_checklist_2026_business_assessment.html",
+      "https://www.dpdpa.com/blogs/dpdpa_compliant_privacy_policy_template_guide.html",
+      "https://www.dpdpa.com/blogs/significant_data_fiduciary_sdf_dpdpa_guide.html",
+      "https://www.dpdpa.com/dpdpa2023/chapter-2/section10.html",
+      "https://www.dpdpa.com/dpdpa2023/chapter-2/section8.html",
+      "https://www.dpdpa.com/dpdparules/rule13.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 8",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 8",
+    "note": "Competitor hits=8 across 7 pages; SaralPrivacy hits=75.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-006",
+    "topic": "Data mapping / inventory",
+    "dpdpa_com": "no",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "sp_advantage",
+    "competitor_urls": [],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 4 / Section 8",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 4 / Section 8",
+    "note": "Competitor hits=0 across 0 pages; SaralPrivacy hits=11.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-007",
+    "topic": "DPIA",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/blog1.html",
+      "https://www.dpdpa.com/blogs/blog2.html",
+      "https://www.dpdpa.com/blogs/cookie_scanner_compliance.html",
+      "https://www.dpdpa.com/blogs/data_protection_officer_dpo_dpdpa_qualifications.html",
+      "https://www.dpdpa.com/blogs/databreachreporting.html",
+      "https://www.dpdpa.com/blogs/demystifying_dpia_in_dpdpa.html",
+      "https://www.dpdpa.com/blogs/gdpr_vs_dpdpa_vs_ccpa_comprehensive_comparison.html",
+      "https://www.dpdpa.com/blogs/india_eu_data_adequacy_dpdpa_gdpr.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 10",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 10",
+    "note": "Competitor hits=26 across 22 pages; SaralPrivacy hits=11.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-008",
+    "topic": "Significant Data Fiduciary",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blog.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/data_protection_audit_dpdpa_sdf_requirements.html",
+      "https://www.dpdpa.com/blogs/data_protection_officer_dpo_dpdpa_qualifications.html",
+      "https://www.dpdpa.com/blogs/significant_data_fiduciary_sdf_dpdpa_guide.html",
+      "https://www.dpdpa.com/dpdpa-certificate-course.html",
+      "https://www.dpdpa.com/dpdpa-module-3.html",
+      "https://www.dpdpa.com/dpdpa-faq-comprehensive.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 10",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 10",
+    "note": "Competitor hits=20 across 17 pages; SaralPrivacy hits=30.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-009",
+    "topic": "Consent Manager",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/DPDP Rules 2025- Analysis of Industry implications.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/Understanding_Role_of_a_Consent_Manager_Under_DPDPA_and_DPDP_Rules.html",
+      "https://www.dpdpa.com/blogs/consent_management_platform_cmp_dpdpa_selection_guide.html",
+      "https://www.dpdpa.com/blogs/gdpr_judgements_dpbi_india_learnings.html",
+      "https://www.dpdpa.com/blogs/righttonominatedpdpadigitalafterlife.html",
+      "https://www.dpdpa.com/",
+      "https://www.dpdpa.com/blogs"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 2; Rules on registration",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 2; Rules on registration",
+    "note": "Competitor hits=19 across 18 pages; SaralPrivacy hits=22.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-010",
+    "topic": "Breach response",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blog.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/Detecting_and_Monitoring_Unauthorized_Use_of_Personal_Data.html",
+      "https://www.dpdpa.com/blogs/Understanding_Role_of_a_Consent_Manager_Under_DPDPA_and_DPDP_Rules.html",
+      "https://www.dpdpa.com/blogs/chatgpt_generative_ai_dpdpa_data_protection_risks.html",
+      "https://www.dpdpa.com/blogs/compensation_for_victims_of_data_breach_under_dpdpa.html",
+      "https://www.dpdpa.com/blogs/criminal_liabilities_for_data_theft_and_data_breach_in_india.html",
+      "https://www.dpdpa.com/blogs/cross_border_data_transfer_dpdpa_guide.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 8(6); Rules on intimation",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 8(6); Rules on intimation",
+    "note": "Competitor hits=78 across 62 pages; SaralPrivacy hits=101.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-011",
+    "topic": "Penalties",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/dpdpa_penalties_explained_50_crore_250_crore_fines.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 33 and Schedule",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 33 and Schedule",
+    "note": "Competitor hits=9 across 1 pages; SaralPrivacy hits=110.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-012",
+    "topic": "Cross-border transfer",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blog.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/Detecting_and_Monitoring_Unauthorized_Use_of_Personal_Data.html",
+      "https://www.dpdpa.com/blogs/Impact of India's DPDPA on AI with Examples and Global Comparisons.html",
+      "https://www.dpdpa.com/blogs/blog1.html",
+      "https://www.dpdpa.com/blogs/blog2.html",
+      "https://www.dpdpa.com/blogs/chatgpt_generative_ai_dpdpa_data_protection_risks.html",
+      "https://www.dpdpa.com/blogs/cross_border_data_transfer_dpdpa_guide.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 16",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 16",
+    "note": "Competitor hits=98 across 43 pages; SaralPrivacy hits=48.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-013",
+    "topic": "AI + DPDPA",
+    "dpdpa_com": "yes",
+    "saralprivacy": "no",
+    "primary_evidence": "no",
+    "gap": "investigate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/Impact of India's DPDPA on AI with Examples and Global Comparisons.html",
+      "https://www.dpdpa.com/blogs/ai_machine_learning_dpdpa_compliance_guide.html",
+      "https://www.dpdpa.com/blogs/chatgpt_generative_ai_dpdpa_data_protection_risks.html",
+      "https://www.dpdpa.com/dpdpa-module-6.html"
+    ],
+    "saralprivacy_evidence": [],
+    "primary_citation": null,
+    "note": "Competitor hits=10 across 4 pages; SaralPrivacy hits=0.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-014",
+    "topic": "WhatsApp",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/Detecting_and_Monitoring_Unauthorized_Use_of_Personal_Data.html",
+      "https://www.dpdpa.com/blogs/Privacy_in_India_Was_it_There_Will_It_Be_There.html",
+      "https://www.dpdpa.com/blogs/The_DPDPA_Conundrum_for_Indian_SMEs.html",
+      "https://www.dpdpa.com/blogs/ai_machine_learning_dpdpa_compliance_guide.html",
+      "https://www.dpdpa.com/blogs/blog1.html",
+      "https://www.dpdpa.com/blogs/blog2.html",
+      "https://www.dpdpa.com/blogs/chatgpt_generative_ai_dpdpa_data_protection_risks.html",
+      "https://www.dpdpa.com/blogs/consent_management_platform_cmp_dpdpa_selection_guide.html"
+    ],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=31 across 29 pages; SaralPrivacy hits=4.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-015",
+    "topic": "Recruitment",
+    "dpdpa_com": "no",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "sp_advantage",
+    "competitor_urls": [],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=0 across 0 pages; SaralPrivacy hits=24.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-016",
+    "topic": "CA firms",
+    "dpdpa_com": "no",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "sp_advantage",
+    "competitor_urls": [],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=0 across 0 pages; SaralPrivacy hits=4.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-017",
+    "topic": "Hidden / inferred data",
+    "dpdpa_com": "yes",
+    "saralprivacy": "no",
+    "primary_evidence": "no",
+    "gap": "investigate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/rules_for_attention_and_inference_data_under_dpdpa.html"
+    ],
+    "saralprivacy_evidence": [],
+    "primary_citation": null,
+    "note": "Competitor hits=4 across 1 pages; SaralPrivacy hits=0.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-018",
+    "topic": "Offline to digital",
+    "dpdpa_com": "no",
+    "saralprivacy": "no",
+    "primary_evidence": "yes",
+    "gap": "sp_opportunity",
+    "competitor_urls": [],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 3 (digital personal data)"
+    ],
+    "primary_citation": "DPDPA 2023 Section 3 (digital personal data)",
+    "note": "Competitor hits=0 across 0 pages; SaralPrivacy hits=0.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-019",
+    "topic": "Healthcare",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/dpdpa_compliance_healthcare_hospitals_guide.html"
+    ],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=4 across 1 pages; SaralPrivacy hits=9.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-020",
+    "topic": "EdTech / schools",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/dpdpa_edtech_platforms_student_data_protection.html"
+    ],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=3 across 1 pages; SaralPrivacy hits=11.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-021",
+    "topic": "HR / employee data",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/blog1.html",
+      "https://www.dpdpa.com/blogs/chatgpt_generative_ai_dpdpa_data_protection_risks.html",
+      "https://www.dpdpa.com/blogs/data_breach_response_plan_dpdpa_72_hours.html",
+      "https://www.dpdpa.com/blogs/demystifying_dpia_in_dpdpa.html",
+      "https://www.dpdpa.com/blogs/directors_personal_liability_dpdpa_cxo_responsibility.html",
+      "https://www.dpdpa.com/blogs/dpdpa_compliance_checklist_2026_business_assessment.html",
+      "https://www.dpdpa.com/blogs/dpdpa_hr_departments_employee_data_protection.html",
+      "https://www.dpdpa.com/blogs/photographersrequiredpdpacompliance.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 7 (employment as legitimate use)",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 7 (employment as legitimate use)",
+    "note": "Competitor hits=32 across 28 pages; SaralPrivacy hits=8.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-022",
+    "topic": "Retention",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/ai_machine_learning_dpdpa_compliance_guide.html",
+      "https://www.dpdpa.com/blogs/data_protection_audit_dpdpa_sdf_requirements.html",
+      "https://www.dpdpa.com/blogs/data_protection_officer_dpo_dpdpa_qualifications.html",
+      "https://www.dpdpa.com/blogs/dataerasureandcertificationunderdpdpa.html",
+      "https://www.dpdpa.com/blogs/dpdpa_compliant_privacy_policy_template_guide.html",
+      "https://www.dpdpa.com/blogs/dpdpa_ecommerce_compliance_customer_data.html",
+      "https://www.dpdpa.com/blogs/india_eu_data_adequacy_dpdpa_gdpr.html",
+      "https://www.dpdpa.com/blogs/righttobeforgottendpdpa.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 8(7)",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 8(7)",
+    "note": "Competitor hits=31 across 28 pages; SaralPrivacy hits=16.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-023",
+    "topic": "Vendor / processor",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/Detecting_and_Monitoring_Unauthorized_Use_of_Personal_Data.html",
+      "https://www.dpdpa.com/blogs/Privacy_in_India_Was_it_There_Will_It_Be_There.html",
+      "https://www.dpdpa.com/blogs/consent_management_platform_cmp_dpdpa_selection_guide.html",
+      "https://www.dpdpa.com/blogs/criminal_liabilities_for_data_theft_and_data_breach_in_india.html",
+      "https://www.dpdpa.com/blogs/photographersrequiredpdpacompliance.html",
+      "https://www.dpdpa.com/blogs/vendor_data_processing_agreement_dpa_dpdpa_template.html",
+      "https://www.dpdpa.com/dpdpa-faq.html",
+      "https://www.dpdpa.com/dpdpa2023/chapter-9/section36.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 8",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 8",
+    "note": "Competitor hits=34 across 14 pages; SaralPrivacy hits=29.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-024",
+    "topic": "Cookies",
+    "dpdpa_com": "yes",
+    "saralprivacy": "no",
+    "primary_evidence": "no",
+    "gap": "investigate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/consent_management_platform_cmp_dpdpa_selection_guide.html",
+      "https://www.dpdpa.com/blogs/cookie_scanner_compliance.html",
+      "https://www.dpdpa.com/blogs/dpdpa_ecommerce_compliance_customer_data.html",
+      "https://www.dpdpa.com/blogs/webbeaconaprivacythreat.html",
+      "https://www.dpdpa.com/cookiepolicy.html",
+      "https://www.dpdpa.com/privacypolicy.html",
+      "https://www.dpdpa.com/dpdpa-interview-questions.html",
+      "https://www.dpdpa.com/dpdpa-module-5.html"
+    ],
+    "saralprivacy_evidence": [],
+    "primary_citation": null,
+    "note": "Competitor hits=23 across 13 pages; SaralPrivacy hits=0.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-025",
+    "topic": "Erasure / RTBF framing",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/Challenges_Implications_of_india's_dpdpa.html",
+      "https://www.dpdpa.com/blogs/DPDPA_Implementation_Timeline.html",
+      "https://www.dpdpa.com/blogs/Impact of India's DPDPA on AI with Examples and Global Comparisons.html",
+      "https://www.dpdpa.com/blogs/Understanding_Role_of_a_Consent_Manager_Under_DPDPA_and_DPDP_Rules.html",
+      "https://www.dpdpa.com/blogs/cross_border_data_transfer_dpdpa_guide.html",
+      "https://www.dpdpa.com/blogs/data_protection_officer_dpo_dpdpa_qualifications.html",
+      "https://www.dpdpa.com/blogs/dataerasureandcertificationunderdpdpa.html",
+      "https://www.dpdpa.com/blogs/dpdpa_penalties_explained_50_crore_250_crore_fines.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 12",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 12",
+    "note": "Competitor hits=43 across 35 pages; SaralPrivacy hits=18.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-026",
+    "topic": "Nomination",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/dataprincipalrightsunderdpdpa.html",
+      "https://www.dpdpa.com/blogs/righttonominatedpdpadigitalafterlife.html",
+      "https://www.dpdpa.com/dpdpa2023/chapter-2/section5.html",
+      "https://www.dpdpa.com/dpdpa2023/chapter-3/section14.html",
+      "https://www.dpdpa.com/dpdparules/rule14.html",
+      "https://www.dpdpa.com/mappingofdpdpatodpdprules.html",
+      "https://www.dpdpa.com/templates/consentformfordataprocessingtemplate.html",
+      "https://www.dpdpa.com/templates/datasubjectrightsrequestformtemplate.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 14",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 14",
+    "note": "Competitor hits=12 across 8 pages; SaralPrivacy hits=15.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-027",
+    "topic": "Data Protection Board",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "yes",
+    "gap": "none",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/data_protection_board_india_dpbi_powers_procedures.html",
+      "https://www.dpdpa.com/blogs/gdpr_judgements_dpbi_india_learnings.html",
+      "https://www.dpdpa.com/dpdpa2023/chapter-5/section18.html"
+    ],
+    "saralprivacy_evidence": [
+      "DPDPA 2023 Section 18",
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": "DPDPA 2023 Section 18",
+    "note": "Competitor hits=7 across 3 pages; SaralPrivacy hits=57.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-028",
+    "topic": "Templates / policies",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/dpdpa_compliant_privacy_policy_template_guide.html",
+      "https://www.dpdpa.com/blogs/vendor_data_processing_agreement_dpa_dpdpa_template.html",
+      "https://www.dpdpa.com/",
+      "https://www.dpdpa.com/dpdpatemplatesandpolicies.html",
+      "https://www.dpdpa.com/templates/consentformfordataprocessingtemplate.html",
+      "https://www.dpdpa.com/templates/cookiepolicytemplate.html",
+      "https://www.dpdpa.com/templates/crossborderdatatransferagreementtemplate.html",
+      "https://www.dpdpa.com/templates/dataprocessingtemplate.html"
+    ],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=42 across 16 pages; SaralPrivacy hits=10.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-029",
+    "topic": "Training / certification",
+    "dpdpa_com": "yes",
+    "saralprivacy": "no",
+    "primary_evidence": "no",
+    "gap": "investigate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/dpdpa-certificate-course.html",
+      "https://www.dpdpa.com/dpdpa-interview-questions.html",
+      "https://www.dpdpa.com/dpdpa-module-1.html",
+      "https://www.dpdpa.com/dpdpa-module-2.html",
+      "https://www.dpdpa.com/dpdpa-module-3.html",
+      "https://www.dpdpa.com/dpdpa-module-4.html",
+      "https://www.dpdpa.com/dpdpa-module-5.html",
+      "https://www.dpdpa.com/dpdpa-module-6.html"
+    ],
+    "saralprivacy_evidence": [],
+    "primary_citation": null,
+    "note": "Competitor hits=12 across 8 pages; SaralPrivacy hits=0.",
+    "publication_eligible": false
+  },
+  {
+    "topic_id": "TOP-030",
+    "topic": "SMEs / small business",
+    "dpdpa_com": "yes",
+    "saralprivacy": "yes",
+    "primary_evidence": "no",
+    "gap": "differentiate",
+    "competitor_urls": [
+      "https://www.dpdpa.com/blogs/The_DPDPA_Conundrum_for_Indian_SMEs.html",
+      "https://www.dpdpa.com/blogs/dpdpa_compliance_checklist_2026_business_assessment.html",
+      "https://www.dpdpa.com/blogs/significant_data_fiduciary_sdf_dpdpa_guide.html",
+      "https://www.dpdpa.com/templates/privacyimpactassessmenttemplate.html",
+      "https://www.dpdpa.com/tools/legitimate-interest-tool"
+    ],
+    "saralprivacy_evidence": [
+      "SaralPrivacy MSME guide / Bible / seed KOs"
+    ],
+    "primary_citation": null,
+    "note": "Competitor hits=10 across 5 pages; SaralPrivacy hits=72.",
+    "publication_eligible": false
+  }
+]

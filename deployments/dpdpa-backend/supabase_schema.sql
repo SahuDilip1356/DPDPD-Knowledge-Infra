@@ -138,3 +138,114 @@ USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow public read access to action_items" 
 ON public.action_items FOR SELECT USING (true);
+
+-- 8. COMPETITOR KNOWLEDGE CARDS (discovery only — never public, never canonical)
+CREATE TABLE IF NOT EXISTS public.competitor_knowledge_cards (
+    card_id VARCHAR(64) PRIMARY KEY,
+    source VARCHAR(64) NOT NULL,
+    source_class VARCHAR(32) NOT NULL DEFAULT 'COMPETITOR',
+    source_url TEXT NOT NULL,
+    content_type VARCHAR(32) NOT NULL,
+    title TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    subtopics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    dpdpa_sections JSONB NOT NULL DEFAULT '[]'::jsonb,
+    dpdp_rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+    audience JSONB NOT NULL DEFAULT '[]'::jsonb,
+    claims JSONB NOT NULL DEFAULT '[]'::jsonb,
+    statistics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    examples JSONB NOT NULL DEFAULT '[]'::jsonb,
+    tools_mentioned JSONB NOT NULL DEFAULT '[]'::jsonb,
+    primary_sources_cited JSONB NOT NULL DEFAULT '[]'::jsonb,
+    verification_required BOOLEAN NOT NULL DEFAULT TRUE,
+    authority_level VARCHAR(8) NOT NULL,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    notes TEXT,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now()),
+    CONSTRAINT competitor_cards_unpublished CHECK (publication_eligible = FALSE),
+    CONSTRAINT competitor_cards_must_verify CHECK (verification_required = TRUE),
+    CONSTRAINT competitor_cards_source_class CHECK (source_class = 'COMPETITOR')
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_competitor_cards_url
+ON public.competitor_knowledge_cards (source_url);
+
+ALTER TABLE public.competitor_knowledge_cards ENABLE ROW LEVEL SECURITY;
+-- No public SELECT policy: these cards are competitive discovery, not Setu truth.
+
+-- 9. CLAIMS REGISTRY + TOPIC MATRIX (Source Truth — still not public)
+CREATE TABLE IF NOT EXISTS public.competitor_claims_registry (
+    claim_id VARCHAR(16) PRIMARY KEY,
+    claim_text TEXT NOT NULL,
+    found_on VARCHAR(64) NOT NULL DEFAULT 'DPDPA.com',
+    card_id VARCHAR(64),
+    original_url TEXT NOT NULL,
+    claim_type VARCHAR(16) NOT NULL,
+    dpdpa_section VARCHAR(32),
+    dpdp_rule VARCHAR(32),
+    primary_source TEXT,
+    verification_status VARCHAR(32) NOT NULL,
+    confidence NUMERIC(3,2) NOT NULL,
+    verdict_note TEXT,
+    publication_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+    used_by_saralprivacy BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.competitor_topic_matrix (
+    topic_id VARCHAR(16) PRIMARY KEY,
+    topic VARCHAR(128) NOT NULL,
+    dpdpa_com VARCHAR(16) NOT NULL,
+    saralprivacy VARCHAR(16) NOT NULL,
+    primary_evidence VARCHAR(8) NOT NULL,
+    gap VARCHAR(32) NOT NULL,
+    competitor_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    saralprivacy_evidence JSONB NOT NULL DEFAULT '[]'::jsonb,
+    primary_citation TEXT,
+    note TEXT,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT topic_matrix_unpublished CHECK (publication_eligible = FALSE)
+);
+
+ALTER TABLE public.competitor_claims_registry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.competitor_topic_matrix ENABLE ROW LEVEL SECURITY;
+
+-- 10. QUESTION UNIVERSE + ARTICLE BRIEFS (factory lists — never public)
+CREATE TABLE IF NOT EXISTS public.competitor_question_universe (
+    question_id VARCHAR(16) PRIMARY KEY,
+    question_text TEXT NOT NULL,
+    audience JSONB NOT NULL DEFAULT '[]'::jsonb,
+    topic VARCHAR(128) NOT NULL,
+    dpdpa_section VARCHAR(32),
+    dpdp_rule VARCHAR(32),
+    asked_on_competitor BOOLEAN NOT NULL DEFAULT FALSE,
+    competitor_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    asked_on_saralprivacy BOOLEAN NOT NULL DEFAULT FALSE,
+    saralprivacy_surfaces JSONB NOT NULL DEFAULT '[]'::jsonb,
+    primary_citation TEXT,
+    gap VARCHAR(32) NOT NULL,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT question_universe_unpublished CHECK (publication_eligible = FALSE)
+);
+
+CREATE TABLE IF NOT EXISTS public.competitor_content_gaps (
+    brief_id VARCHAR(16) PRIMARY KEY,
+    title TEXT NOT NULL,
+    priority VARCHAR(8) NOT NULL,
+    gap_type VARCHAR(32) NOT NULL,
+    why_write TEXT NOT NULL,
+    audience TEXT NOT NULL,
+    primary_citations JSONB NOT NULL DEFAULT '[]'::jsonb,
+    never_cite JSONB NOT NULL DEFAULT '["DPDPA.com"]'::jsonb,
+    questions_answered JSONB NOT NULL DEFAULT '[]'::jsonb,
+    competitor_covers BOOLEAN NOT NULL DEFAULT FALSE,
+    competitor_urls_discovery_only JSONB NOT NULL DEFAULT '[]'::jsonb,
+    outline JSONB NOT NULL DEFAULT '[]'::jsonb,
+    cite_instruction TEXT,
+    publication_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT content_gaps_unpublished CHECK (publication_eligible = FALSE)
+);
+
+ALTER TABLE public.competitor_question_universe ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.competitor_content_gaps ENABLE ROW LEVEL SECURITY;

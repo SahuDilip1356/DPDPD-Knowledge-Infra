@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuestionUniverseRow",
+  "description": "A customer-facing question. Competitor wording is discovery only. Answers must cite the Act.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "question_id",
+    "question_text",
+    "audience",
+    "topic",
+    "asked_on_competitor",
+    "asked_on_saralprivacy",
+    "gap",
+    "publication_eligible"
+  ],
+  "properties": {
+    "question_id": {
+      "type": "string",
+      "pattern": "^QST-[0-9]{6}$"
+    },
+    "question_text": { "type": "string", "minLength": 8 },
+    "audience": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "business",
+          "privacy professional",
+          "data principal",
+          "student"
+        ]
+      }
+    },
+    "topic": { "type": "string", "minLength": 2 },
+    "dpdpa_section": { "type": ["string", "null"] },
+    "dpdp_rule": { "type": ["string", "null"] },
+    "asked_on_competitor": { "type": "boolean" },
+    "competitor_urls": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "asked_on_saralprivacy": { "type": "boolean" },
+    "saralprivacy_surfaces": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "primary_citation": { "type": ["string", "null"] },
+    "gap": {
+      "type": "string",
+      "enum": [
+        "both_ask",
+        "they_ask_we_dont",
+        "we_ask_they_dont",
+        "customer_gap"
+      ]
+    },
+    "publication_eligible": {
+      "type": "boolean",
+      "const": false
+    }
+  }
+}

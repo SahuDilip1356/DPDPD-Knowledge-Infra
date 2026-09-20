@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CompetitorTopicMatrixRow",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "topic_id",
+    "topic",
+    "dpdpa_com",
+    "saralprivacy",
+    "primary_evidence",
+    "gap",
+    "publication_eligible"
+  ],
+  "properties": {
+    "topic_id": {
+      "type": "string",
+      "pattern": "^TOP-[0-9]{3}$"
+    },
+    "topic": { "type": "string", "minLength": 2 },
+    "dpdpa_com": {
+      "type": "string",
+      "enum": ["yes", "generic", "no"]
+    },
+    "saralprivacy": {
+      "type": "string",
+      "enum": ["yes", "generic", "no"]
+    },
+    "primary_evidence": {
+      "type": "string",
+      "enum": ["yes", "no"]
+    },
+    "gap": {
+      "type": "string",
+      "enum": [
+        "none",
+        "differentiate",
+        "investigate",
+        "sp_advantage",
+        "sp_opportunity"
+      ]
+    },
+    "competitor_urls": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "saralprivacy_evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "primary_citation": { "type": ["string", "null"] },
+    "note": { "type": "string" },
+    "publication_eligible": {
+      "type": "boolean",
+      "const": false
+    }
+  }
+}

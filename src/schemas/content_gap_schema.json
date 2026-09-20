@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContentGapBrief",
+  "description": "An article Setu should write. Cite the Act or Gazette, never DPDPA.com.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "brief_id",
+    "title",
+    "priority",
+    "gap_type",
+    "why_write",
+    "audience",
+    "primary_citations",
+    "never_cite",
+    "publication_eligible"
+  ],
+  "properties": {
+    "brief_id": {
+      "type": "string",
+      "pattern": "^GAP-[0-9]{3}$"
+    },
+    "title": { "type": "string", "minLength": 8 },
+    "priority": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2"]
+    },
+    "gap_type": {
+      "type": "string",
+      "enum": [
+        "none",
+        "differentiate",
+        "investigate",
+        "sp_advantage",
+        "sp_opportunity"
+      ]
+    },
+    "why_write": { "type": "string", "minLength": 12 },
+    "audience": { "type": "string", "minLength": 3 },
+    "primary_citations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "never_cite": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "questions_answered": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "competitor_covers": { "type": "boolean" },
+    "competitor_urls_discovery_only": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "outline": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "cite_instruction": { "type": "string" },
+    "publication_eligible": {
+      "type": "boolean",
+      "const": false
+    }
+  }
+}
