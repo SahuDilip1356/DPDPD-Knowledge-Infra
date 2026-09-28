@@ -93,7 +93,7 @@ Only a pilot of three clips. Scaling waits on measured engagement.
 
 ### A4 — SaralPrivacy will accept owning the "business application" half
 - validate_by: founder decision on retiring the MSME guide from dpdpa.wiki — before
-  week 2 starts
+  week 2 starts. **Validated 2026-09-28: founder chose to retire the guide (301).**
 - if_wrong: keep the guide on dpdpa.wiki with a canonical tag pointing to
   saralprivacy.com, and G5 weakens to "no new duplication"
 

@@ -34,7 +34,7 @@ export default function CommandCenter() {
       >
         {/* Monospace statutory watermark */}
         <div style={{ position: "absolute", right: "20px", top: "15px", fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
-          DPDP.ACT.2023 // GAZETTE.NO.44 // MEITY.FEED.LIVE
+          DPDP.ACT.2023 // GAZETTE.NO.44
         </div>
 
         <div className="flex flex-col gap-2" style={{ maxWidth: "820px" }}>
@@ -70,14 +70,14 @@ export default function CommandCenter() {
                 placeholder="Ask any DPDPA query... e.g. What is the 72h breach rule under Sec 8(6)?"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && e.target.value) {
-                    navigate(`/ask?q=${encodeURIComponent(e.target.value)}`);
+                    navigate(`/workspace/ask?q=${encodeURIComponent(e.target.value)}`);
                   }
                 }}
                 style={{ width: "100%", background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "8px", padding: "10px 14px", color: "#FFFFFF", fontSize: "13px", outline: "none" }}
               />
             </div>
             <button 
-              onClick={() => navigate("/ask")}
+              onClick={() => navigate("/workspace/ask")}
               style={{ padding: "10px 20px", fontSize: "13px", background: "#10B981", color: "#064E3B", border: "none", borderRadius: "8px", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 4px 14px rgba(16, 185, 129, 0.3)" }}
             >
               Search Database — Free →
@@ -89,13 +89,13 @@ export default function CommandCenter() {
             <span style={{ fontSize: "11px", color: "#64748B", fontWeight: 600 }}>Trending:</span>
             {[
               { label: "Sec 8(6) Breach 72h", q: "Section 8(6) breach notification requirement" },
-              { label: "Notice Sec 6(1)", q: "Section 6(1) consent notice requirements" },
+              { label: "Notice Sec 5", q: "Section 5 notice requirements" },
               { label: "Children Data Sec 9", q: "Section 9 processing data of children" },
               { label: "Penalties Schedule", q: "DPDPA Schedule penalties breakdown" }
             ].map((chip) => (
               <button
                 key={chip.label}
-                onClick={() => navigate(`/ask?q=${encodeURIComponent(chip.q)}`)}
+                onClick={() => navigate(`/workspace/ask?q=${encodeURIComponent(chip.q)}`)}
                 style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#E2E8F0", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace", cursor: "pointer", transition: "all 150ms ease" }}
                 onMouseOver={(e) => e.currentTarget.style.borderColor = "#10B981"}
                 onMouseOut={(e) => e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"}
@@ -114,7 +114,7 @@ export default function CommandCenter() {
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#60A5FA" }}></span>
-            12 Gazetted Rules & MeitY Feeds
+            23 Notified Rules (2025)
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#F59E0B" }}></span>
@@ -181,7 +181,7 @@ export default function CommandCenter() {
               </div>
               <button 
                 className="btn btn-secondary" 
-                onClick={() => navigate("/changes")} 
+                onClick={() => navigate("/workspace/changes")} 
                 style={{ fontSize: "12px", padding: "7px 14px", fontWeight: 600, color: "var(--brand-blue)", borderColor: "var(--brand-blue)" }}
               >
                 View All Changes →
@@ -209,7 +209,7 @@ export default function CommandCenter() {
                       <tr 
                         key={event.id} 
                         className="table-row-interactive" 
-                        onClick={() => navigate(`/changes/${event.id}`)}
+                        onClick={() => navigate(`/workspace/changes/${event.id}`)}
                         style={{ 
                           borderBottom: "1px solid #E2E8F0", 
                           cursor: "pointer", 
@@ -242,7 +242,7 @@ export default function CommandCenter() {
                             </span>
                           ) : (
                             <span style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", color: "#64748B", padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
-                              Draft Phase
+                              Not yet notified
                             </span>
                           )}
                         </td>
@@ -278,7 +278,7 @@ export default function CommandCenter() {
                 <div 
                   key={action.id} 
                   className="attention-item card card-compact card-interactive flex items-center justify-between"
-                  onClick={() => navigate("/actions")}
+                  onClick={() => navigate("/workspace/actions")}
                   style={{ borderLeft: "4px solid #DC2626", background: "#FAFBFD", padding: "14px 16px" }}
                 >
                   <div style={{ minWidth: 0, flex: 1, paddingRight: "var(--space-4)" }}>
@@ -327,7 +327,7 @@ export default function CommandCenter() {
               ))}
             </div>
 
-            <button className="btn btn-primary" onClick={() => navigate("/factory")} style={{ width: "100%", justifyContent: "center", padding: "10px", fontSize: "13px" }}>
+            <button className="btn btn-primary" onClick={() => navigate("/workspace/factory")} style={{ width: "100%", justifyContent: "center", padding: "10px", fontSize: "13px" }}>
               Open Research Factory Board →
             </button>
           </div>

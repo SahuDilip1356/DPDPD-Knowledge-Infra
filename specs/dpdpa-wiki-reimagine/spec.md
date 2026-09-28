@@ -167,8 +167,9 @@ glossary entry → DefinedTerm · video page → adds VideoObject.
 - when: scanned
 - then: none of these strings appear on any public page: "Sec 6(1)" as a notice label,
         "0.0%", "100% GROUNDED", "Zero-Hallucination", "MEITY.FEED.LIVE", "Draft Phase",
-        "Consent Notice Rules 2024", "Rule 23", "Rule 5: Verifiable Consent",
-        "Rule 14: Consent Manager", "checklist is on its way"
+        "Consent Notice Rules 2024", "Rule 23" presented as the cross-border rule (the
+        notified Rule 23 is "Calling for information" and may be shown as such),
+        "Rule 5: Verifiable Consent", "Rule 14: Consent Manager", "checklist is on its way"
 
 ### AC11 — The Bible penalty table matches the Schedule
 - traces: G1
@@ -258,8 +259,11 @@ section; user accounts or server-side progress; comments; search within the site
 
 - **Q1** — Retire the MSME guide (301) or keep it with a canonical to saralprivacy.com?
   Owner: Dilip · by: 2026-10-03 · blocks: AC12
+  **Decided 2026-09-28: retire with a 301 to `/learn/what-is-dpdpa` (branch A of T19), applied
+  once module 1 is live.** Until then the guide stays reachable and out of primary navigation.
 - **Q2** — Which saralprivacy.com URL is the module-6 handoff target (assessment page or
   /learn)? Owner: Dilip · by: 2026-10-03 · blocks: AC5
+  **Decided 2026-09-28: `https://saralprivacy.com/assessment` (verified live, HTTP 200).**
 - **Q3** — Which three provisions get the pilot clips? Recommendation: Section 6
   (consent), Section 8 (obligations), Rule 7 (breach). Owner: Dilip · by: 2026-10-17 ·
   blocks: AC17

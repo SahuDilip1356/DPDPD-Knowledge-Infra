@@ -153,7 +153,7 @@ export default function ChangesFeed() {
               <div 
                 key={event.id} 
                 className="card card-interactive flex flex-col gap-3"
-                onClick={() => navigate(`/changes/${event.id}`)}
+                onClick={() => navigate(`/workspace/changes/${event.id}`)}
               >
                 <div className="flex justify-between items-start gap-4">
                   <div>
@@ -218,7 +218,7 @@ export default function ChangesFeed() {
                   marginTop: "8px"
                 }} />
                 
-                <div className="timeline-card card card-interactive flex-1 flex flex-col gap-3" onClick={() => navigate(`/changes/${event.id}`)}>
+                <div className="timeline-card card card-interactive flex-1 flex flex-col gap-3" onClick={() => navigate(`/workspace/changes/${event.id}`)}>
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-meta">{event.date_published}</span>

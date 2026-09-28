@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dpdpa-wiki-dist",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "preview", "--port", "4180", "--strictPort"],
+      "cwd": "deployments/dpdpa-wiki",
+      "port": 4180
+    }
+  ]
+}

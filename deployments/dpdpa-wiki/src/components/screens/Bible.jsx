@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { PriorityBadge, EmptyState } from "../ui/SharedComponents";
+import { EmptyState } from "../ui/SharedComponents";
 
 // Detailed local data representing the DPDPA Chapters and Sections
 const BIBLE_SECTIONS = [
@@ -14,7 +14,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Article 3 (Territorial Scope)",
     it_act: "IT Act 2000 Sec 1 (Title & Scope)",
     certin_rbi: "N/A Statutory Scope",
-    max_penalty: "N/A",
     sla: "Phased 18-Month Timeline",
     infographic_type: "scope"
   },
@@ -32,7 +31,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Article 4 (Definitions)",
     it_act: "IT Act Sec 2 & SPDI Rules 2011",
     certin_rbi: "RBI Payment System Definitions",
-    max_penalty: "N/A",
     sla: "N/A",
     infographic_type: "definitions"
   },
@@ -47,7 +45,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art. 3(2) Extraterritoriality",
     it_act: "IT Act Sec 75 (Extraterritorial Scope)",
     certin_rbi: "RBI Data Localization Directive",
-    max_penalty: "₹250 Crore",
     sla: "Extraterritorial Tracking",
     infographic_type: "scope"
   },
@@ -62,7 +59,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Article 6 (Lawful Processing)",
     it_act: "IT Act Sec 43A (Consent Mandate)",
     certin_rbi: "RBI Payment Consent Rules",
-    max_penalty: "₹250 Crore",
     sla: "Point-of-Collection Grounding",
     infographic_type: "lawful"
   },
@@ -81,7 +77,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 13 & 14 Privacy Notices",
     it_act: "SPDI Rules 2011 Rule 5 (Privacy Policy)",
     certin_rbi: "RBI Customer Disclosure Norms",
-    max_penalty: "₹250 Crore",
     sla: "Immediate / Onboarding",
     infographic_type: "notice_flow"
   },
@@ -99,7 +94,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Article 7 (Consent Conditions)",
     it_act: "IT Act Sec 43A Consent Rules",
     certin_rbi: "RBI Customer Opt-in Directive",
-    max_penalty: "₹250 Crore",
     sla: "Instant Withdrawal Support",
     infographic_type: "consent_lifecycle"
   },
@@ -114,7 +108,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 6(1)(f) Legitimate Interest",
     it_act: "IT Act Mandatory Govt Function",
     certin_rbi: "PMLA / KYC Non-Consensual Record",
-    max_penalty: "₹250 Crore",
     sla: "Non-Consensual Logging",
     infographic_type: "legitimate"
   },
@@ -133,7 +126,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 32 Security & Art 33 Breach",
     it_act: "IT Act Sec 43A Reasonable Security",
     certin_rbi: "CERT-In 6-Hr vs DPDPA 72-Hr SLA",
-    max_penalty: "₹250 Crore (Security) / ₹200 Cr (Breach)",
     sla: "72-Hour Breach SLA (DPBI)",
     infographic_type: "breach_sla"
   },
@@ -152,7 +144,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 8 Children Consent (Age <16)",
     it_act: "POCSO / IT Act Children Protection",
     certin_rbi: "N/A Children Specialized",
-    max_penalty: "₹200 Crore",
     sla: "Verifiable Age Verification",
     infographic_type: "children_protection"
   },
@@ -171,7 +162,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 35 DPIA & Art 37 DPO",
     it_act: "IT Rules 2021 SSMI Thresholds",
     certin_rbi: "RBI CISO & Audit Framework",
-    max_penalty: "₹150 Crore",
     sla: "Annual Audit & DPIA Cycle",
     infographic_type: "sdf_governance"
   },
@@ -186,7 +176,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 15 Right of Access",
     it_act: "IT Act User Inquiry Rights",
     certin_rbi: "RBI Banking Statement Rights",
-    max_penalty: "₹250 Crore",
     sla: "30-Day Response SLA",
     infographic_type: "dsar_access"
   },
@@ -201,7 +190,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 16 Correction & Art 17 Erasure",
     it_act: "IT Act Data Accuracy Rules",
     certin_rbi: "PMLA 5-Yr Retention Override",
-    max_penalty: "₹250 Crore",
     sla: "Purpose Expiry Deletion",
     infographic_type: "erasure_flow"
   },
@@ -216,7 +204,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Art 77 Right to Lodge Complaint",
     it_act: "IT Rules 2021 Grievance Officer (15 Days)",
     certin_rbi: "RBI Banking Ombudsman (30 Days)",
-    max_penalty: "₹250 Crore",
     sla: "Mandatory Prior Channel",
     infographic_type: "grievance_flow"
   },
@@ -231,7 +218,6 @@ const BIBLE_SECTIONS = [
     gdpr: "GDPR Chapter V Transfers (SCCs/Adequacy)",
     it_act: "SPDI Rules Rule 7 Transfer",
     certin_rbi: "RBI Payment System Data Localization 2018",
-    max_penalty: "₹250 Crore",
     sla: "Blacklist Verification",
     infographic_type: "cross_border"
   },
@@ -240,24 +226,27 @@ const BIBLE_SECTIONS = [
     section: "Section 33",
     title: "Penalties",
     urn: "urn:ki:in:dpdp:act:2023:sec:33",
-    summary: "Empowers the Board to levy major financial penalties up to ₹250 crore based on the severity and nature of the non-compliance.",
+    summary: "Empowers the Data Protection Board, after an inquiry, to impose a monetary penalty for a significant breach, up to the maximum the Schedule attaches to that breach.",
     obligations: ["Review penalty risk indexes periodically during board risk audits."],
     layer: "Layer 1 (Act)",
     gdpr: "GDPR Art 83 Fines (€20M / 4% Turnover)",
     it_act: "IT Act Sec 43A Compensation Caps",
     certin_rbi: "CERT-In 1-Yr Imprisonment / Fines",
-    max_penalty: "₹250 Crore",
     sla: "Board Adjudication Order",
     infographic_type: "penalty_gauge"
   }
 ];
 
+// The Schedule to the Digital Personal Data Protection Act, 2023 [see section 33(1)].
+// "breach" and "penalty" are verbatim from the gazette; every amount is a maximum.
 const PENALTY_SCHEDULE = [
-  { violation: "Failure to take reasonable security safeguards to prevent data breach", section: "Section 8(5)", max_fine: "₹250 Crore", severity: "critical", urn: "urn:ki:in:dpdp:penalty:security-safeguards" },
-  { violation: "Failure to notify the Board and Data Principals in the event of a breach", section: "Section 8(6)", max_fine: "₹200 Crore", severity: "high", urn: "urn:ki:in:dpdp:penalty:notify-breach" },
-  { violation: "Breach of obligations in relation to children's data processing", section: "Section 9", max_fine: "₹200 Crore", severity: "high", urn: "urn:ki:in:dpdp:penalty:children-obligations" },
-  { violation: "Breach of obligations by Significant Data Fiduciary (SDF)", section: "Section 10", max_fine: "₹150 Crore", severity: "high", urn: "urn:ki:in:dpdp:penalty:sdf-obligations" },
-  { violation: "Failure of Data Principal to comply with statutory duties", section: "Section 15", max_fine: "₹10,000", severity: "low", urn: "urn:ki:in:dpdp:penalty:principal-duties" }
+  { serial: 1, provision: "s.8(5)", breach: "Breach in observing the obligation of Data Fiduciary to take reasonable security safeguards to prevent personal data breach under sub-section (5) of section 8", penalty: "May extend to two hundred and fifty crore rupees" },
+  { serial: 2, provision: "s.8(6)", breach: "Breach in observing the obligation to give the Board or affected Data Principal notice of a personal data breach under sub-section (6) of section 8", penalty: "May extend to two hundred crore rupees" },
+  { serial: 3, provision: "s.9", breach: "Breach in observance of additional obligations in relation to children under section 9", penalty: "May extend to two hundred crore rupees" },
+  { serial: 4, provision: "s.10", breach: "Breach in observance of additional obligations of Significant Data Fiduciary under section 10", penalty: "May extend to one hundred and fifty crore rupees" },
+  { serial: 5, provision: "s.15", breach: "Breach in observance of the duties under section 15", penalty: "May extend to ten thousand rupees" },
+  { serial: 6, provision: "s.32", breach: "Breach of any term of voluntary undertaking accepted by the Board under section 32", penalty: "Up to the extent applicable for the breach in respect of which the proceedings under section 28 were instituted" },
+  { serial: 7, provision: "Any other provision", breach: "Breach of any other provision of this Act or the rules made thereunder", penalty: "May extend to fifty crore rupees" }
 ];
 
 export default function Bible() {
@@ -363,8 +352,8 @@ export default function Bible() {
             </div>
             <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#EF4444" }}>₹250 Cr</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Max Penalty</div>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#EF4444" }}>{PENALTY_SCHEDULE.length}</div>
+              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Schedule Entries</div>
             </div>
           </div>
         </div>
@@ -589,17 +578,6 @@ export default function Bible() {
                               </span>
                             </div>
 
-                            {/* Penalty & Severity Gauge */}
-                            <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "10px 12px", borderRadius: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div>
-                                <div style={{ fontSize: "10px", fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>Max Statutory Fine Cap</div>
-                                <div style={{ fontSize: "16px", fontWeight: 800, color: item.max_penalty !== "N/A" ? "#991B1B" : "#14213D" }}>{item.max_penalty}</div>
-                              </div>
-                              <span style={{ fontSize: "10px", fontWeight: 800, background: item.max_penalty !== "N/A" ? "#FEF2F2" : "#F1F5F9", color: item.max_penalty !== "N/A" ? "#991B1B" : "#475569", padding: "4px 8px", borderRadius: "6px", border: item.max_penalty !== "N/A" ? "1px solid #FCA5A5" : "1px solid #CBD5E1" }}>
-                                {item.max_penalty !== "N/A" ? "HIGH SEVERITY" : "STANDARD"}
-                              </span>
-                            </div>
-
                             {/* Comparative Law Matrix */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                               <div style={{ fontSize: "11px", fontWeight: 800, color: "var(--brand-navy)", textTransform: "uppercase" }}>
@@ -652,14 +630,14 @@ export default function Bible() {
           <div style={{ padding: "16px 20px", background: "#F8FAFC", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--brand-navy)", margin: 0 }}>
-                Statutory Penalties (Schedule 1 of DPDPA 2023)
+                The Schedule — Penalties (see Section 33(1), DPDP Act 2023)
               </h3>
               <p style={{ fontSize: "12px", color: "var(--brand-slate)", margin: "2px 0 0 0" }}>
-                Financial penalty limits levied by the Data Protection Board of India for statutory breaches.
+                Penalties are imposed by the Data Protection Board of India under Section 33, after an inquiry. Every amount is a maximum: the penalty "may extend to" the figure shown, and the Board must weigh the factors in Section 33(2).
               </p>
             </div>
-            <span style={{ fontSize: "11px", fontWeight: 800, background: "#FEF2F2", color: "#991B1B", border: "1px solid #FCA5A5", padding: "4px 10px", borderRadius: "9999px" }}>
-              Max Cap: ₹250 Crore
+            <span style={{ fontSize: "11px", fontWeight: 800, background: "#F1F5F9", color: "#475569", border: "1px solid #CBD5E1", padding: "4px 10px", borderRadius: "9999px" }}>
+              {PENALTY_SCHEDULE.length} entries · as gazetted
             </span>
           </div>
 
@@ -667,39 +645,28 @@ export default function Bible() {
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
               <thead>
                 <tr style={{ background: "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)", borderBottom: "2px solid #E2E8F0" }}>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "45%" }}>Violation / Breach Description</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "15%" }}>Section</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "20%" }}>Max Fine Limit</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "12%" }}>Severity</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "8%" }}>Action</th>
+                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "6%" }}>Sl.</th>
+                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "14%" }}>Provision</th>
+                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "50%" }}>Breach of provisions of this Act or the rules made thereunder</th>
+                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "30%" }}>Penalty</th>
                 </tr>
               </thead>
               <tbody>
                 {PENALTY_SCHEDULE.map((p, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #F1F5F9", background: idx % 2 === 0 ? "#FFFFFF" : "#FAFAF8" }}>
-                    <td style={{ padding: "14px 18px", fontSize: "13px", fontWeight: 700, color: "var(--brand-navy)", lineHeight: 1.4 }}>
-                      {p.violation}
+                  <tr key={p.serial} style={{ borderBottom: "1px solid #F1F5F9", background: idx % 2 === 0 ? "#FFFFFF" : "#FAFAF8" }}>
+                    <td className="text-mono" style={{ padding: "14px 18px", fontSize: "12px", fontWeight: 700, color: "var(--brand-slate)" }}>
+                      {p.serial}.
                     </td>
                     <td style={{ padding: "14px 18px" }}>
                       <span className="text-mono" style={{ fontSize: "11px", fontWeight: 700, background: "#EFF6FF", color: "#1A4FA3", padding: "3px 8px", borderRadius: "4px", border: "1px solid #BFDBFE" }}>
-                        {p.section}
+                        {p.provision}
                       </span>
                     </td>
-                    <td style={{ padding: "14px 18px" }}>
-                      <span style={{ fontSize: "13px", fontWeight: 800, color: p.severity === "critical" ? "#991B1B" : "#92400E", background: p.severity === "critical" ? "#FEF2F2" : "#FFF7ED", border: p.severity === "critical" ? "1px solid #FCA5A5" : "1px solid #FDBA74", padding: "4px 10px", borderRadius: "6px" }}>
-                        {p.max_fine}
-                      </span>
+                    <td style={{ padding: "14px 18px", fontSize: "13px", fontWeight: 600, color: "var(--brand-navy)", lineHeight: 1.45 }}>
+                      {p.breach}
                     </td>
-                    <td style={{ padding: "14px 18px" }}>
-                      <PriorityBadge priority={p.severity} />
-                    </td>
-                    <td style={{ padding: "14px 18px" }}>
-                      <button
-                        onClick={() => handleCopyUrn(p.urn)}
-                        style={{ fontSize: "11px", fontWeight: 700, color: "#1A4FA3", background: "none", border: "none", cursor: "pointer" }}
-                      >
-                        {copiedUrn === p.urn ? "Copied! ✓" : "Copy URN"}
-                      </button>
+                    <td style={{ padding: "14px 18px", fontSize: "13px", fontWeight: 700, color: "#7C2D12", lineHeight: 1.45 }}>
+                      {p.penalty}
                     </td>
                   </tr>
                 ))}

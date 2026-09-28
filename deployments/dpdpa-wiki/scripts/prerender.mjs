@@ -27,6 +27,8 @@ const { render, publicRoutes, headFor } = await import(
 );
 
 const routes = publicRoutes();
+const SITE = "https://dpdpa.wiki";
+const today = new Date().toISOString().slice(0, 10);
 let written = 0;
 
 for (const route of routes) {
@@ -49,7 +51,8 @@ for (const route of routes) {
       .replace(/\n?\s*<title>[\s\S]*?<\/title>/, "")
       .replace(/\n?\s*<meta name="description"[^>]*>/, "")
       .replace(/\n?\s*<link rel="canonical"[^>]*>/, "")
-      .replace(/\n?\s*<meta property="og:(type|title|description|url)"[^>]*>/g, "")
+      .replace(/\n?\s*<meta property="og:(type|title|description|url|image)"[^>]*>/g, "")
+      .replace(/\n?\s*<meta name="twitter:card"[^>]*>/, "")
       .replace("</head>", `  ${head}\n  </head>`);
   }
 
@@ -66,4 +69,45 @@ for (const route of routes) {
   written++;
 }
 
-console.log(`\n  ${written}/${routes.length} routes prerendered`);
+// ── sitemap.xml: every public route, lastmod = build date ──
+const sitemap = [
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+  ...routes.map((r) => `  <url><loc>${SITE}${r === "/" ? "/" : r}</loc><lastmod>${today}</lastmod></url>`),
+  "</urlset>",
+  ""
+].join("\n");
+fs.writeFileSync(path.join(dist, "sitemap.xml"), sitemap);
+
+// ── 404.html: a real not-found page with a 404 status from the host ──
+// Rendered from the /404 route (App maps it and the catch-all to NotFound).
+try {
+  const html404 = render("/404");
+  const head404 = headFor("/404") || [
+    "<title>Page not found | dpdpa.wiki</title>",
+    '<meta name="robots" content="noindex" />',
+    `<link rel="canonical" href="${SITE}/404" />`
+  ].join("\n    ");
+  let doc = template.replace('<div id="root"></div>', `<div id="root">${html404}</div>`);
+  doc = doc
+    .replace(/\n?\s*<title>[\s\S]*?<\/title>/, "")
+    .replace(/\n?\s*<meta name="description"[^>]*>/, "")
+    .replace(/\n?\s*<link rel="canonical"[^>]*>/, "")
+    .replace(/\n?\s*<meta name="robots"[^>]*>/, "")
+    .replace(/\n?\s*<meta property="og:(type|title|description|url)"[^>]*>/g, "")
+    .replace("</head>", `  ${head404}\n  </head>`);
+  fs.writeFileSync(path.join(dist, "404.html"), doc);
+  console.log(`  ✓ ${"/404 → 404.html".padEnd(42)} ${String(html404.length).padStart(7)} bytes`);
+} catch (err) {
+  console.warn(`  ! 404.html not written — ${err.message}`);
+}
+
+// ── /workspace/index.html: the SPA document for the founder's workspace, noindex ──
+{
+  const wsDir = path.join(dist, "workspace");
+  fs.mkdirSync(wsDir, { recursive: true });
+  const ws = template.replace("</head>", '  <meta name="robots" content="noindex, nofollow" />\n  </head>');
+  fs.writeFileSync(path.join(wsDir, "index.html"), ws);
+}
+
+console.log(`\n  ${written}/${routes.length} routes prerendered · sitemap.xml (${routes.length} urls) · 404.html · workspace/index.html`);

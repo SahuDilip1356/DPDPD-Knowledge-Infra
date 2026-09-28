@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
 import { supabase } from "../../data/supabaseClient";
 import {
@@ -22,7 +22,7 @@ function SubscribeForm({ intent = "checklist", score = null, compact = false }) 
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       setState("error");
-      setMessage("Enter an email address we can send the checklist to.");
+      setMessage("Enter a valid email address.");
       return;
     }
 
@@ -50,7 +50,7 @@ function SubscribeForm({ intent = "checklist", score = null, compact = false }) 
     }
 
     setState("done");
-    setMessage("Check your inbox — the checklist is on its way.");
+    setMessage("You're on the list.");
   };
 
   if (state === "done") {
@@ -173,15 +173,8 @@ function Assessment() {
 
 /* ── Page ───────────────────────────────────────────────────────────── */
 export default function Home() {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState("");
-
-  // Search intent belongs to the grounded Q&A surface, not a new engine.
-  const search = (e) => {
-    e.preventDefault();
-    const q = query.trim();
-    navigate(q ? `/ask?q=${encodeURIComponent(q)}` : "/ask");
-  };
+  // The hero search used to hand off to Ask Intelligence, which is not
+  // public this cycle (spec NG2); the provision index is the way in.
 
   // FAQPage structured data is emitted into the HTML by the prerender step
   // (see lib/seo.js), so it is present before any script runs. Injecting it
@@ -203,18 +196,6 @@ export default function Home() {
             </Link>
           </div>
 
-          <form className="hero-search" onSubmit={search} role="search">
-            <label className="sr-only" htmlFor="hero-q">Search the DPDP Act</label>
-            <input
-              id="hero-q"
-              className="hero-search-input"
-              type="search"
-              placeholder={HERO.searchPlaceholder}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button className="hero-search-btn" type="submit">Search</button>
-          </form>
         </div>
       </section>
 

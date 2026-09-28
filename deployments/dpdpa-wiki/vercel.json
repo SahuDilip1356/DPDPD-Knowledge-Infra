@@ -1,5 +1,22 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/today", "destination": "/workspace/today", "permanent": true },
+    { "source": "/infographic", "destination": "/workspace/infographic", "permanent": true },
+    { "source": "/changes", "destination": "/workspace/changes", "permanent": true },
+    { "source": "/changes/:id", "destination": "/workspace/changes/:id", "permanent": true },
+    { "source": "/knowledge", "destination": "/workspace/knowledge", "permanent": true },
+    { "source": "/actions", "destination": "/workspace/actions", "permanent": true },
+    { "source": "/factory", "destination": "/workspace/factory", "permanent": true },
+    { "source": "/ask", "destination": "/workspace/ask", "permanent": true },
+    { "source": "/bible", "destination": "/act", "permanent": true },
+    { "source": "/admin", "destination": "/workspace/admin", "permanent": true }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/workspace/:path*", "destination": "/workspace/index.html" }
+  ],
+  "headers": [
+    { "source": "/workspace/:path*", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
   ]
 }

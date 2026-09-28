@@ -25,7 +25,7 @@ export default function ChangeWorkspace() {
     return (
       <div className="card text-center" style={{ padding: "var(--space-12)" }}>
         <h3>Event not found</h3>
-        <button className="btn btn-primary" onClick={() => navigate("/changes")} style={{ marginTop: "var(--space-4)" }}>
+        <button className="btn btn-primary" onClick={() => navigate("/workspace/changes")} style={{ marginTop: "var(--space-4)" }}>
           Back to Changes
         </button>
       </div>
@@ -63,7 +63,7 @@ export default function ChangeWorkspace() {
     <div className="change-workspace flex flex-col gap-6">
       {/* ── Breadcrumb ── */}
       <div className="text-small">
-        <span style={{ cursor: "pointer", color: "var(--text-link)" }} onClick={() => navigate("/changes")}>
+        <span style={{ cursor: "pointer", color: "var(--text-link)" }} onClick={() => navigate("/workspace/changes")}>
           Regulatory Changes
         </span>{" "}
         / {event.title.substring(0, 40)}...

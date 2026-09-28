@@ -26,6 +26,8 @@
   background: var(--ivory);
   color: var(--body);
   font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .pub-container {
@@ -112,6 +114,27 @@
   border-bottom: 1px solid transparent;
 }
 .pub-nav a:hover { color: var(--ink); border-bottom-color: var(--saffron); text-decoration: none; }
+.pub-nav .pub-nav-cta { color: var(--saffron); font-weight: 600; }
+
+.pub-menu-btn {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  min-width: 44px;
+  margin-inline-start: auto;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.pub-menu-icon { display: inline-flex; flex-direction: column; gap: 4px; width: 18px; }
+.pub-menu-icon span { display: block; height: 2px; background: currentColor; border-radius: 1px; }
 
 /* ── Hero ────────────────────────────────────────────────────────── */
 .hero {
@@ -471,7 +494,27 @@
 
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .pub-nav { display: none; }
+  .pub-menu-btn { display: inline-flex; }
+  .pub-nav {
+    display: none;
+    position: absolute;
+    left: 0; right: 0; top: 68px;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 8px clamp(20px, 5vw, 40px) 16px;
+    background: var(--ivory);
+    border-bottom: 1px solid var(--rule);
+  }
+  .pub-nav.is-open { display: flex; }
+  .pub-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .pub-nav a:last-child { border-bottom-color: transparent; }
   .pub-footer-inner { grid-template-columns: 1fr; }
   .resource { border-right: none; }
 }

@@ -15,7 +15,7 @@ export const HERO = {
   subtitle:
     "Every obligation traced to its section, every answer carrying its citation. Built for the people who have to act on the law, not only read it.",
   primaryCta: { label: "Get the compliance checklist", intent: "checklist" },
-  secondaryCta: { label: "Explore the Act", href: "/bible" },
+  secondaryCta: { label: "Read the Act", href: "/act" },
   searchPlaceholder: "Search the DPDP Act, rules, and guidance"
 };
 
@@ -25,29 +25,29 @@ export const JOURNEYS = [
     id: "founder",
     label: "Founders",
     lede: "You need to know what applies to you and what it costs to get wrong.",
-    firstStep: "Start with what counts as personal data in your business",
-    href: "/knowledge"
+    firstStep: "Start with who the Act applies to",
+    href: "/act/section-3"
   },
   {
     id: "legal",
     label: "Legal teams",
     lede: "You need the text, its amendments, and what supersedes what.",
-    firstStep: "Read the Act with its rules and gazette history",
-    href: "/bible"
+    firstStep: "Read the Act and the Rules, section by section",
+    href: "/act"
   },
   {
     id: "product",
     label: "Product teams",
     lede: "You need consent and notice that hold up in a real user flow.",
-    firstStep: "See what a compliant notice has to contain",
-    href: "/actions"
+    firstStep: "See what a notice has to contain",
+    href: "/act/section-5"
   },
   {
     id: "developer",
     label: "Developers",
     lede: "You need retention, access control, and breach handling in code.",
-    firstStep: "Review the technical obligations by section",
-    href: "/knowledge"
+    firstStep: "Review the obligations of a Data Fiduciary",
+    href: "/act/section-8"
   }
 ];
 
@@ -55,39 +55,39 @@ export const JOURNEYS = [
 export const RESOURCES = [
   {
     title: "The Act",
-    description: "The full text of the DPDP Act 2023, section by section, with the 2025 Rules alongside.",
-    meta: "44 sections",
-    href: "/bible"
+    description: "The full text of the DPDP Act 2023, section by section, in the gazette's words, with the date each provision applies from.",
+    meta: "44 sections + Schedule",
+    href: "/act"
   },
   {
     title: "Definitions",
     description: "Data Principal, Data Fiduciary, Significant Data Fiduciary, Consent Manager — who each term binds.",
-    meta: "23 defined terms",
-    href: "/knowledge"
+    meta: "32 defined terms",
+    href: "/glossary"
   },
   {
     title: "Obligations",
     description: "What a Data Fiduciary must do: notice, consent, purpose limitation, retention, security safeguards.",
-    meta: "By section",
-    href: "/knowledge"
+    meta: "Section 8",
+    href: "/act/section-8"
   },
   {
     title: "Rights",
     description: "Access, correction, erasure, grievance redressal, and nomination — and the timelines attached.",
     meta: "Sections 11–15",
-    href: "/knowledge"
+    href: "/act/section-11"
   },
   {
-    title: "Templates",
-    description: "Consent notices, retention schedules, DSAR workflows, and a processing register you can adapt.",
-    meta: "Operational",
-    href: "/actions"
+    title: "The Rules",
+    description: "The DPDP Rules 2025: notice, consent managers, security safeguards, breach intimation, retention periods, and the Board.",
+    meta: "23 rules + 7 schedules",
+    href: "/rules"
   },
   {
     title: "Breach response",
     description: "What to do in the first 72 hours, who to notify, and what the Board expects on record.",
-    meta: "₹200 crore exposure",
-    href: "/actions"
+    meta: "Rule 7 · up to ₹200 crore",
+    href: "/rules/rule-7"
   }
 ];
 
@@ -190,7 +190,7 @@ export const FAQ = [
   },
   {
     q: "When do the DPDP Rules come into force?",
-    a: "The Act received assent in August 2023 and is being brought into force in stages through notification. The Rules published in 2025 set out the operational detail — consent manager registration, breach intimation, and verifiable consent for children. Check the changes feed for the current commencement position."
+    a: "The Rules were notified on 13 November 2025. Rules 1, 2 and 17 to 21 (definitions and the Data Protection Board) apply from that date; Rule 4 (Consent Manager registration) from 13 November 2026; the remaining rules, including notice, security safeguards, breach intimation and children's consent, from 13 May 2027. Each rule page shows its own date."
   },
   {
     q: "Do I need a Data Protection Officer?",
@@ -213,8 +213,8 @@ export const TRUST = {
 
 export const CAPTURE = {
   title: "Get the DPDP compliance checklist",
-  body: "A working checklist covering notice, consent, retention, rights, and breach response. No sales sequence — you can unsubscribe from the first email.",
+  body: "A working checklist covering notice, consent, retention, rights, and breach response. No sales sequence.",
   placeholder: "you@company.com",
-  cta: "Send me the checklist",
-  reassurance: "One email with the checklist. Regulatory updates only if you ask for them."
+  cta: "Add me to the list",
+  reassurance: "We email the checklist when it is ready, and nothing else unless you ask."
 };

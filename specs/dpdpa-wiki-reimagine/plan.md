@@ -1,6 +1,6 @@
 # Plan — dpdpa.wiki reimagined
 
-**Status:** draft
+**Status:** in progress — phase 1 (gate 1) started 2026-09-28
 **Spec:** ./spec.md
 **Date:** 2026-09-27
 
@@ -43,6 +43,7 @@ for the founder but is unlinked and `noindex`.
 ## Tasks
 
 ### T1 — Add Vitest and a build-output test harness
+- status: done (2026-09-28)
 - implements: AC13
 - depends_on: none
 - files: deployments/dpdpa-wiki/package.json, deployments/dpdpa-wiki/vitest.config.js,
@@ -55,6 +56,7 @@ for the founder but is unlinked and `noindex`.
          `"test": "vitest run"` to scripts.
 
 ### T2 — Sync verified law into the wiki as data
+- status: done (2026-09-28)
 - implements: AC1, AC3
 - depends_on: none
 - files: deployments/dpdpa-wiki/scripts/sync-law.mjs, deployments/dpdpa-wiki/src/data/law/provisions.json,
@@ -71,6 +73,7 @@ for the founder but is unlinked and `noindex`.
          informed, unconditional and unambiguous".
 
 ### T3 — Attach canonical questions to provisions
+- status: done (2026-09-28)
 - implements: AC1
 - depends_on: T2
 - files: deployments/dpdpa-wiki/scripts/sync-law.mjs, deployments/dpdpa-wiki/src/data/law/provisions.json,
@@ -84,6 +87,7 @@ for the founder but is unlinked and `noindex`.
          S6 has ≥ 5 questions.
 
 ### T4 — Provision pages, index pages and the Act Schedule
+- status: done (2026-09-28)
 - implements: AC1, AC3, AC4, AC13
 - depends_on: T1, T2
 - files: deployments/dpdpa-wiki/src/lib/law.js, deployments/dpdpa-wiki/src/components/screens/Provision.jsx,
@@ -100,6 +104,7 @@ for the founder but is unlinked and `noindex`.
          `/act/schedule` lists 7 rows.
 
 ### T5 — Register provision routes for prerender + head tags
+- status: done (2026-09-28)
 - implements: AC13
 - depends_on: T4
 - files: deployments/dpdpa-wiki/src/lib/seo.js, deployments/dpdpa-wiki/tests/provision-seo.test.js
@@ -112,6 +117,7 @@ for the founder but is unlinked and `noindex`.
          `/act/section-6` and `/rules/rule-7`.
 
 ### T6 — Citation guard for notes and lessons
+- status: done (2026-09-28)
 - implements: AC2, AC6
 - depends_on: T2
 - files: deployments/dpdpa-wiki/src/lib/citations.js, deployments/dpdpa-wiki/scripts/check-citations.mjs,
@@ -126,6 +132,7 @@ for the founder but is unlinked and `noindex`.
          passing note, a note citing an unknown label, a lesson citing outside its module.
 
 ### T7 — Glossary from Section 2 and Rule 2
+- status: done (2026-09-28)
 - implements: AC19, AC13
 - depends_on: T4, T6
 - files: deployments/dpdpa-wiki/scripts/sync-law.mjs, deployments/dpdpa-wiki/src/data/law/glossary.json,
@@ -140,6 +147,7 @@ for the founder but is unlinked and `noindex`.
          matches; `/glossary/data-fiduciary` exists and emits `DefinedTerm`.
 
 ### T8 — Trust cleanup of the existing public and workspace pages
+- status: done (2026-09-28)
 - implements: AC10, AC11, AC9
 - depends_on: none
 - files: deployments/dpdpa-wiki/src/components/screens/CommandCenter.jsx,
@@ -156,6 +164,7 @@ for the founder but is unlinked and `noindex`.
          and asserts none appear. Do not touch `mockData.js` here (T9).
 
 ### T9 — Remove fabricated legal items from sample data
+- status: done (2026-09-28)
 - implements: AC10
 - depends_on: none
 - files: deployments/dpdpa-wiki/src/data/mockData.js, deployments/dpdpa-wiki/tests/mockdata.test.js
@@ -170,6 +179,7 @@ for the founder but is unlinked and `noindex`.
          titles remain.
 
 ### T10 — Move the workspace off public navigation and behind /workspace
+- status: done (2026-09-28)
 - implements: AC9, AC14
 - depends_on: T8
 - files: deployments/dpdpa-wiki/src/App.jsx, deployments/dpdpa-wiki/src/components/marketing/PublicShell.jsx,
@@ -185,6 +195,7 @@ for the founder but is unlinked and `noindex`.
          links to a workspace path; workspace HTML has noindex.
 
 ### T11 — Real 404, sitemap.xml, robots.txt, og:image
+- status: done (2026-09-28)
 - implements: AC13, AC14, AC15
 - depends_on: T5
 - files: deployments/dpdpa-wiki/scripts/prerender.mjs, deployments/dpdpa-wiki/public/robots.txt,
@@ -311,6 +322,7 @@ for the founder but is unlinked and `noindex`.
          applicability terminals link to `/act/section-3`.
 
 ### T17 — Mobile navigation and responsive public pages
+- status: done (2026-09-28)
 - implements: AC16, AC18
 - depends_on: T10
 - files: deployments/dpdpa-wiki/src/components/marketing/PublicShell.jsx, deployments/dpdpa-wiki/src/styles/home.css,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import "./styles/design-tokens.css";
 import "./styles/global.css";
 import "./styles/components.css";
@@ -13,6 +13,9 @@ import { supabase } from "./data/supabaseClient";
 import Home from "./components/screens/Home";
 import GuideIndex from "./components/screens/GuideIndex";
 import Guide from "./components/screens/Guide";
+import Provision from "./components/screens/Provision";
+import ProvisionIndex from "./components/screens/ProvisionIndex";
+import GlossaryEntry, { GlossaryIndex } from "./components/screens/Glossary";
 import CommandCenter from "./components/screens/CommandCenter";
 import InfographicDashboard from "./components/screens/InfographicDashboard";
 import ChangesFeed from "./components/screens/ChangesFeed";
@@ -23,8 +26,14 @@ import FactoryBoard from "./components/screens/FactoryBoard";
 import AskIntelligence from "./components/screens/AskIntelligence";
 import AdminAudit from "./components/screens/AdminAudit";
 import Bible from "./components/screens/Bible";
+import NotFound from "./components/screens/NotFound";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+function LegacyChange() {
+  const { id } = useParams();
+  return <Navigate to={`/workspace/changes/${id}`} replace />;
+}
 
 function CourseRedirect() {
   React.useEffect(() => {
@@ -129,27 +138,44 @@ export default function App({ Router = BrowserRouter, routerProps = {} }) {
         <Route path="/" element={<Home />} />
         <Route path="/guide" element={<GuideIndex />} />
         <Route path="/guide/:slug" element={<Guide />} />
+        <Route path="/act" element={<ProvisionIndex doc="act" />} />
+        <Route path="/act/:slug" element={<Provision />} />
+        <Route path="/rules" element={<ProvisionIndex doc="rules" />} />
+        <Route path="/rules/:slug" element={<Provision />} />
+        <Route path="/glossary" element={<GlossaryIndex />} />
+        <Route path="/glossary/:slug" element={<GlossaryEntry />} />
 
-        {/* Workspace */}
-        <Route path="/today" element={workspace(<CommandCenter />)} />
-        <Route path="/course" element={<CourseRedirect />} />
-        <Route path="/infographic" element={workspace(<InfographicDashboard />)} />
-        <Route path="/changes" element={workspace(<ChangesFeed />)} />
-        <Route path="/changes/:id" element={workspace(<ChangeWorkspace />)} />
-        <Route path="/knowledge" element={workspace(<KnowledgeExplorer />)} />
-        <Route path="/actions" element={workspace(<DecisionsActions user={user} />)} />
-        <Route path="/factory" element={workspace(
+        {/* Workspace — the founder's working surface. Reached by URL only,
+            never from public navigation, and served with noindex (spec AC9, AC14). */}
+        <Route path="/workspace" element={<Navigate to="/workspace/today" replace />} />
+        <Route path="/workspace/today" element={workspace(<CommandCenter />)} />
+        <Route path="/workspace/course" element={<CourseRedirect />} />
+        <Route path="/workspace/infographic" element={workspace(<InfographicDashboard />)} />
+        <Route path="/workspace/changes" element={workspace(<ChangesFeed />)} />
+        <Route path="/workspace/changes/:id" element={workspace(<ChangeWorkspace />)} />
+        <Route path="/workspace/knowledge" element={workspace(<KnowledgeExplorer />)} />
+        <Route path="/workspace/actions" element={workspace(<DecisionsActions user={user} />)} />
+        <Route path="/workspace/factory" element={workspace(
           <FactoryBoard user={user} onSignInClick={() => setAuthModalOpen(true)} />
         )} />
-        <Route path="/ask" element={workspace(
+        <Route path="/workspace/ask" element={workspace(
           <AskIntelligence apiOnline={apiOnline} apiBaseUrl={API_BASE_URL} />
         )} />
-        <Route path="/bible" element={workspace(<Bible />)} />
-        <Route path="/admin" element={workspace(<AdminAudit />)} />
+        <Route path="/workspace/bible" element={workspace(<Bible />)} />
+        <Route path="/workspace/admin" element={workspace(<AdminAudit />)} />
 
-        {/* Unknown paths land on the homepage rather than the workspace, so a
-            stale inbound link still gives a stranger somewhere to start. */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Old workspace paths keep working for anyone who bookmarked them. */}
+        {["today", "course", "infographic", "changes", "knowledge", "actions", "factory", "ask", "admin"].map((p) => (
+          <Route key={p} path={`/${p}`} element={<Navigate to={`/workspace/${p}`} replace />} />
+        ))}
+        <Route path="/changes/:id" element={<LegacyChange />} />
+        <Route path="/bible" element={<Navigate to="/act" replace />} />
+
+        {/* A real not-found page. The host serves dist/404.html with status 404
+            for unknown paths; this route covers client-side navigation and the
+            prerender of that file. */}
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
