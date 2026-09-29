@@ -519,9 +519,70 @@ def rollback():
     print(f"rollback: removed {len(urns)} KOs, their edges, and their vectors")
 
 
+# ---------------------------------------------------------------- revise
+def revise(dry_run: bool):
+    """Publish a new version of every primary provision KO whose gazette text changed.
+
+    The Knowledge Constitution never overwrites: the live version is closed
+    (system_time_end set) and version n+1 is inserted beside it, with its graph
+    edges copied to the new version. The vector index keeps one vector per URN,
+    so it is re-embedded from the new text.
+    """
+    from datetime import datetime, timezone
+    from supabase import create_client
+    law, _ = load_law()
+    client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
+    urns = {provision_urn(label): label for label in law}
+    live = []
+    for chunk in [list(urns)[i:i + 50] for i in range(0, len(urns), 50)]:
+        live += client.table("knowledge_objects").select("*").in_("urn", chunk).is_("system_time_end", "null").execute().data
+    changed = []
+    for row in live:
+        label = urns[row["urn"]]
+        text = law[label]["text"]
+        if (row.get("body") or {}).get("full_text") == text:
+            continue
+        new = {k: v for k, v in row.items() if k not in ("system_time_start", "system_time_end")}
+        new["version"] = row["version"] + 1
+        new["summary"] = text[:1500] + (" …" if len(text) > 1500 else "")
+        new["body"] = {**(row.get("body") or {}), "full_text": text}
+        new["evidence"] = [evidence_item(label, text[:300], law, 1)]
+        changed.append((row, new))
+    print(f"revise: {len(live)} live provision KOs, {len(changed)} with changed gazette text")
+    for old, new in changed:
+        print(f"  {old['urn']}  v{old['version']} -> v{new['version']}")
+    if dry_run or not changed:
+        return
+
+    now = datetime.now(timezone.utc).isoformat()
+    for old, new in changed:
+        new["system_time_start"] = now
+        client.table("knowledge_objects").insert(new).execute()
+        client.table("knowledge_objects").update({"system_time_end": now}) \
+            .eq("urn", old["urn"]).eq("version", old["version"]).execute()
+        edges = client.table("graph_edges").select("*").eq("source_urn", old["urn"]).eq("source_version", old["version"]).execute().data
+        if edges:
+            client.table("graph_edges").insert([
+                {"source_urn": e["source_urn"], "source_version": new["version"],
+                 "target_urn": e["target_urn"], "edge_type": e["edge_type"]} for e in edges]).execute()
+    print(f"revise: supabase ok — {len(changed)} new versions, previous versions closed at {now}")
+
+    kos = [new for _, new in changed]
+    texts = [f"Title: {k['title']}. Type: {k['type']}. Summary: {k['summary']}. "
+             f"Entities: {', '.join(k['body'].get('entities', []))}" for k in kos]
+    vectors = embed(texts)
+    host = pinecone_host()
+    headers = {"Api-Key": os.getenv("PINECONE_API_KEY"), "Content-Type": "application/json"}
+    batch = [{"id": k["urn"], "values": vectors[i].tolist(),
+              "metadata": {"title": k["title"], "type": k["type"], "version": k["version"],
+                           "summary": k["summary"][:2000]}} for i, k in enumerate(kos)]
+    requests.post(f"https://{host}/vectors/upsert", headers=headers, json={"vectors": batch}, timeout=60).raise_for_status()
+    print(f"revise: pinecone ok — {len(kos)} vectors re-embedded")
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("step", choices=["primary", "answers", "dedup", "push", "rollback"])
+    parser.add_argument("step", choices=["primary", "answers", "dedup", "push", "rollback", "revise"])
     parser.add_argument("--limit", type=int, default=DEFAULT_ANSWERS)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -529,7 +590,8 @@ def main():
      "answers": lambda: build_answers(args.limit),
      "dedup": dedup_answers,
      "push": lambda: push(args.dry_run),
-     "rollback": rollback}[args.step]()
+     "rollback": rollback,
+     "revise": lambda: revise(args.dry_run)}[args.step]()
 
 
 if __name__ == "__main__":
