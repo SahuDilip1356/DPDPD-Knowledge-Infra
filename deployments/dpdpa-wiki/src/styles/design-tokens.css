@@ -175,8 +175,8 @@
   --gradient-accent:  linear-gradient(90deg, #1A4FA3 0%, #138808 50%, #FF9933 100%);
 
   /* ── Layout ───────────────────────────────────────────────────── */
-  --nav-width:          240px;
-  --nav-collapsed:      72px;
+  --nav-width:          270px;
+  --nav-collapsed:      84px;
   --topbar-height:      56px;
   --content-max:        1600px;
   --reading-max:        880px;

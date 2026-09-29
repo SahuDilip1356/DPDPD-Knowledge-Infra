@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../data/supabaseClient";
 import { REGULATORY_EVENTS } from "../../data/mockData";
-import { StatusBadge, PriorityBadge, ImpactBadge } from "../ui/SharedComponents";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
+import { StatusBadge, ImpactBadge } from "../ui/SharedComponents";
 
 
 export default function ChangesFeed() {
@@ -30,9 +31,9 @@ export default function ChangesFeed() {
           }
         }
       } catch (err) {
-        console.warn("Supabase load failed, falling back to mockData.js:", err);
+        console.warn("Supabase changes load failed:", err);
       }
-      setEvents(REGULATORY_EVENTS);
+      setEvents(MOCKS_ENABLED ? REGULATORY_EVENTS : []);
       setLoading(false);
     };
 

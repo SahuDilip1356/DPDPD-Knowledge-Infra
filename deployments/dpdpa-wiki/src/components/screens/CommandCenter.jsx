@@ -1,16 +1,20 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { REGULATORY_EVENTS, ACTION_ITEMS, PIPELINE_ITEMS } from "../../data/mockData";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import { MetricCard, StatusBadge, PriorityBadge, ImpactBadge } from "../ui/SharedComponents";
 
 export default function CommandCenter() {
   const navigate = useNavigate();
+  const regulatoryEvents = MOCKS_ENABLED ? REGULATORY_EVENTS : [];
+  const actionItems = MOCKS_ENABLED ? ACTION_ITEMS : [];
+  const pipelineItems = MOCKS_ENABLED ? PIPELINE_ITEMS : [];
 
   // Compute metrics
-  const activeEventsCount = REGULATORY_EVENTS.filter(e => e.status === "active").length;
-  const criticalActionsCount = ACTION_ITEMS.filter(a => a.priority === "critical" && a.status !== "completed").length;
-  const pendingReviewCount = PIPELINE_ITEMS.length;
-  const unresolvedConflictsCount = 1;
+  const activeEventsCount = regulatoryEvents.filter(e => e.status === "active").length;
+  const criticalActionsCount = actionItems.filter(a => a.priority === "critical" && a.status !== "completed").length;
+  const pendingReviewCount = pipelineItems.length;
+  const unresolvedConflictsCount = MOCKS_ENABLED ? 1 : 0;
 
   const handleMetricClick = (path) => {
     navigate(path);
@@ -34,7 +38,7 @@ export default function CommandCenter() {
       >
         {/* Monospace statutory watermark */}
         <div style={{ position: "absolute", right: "20px", top: "15px", fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
-          DPDP.ACT.2023 // GAZETTE.NO.44 // MEITY.FEED.LIVE
+          DPDP.ACT.2023 // GAZETTE.NO.44 // OPERATOR.WORKSPACE
         </div>
 
         <div className="flex flex-col gap-2" style={{ maxWidth: "820px" }}>
@@ -43,10 +47,10 @@ export default function CommandCenter() {
               🇮🇳 GAZETTE OF INDIA · DPDP ACT 2023
             </span>
             <span style={{ background: "rgba(59, 130, 246, 0.15)", border: "1px solid #3B82F6", color: "#93C5FD", padding: "3px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
-              Live Knowledge Graph v1.0
+              {MOCKS_ENABLED ? "Local fixture data" : "Live workspace integration pending"}
             </span>
             <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", fontFamily: "monospace" }}>
-              UPDATED DAILY
+              {MOCKS_ENABLED ? "DEVELOPMENT ONLY" : "NO FABRICATED METRICS"}
             </span>
           </div>
 
@@ -200,7 +204,7 @@ export default function CommandCenter() {
                   </tr>
                 </thead>
                 <tbody>
-                  {REGULATORY_EVENTS.slice(0, 3).map((event) => {
+                  {regulatoryEvents.slice(0, 3).map((event) => {
                     const formattedDate = event.date_effective 
                       ? new Date(event.date_effective).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                       : null;
@@ -274,7 +278,7 @@ export default function CommandCenter() {
             </div>
             
             <div className="attention-list flex flex-col gap-3">
-              {ACTION_ITEMS.filter(a => a.status === "proposed" || a.priority === "critical").map((action) => (
+              {actionItems.filter(a => a.status === "proposed" || a.priority === "critical").map((action) => (
                 <div 
                   key={action.id} 
                   className="attention-item card card-compact card-interactive flex items-center justify-between"
@@ -310,7 +314,7 @@ export default function CommandCenter() {
             </div>
             
             <div className="pipeline-stats flex flex-col gap-3">
-              {PIPELINE_ITEMS.map((item) => (
+              {pipelineItems.map((item) => (
                 <div key={item.id} className="pipeline-mini-card" style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex justify-between items-center" style={{ marginBottom: "4px" }}>
                     <span style={{ fontWeight: 600, fontSize: "13px", color: "var(--brand-navy)" }} className="truncate">{item.title}</span>
@@ -350,4 +354,3 @@ export default function CommandCenter() {
     </div>
   );
 }
-

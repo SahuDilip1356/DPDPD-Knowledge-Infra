@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { CitationCard, EmptyState, StatusBadge } from "../ui/SharedComponents";
+import { CitationCard, StatusBadge } from "../ui/SharedComponents";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 
-export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http://localhost:8000" }) {
+export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "" }) {
   const [messages, setMessages] = useState([
     {
       id: "msg-0",
@@ -76,12 +77,25 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
             suggestedNextSteps: data.grounded ? ["Explore impacted business actions", "Verify citation coordinates"] : ["Try relaxing scope filters"]
           },
         ]);
-      } else {
-        // Handle mock reasoning response
+      } else if (MOCKS_ENABLED) {
+        // Explicit local-development fixture mode; never included in production behavior.
         setTimeout(() => {
           const res = resolveMockQuery(userText);
           setMessages((prev) => [...prev, { ...res, id: `msg-system-${Date.now()}` }]);
         }, 800);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-system-${Date.now()}`,
+            sender: "system",
+            text: "The reasoning service is currently unavailable. No answer was generated.",
+            grounded: false,
+            citations: [],
+            qualifications: "Service unavailable.",
+            suggestedNextSteps: ["Try again after the API connection is restored"]
+          },
+        ]);
       }
     } catch (err) {
       setMessages((prev) => [
@@ -89,10 +103,10 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
         {
           id: `msg-system-${Date.now()}`,
           sender: "system",
-          text: `Error connecting to reasoning engine: ${err.message}. Showing local sandbox response instead.`,
+          text: `Error connecting to reasoning engine: ${err.message}. No answer was generated.`,
           grounded: false,
           citations: [],
-          qualifications: "Offline Sandbox Fallback.",
+          qualifications: "Service unavailable.",
           suggestedNextSteps: ["Check API connection"]
         },
       ]);
@@ -134,13 +148,13 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
           {/* Telemetry metrics */}
           <div style={{ display: "flex", gap: "16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", padding: "12px 20px", borderRadius: "12px" }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#34D399" }}>100%</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Grounded</div>
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "#34D399" }}>Required</div>
+              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Citations</div>
             </div>
             <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#60A5FA" }}>0.0%</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Hallucination</div>
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "#60A5FA" }}>Active</div>
+              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Guardrails</div>
             </div>
             <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
             <div style={{ textAlign: "center" }}>

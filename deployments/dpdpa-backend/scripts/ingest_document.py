@@ -11,8 +11,8 @@ import sys
 import argparse
 from dotenv import load_dotenv
 
-# Ensure local imports work
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# Ensure the deployable backend root is importable when invoked as a script.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.storage.db_client import DatabaseClient
 from src.storage.git_ledger import GitLedger

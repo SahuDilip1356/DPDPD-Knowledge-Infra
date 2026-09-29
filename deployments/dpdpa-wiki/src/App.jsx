@@ -8,6 +8,7 @@ import AppShell from "./components/AppShell";
 import SearchOverlay from "./components/ui/SearchOverlay";
 import AuthModal from "./components/ui/AuthModal";
 import { supabase } from "./data/supabaseClient";
+import { API_BASE_URL, API_CONFIGURED, apiFetch } from "./lib/api";
 
 // Screens
 import Home from "./components/screens/Home";
@@ -23,8 +24,10 @@ import FactoryBoard from "./components/screens/FactoryBoard";
 import AskIntelligence from "./components/screens/AskIntelligence";
 import AdminAudit from "./components/screens/AdminAudit";
 import Bible from "./components/screens/Bible";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+import Acts from "./components/screens/Acts";
+import Rules from "./components/screens/Rules";
+import Interpretations from "./components/screens/Interpretations";
+import Discussions from "./components/screens/Discussions";
 
 function CourseRedirect() {
   React.useEffect(() => {
@@ -52,14 +55,19 @@ export default function App({ Router = BrowserRouter, routerProps = {} }) {
   // Check API health status
   useEffect(() => {
     const checkHealth = async () => {
+      if (!API_CONFIGURED) {
+        setApiOnline(false);
+        setLoadingHealth(false);
+        return;
+      }
       try {
-        const response = await fetch(`${API_BASE_URL}/health`, { method: "GET" });
+        const response = await apiFetch("/health/ready", { method: "GET" });
         if (response.ok) {
           setApiOnline(true);
         } else {
           setApiOnline(false);
         }
-      } catch (err) {
+      } catch {
         setApiOnline(false);
       } finally {
         setLoadingHealth(false);
@@ -137,6 +145,10 @@ export default function App({ Router = BrowserRouter, routerProps = {} }) {
         <Route path="/changes" element={workspace(<ChangesFeed />)} />
         <Route path="/changes/:id" element={workspace(<ChangeWorkspace />)} />
         <Route path="/knowledge" element={workspace(<KnowledgeExplorer />)} />
+        <Route path="/acts" element={workspace(<Acts />)} />
+        <Route path="/rules" element={workspace(<Rules />)} />
+        <Route path="/interpretations" element={workspace(<Interpretations />)} />
+        <Route path="/discussions" element={workspace(<Discussions />)} />
         <Route path="/actions" element={workspace(<DecisionsActions user={user} />)} />
         <Route path="/factory" element={workspace(
           <FactoryBoard user={user} onSignInClick={() => setAuthModalOpen(true)} />

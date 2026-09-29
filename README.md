@@ -2,6 +2,11 @@
 
 An enterprise compliance knowledge management system for the **Digital Personal Data Protection Act (DPDPA), 2023**. Built with a bitemporal graph database model, automated layout-aware LLM vision ingestion, Outbound Webhook alerts, and a grounded Reasoning Assistant.
 
+The canonical runtime backend is `deployments/dpdpa-backend/`. The root Dockerfile
+is a compatibility entry point that builds that directory. The older root `src/`
+tree is retained temporarily only to preserve uncommitted evaluation work and must
+not be used for deployment.
+
 ---
 
 ## 🏗️ System Architecture
@@ -34,6 +39,8 @@ GEMINI_API_KEY="your-gemini-api-key"
 OPENAI_API_KEY="your-openai-api-key"
 PINECONE_API_KEY="your-pinecone-api-key"
 PINECONE_INDEX_NAME="dpdpa-knowledge"
+ADMIN_API_KEY="generate-a-32-plus-character-random-value"
+APP_ENV="development"
 
 # Webhooks & Auth
 SUBSCRIBER_WEBHOOK_URL="https://your-domain.com/webhook"
@@ -47,14 +54,15 @@ VITE_SUPABASE_ANON_KEY="your-anon-key"
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r deployments/dpdpa-backend/requirements.txt
+cd deployments/dpdpa-backend
 uvicorn src.api.api_service:app --port 8000 --reload
 ```
 The API Swagger documentation will be available at: **`http://localhost:8000/docs`**
 
 #### Start React Client Dashboard
 ```bash
-cd frontend
+cd deployments/dpdpa-wiki
 npm install
 npm run dev
 ```
@@ -77,7 +85,8 @@ docker compose up --build
 ### Set Up Document Storage Bucket
 Before running the crawler, set up the public PDF hosting storage bucket and database security policies:
 ```bash
-python3 setup_document_storage.py
+cd deployments/dpdpa-backend
+python3 scripts/setup_document_storage.py
 ```
 *(Copy the generated SQL policies and run them in the Supabase SQL Editor).*
 
@@ -85,25 +94,27 @@ python3 setup_document_storage.py
 To scrape MeitY's site and ingest the latest rules automatically:
 ```bash
 # Poll MeitY for privacy circulars
-python3 ingest_document.py --poll
+python3 scripts/ingest_document.py --poll
 
 # Load a specific document URN from a URL
-python3 ingest_document.py --url "https://egazette.gov.in/notif.pdf" --urn "urn:ki:in:dpdp:rule:new-notification" --layer 1
+python3 scripts/ingest_document.py "https://egazette.gov.in/notif.pdf" --urn "urn:ki:in:dpdp:rule:new-notification" --layer 1
 ```
 
 ---
 
 ## 🛡️ 5. Administrative Audit & Security Panel
 
-### Actions Guardrails
-The system protects critical compliance states and manual ingestion boards from unauthorized modifications:
-- **Checklist States (`/actions`):** Requires admin login to check or toggle regulatory tasks.
-- **Ingestion Pipeline (`/factory`):** Requires admin login to approve and advance staging documents.
+### Current guardrail boundary
+
+The backend protects every `/admin/*` endpoint with the transitional
+`X-Admin-Key` control. The actions and factory screens still require the role-based,
+server-enforced workflow described in `COMPREHENSIVE_BUILD_SPEC.md`; their current
+client-side login state is not an authorization boundary.
 
 ### Accessing the Admin Audit Panel (`/admin`)
-1. Open the browser and visit `http://localhost:5173`.
-2. Click **Sign In** (top-right header).
-3. **Sandbox Fallback:** If cloud credentials are not loaded, enter **any email and password** (e.g. `admin@dpdpa.gov` / `admin123`) to bypass verification and log in.
-4. Once authenticated, a new **Admin Audit** link will appear in the left sidebar. Navigate to it to view:
+1. Generate an admin key, store it in `ADMIN_API_KEY` for the backend, and restart the service.
+2. Open `http://localhost:5173/admin`.
+3. Enter the same key in the admin authorization form. It is retained only in the browser tab's `sessionStorage`.
+4. The dashboard then loads:
    - **Live Search Logs:** Real-time log table of user searches submitted to the Grounded Assistant.
    - **Layer Statistics Chart:** Percentage distribution of Primary Core vs Expert Advisories.

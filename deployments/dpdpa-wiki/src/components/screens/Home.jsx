@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
+import CometCascadeHeroBackground from "../marketing/CometCascadeHeroBackground";
 import { supabase } from "../../data/supabaseClient";
 import {
   HERO, JOURNEYS, RESOURCES, ASSESSMENT, ASSESSMENT_BANDS, FAQ, TRUST, CAPTURE
@@ -35,12 +36,19 @@ function SubscribeForm({ intent = "checklist", score = null, compact = false }) 
       return;
     }
 
-    const { error } = await supabase.from("subscribers").insert({
-      email: value,
-      intent,
-      source_path: window.location.pathname,
-      assessment_score: score
-    });
+    let error;
+    try {
+      ({ error } = await supabase.from("subscribers").insert({
+        email: value,
+        intent,
+        source_path: window.location.pathname,
+        assessment_score: score
+      }));
+    } catch {
+      setState("error");
+      setMessage("We couldn't save that. Try again in a moment.");
+      return;
+    }
 
     // A repeat address is a success from the reader's point of view.
     if (error && error.code !== "23505") {
@@ -50,7 +58,7 @@ function SubscribeForm({ intent = "checklist", score = null, compact = false }) 
     }
 
     setState("done");
-    setMessage("Check your inbox — the checklist is on its way.");
+    setMessage("Your request was saved. Email delivery is not yet enabled.");
   };
 
   if (state === "done") {
@@ -191,6 +199,7 @@ export default function Home() {
     <PublicShell>
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <section className="hero">
+        <CometCascadeHeroBackground />
         <div className="pub-container hero-inner">
           <p className="hero-eyebrow">{HERO.eyebrow}</p>
           <h1 className="hero-title">{HERO.title}</h1>

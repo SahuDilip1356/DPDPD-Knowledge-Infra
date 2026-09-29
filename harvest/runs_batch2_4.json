@@ -1,0 +1,43 @@
+{
+  "started_at": "2026-09-19",
+  "actor": "apify/website-content-crawler",
+  "caps": {
+    "maxCrawlPages": 40,
+    "maxCrawlDepth": 3,
+    "maxResults": 40,
+    "timeout_seconds": 600,
+    "memory_mb": 2048,
+    "max_concurrent": 5
+  },
+  "runs": [
+    {"name": "ConsentX", "start_url": "https://www.consentx.io", "run_id": "1ZkQ9O5DbOFg2G6xe", "dataset_id": "mmhBL5hmwaRnv6OHY", "status": "TIMED-OUT", "pages": 32, "console": "https://console.apify.com/view/runs/1ZkQ9O5DbOFg2G6xe"},
+    {"name": "Consently", "start_url": "https://www.consently.in", "run_id": "fTk640R0w8yCTdpjx", "dataset_id": "Q5L4CT502C6GgrTce", "status": "SUCCEEDED", "pages": 39, "console": "https://console.apify.com/view/runs/fTk640R0w8yCTdpjx"},
+    {"name": "DPDP Comply", "start_url": "https://comply.askmeidentity.com", "run_id": "SnOTEbScBPsrp9eSq", "dataset_id": "67QGux97pr8VlmS4G", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/SnOTEbScBPsrp9eSq"},
+    {"name": "ConsentiQo", "start_url": "https://consentiqo.com", "run_id": "aV226BiA6M9Sm3vhM", "dataset_id": "MoEEpIGhMSuiej09D", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/aV226BiA6M9Sm3vhM"},
+    {"name": "Complynz", "start_url": "https://complynz.com", "run_id": "TwsZHl5rjgNRsfjPb", "dataset_id": "rpoSiyZH67TV3LsyS", "status": "SUCCEEDED", "pages": 39, "console": "https://console.apify.com/view/runs/TwsZHl5rjgNRsfjPb"},
+    {"name": "Privy by IDfy", "start_url": "https://www.privybyidfy.com", "run_id": "gWMp9ppijSau8Rwje", "dataset_id": "LJvHayzxP0FqxOJJI", "status": "SUCCEEDED", "pages": 39, "console": "https://console.apify.com/view/runs/gWMp9ppijSau8Rwje"},
+    {"name": "Redacto", "start_url": "https://www.redacto.ai", "run_id": "kpS2rGvOC4nwlbScS", "dataset_id": "lPw7nr7VrBaySO2GV", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/kpS2rGvOC4nwlbScS"},
+    {"name": "Consentin", "start_url": "https://www.consentin.com", "run_id": "mdQEAVHvIYvamacxe", "dataset_id": "myqG6tPr6RYNdsHiL", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/mdQEAVHvIYvamacxe"},
+    {"name": "Concur", "start_url": "https://concur.live", "run_id": "CXs3EUBb5cF9FkHGy", "dataset_id": "QniMdxhtraN4DYua8", "status": "SUCCEEDED", "pages": 4, "console": "https://console.apify.com/view/runs/CXs3EUBb5cF9FkHGy"},
+    {"name": "DPDPA Shield", "start_url": "https://dpdpashield.in", "run_id": "sKJOrNSnh6Jzck8JC", "dataset_id": "1TCOeWdAcdyoWEZbh", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/sKJOrNSnh6Jzck8JC"},
+    {"name": "ComplyDP", "start_url": "https://www.complydp.com", "run_id": "HT5mcjvpjnR12pssL", "dataset_id": "1HhhyVB2KsLfFyTnv", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/HT5mcjvpjnR12pssL"},
+    {"name": "dcomply", "start_url": "https://dcomply.in", "run_id": "uCAD62dVXw8SMqiPc", "dataset_id": "7IwzbhmsTrUtiFMPc", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/uCAD62dVXw8SMqiPc"},
+    {"name": "GoTrust DPDPA product", "start_url": "https://www.gotrust.tech", "run_id": "tqqdLJzhJ2HQA06lv", "dataset_id": "CA1qafnPYNvZh9C8Z", "status": "SUCCEEDED", "pages": 42, "console": "https://console.apify.com/view/runs/tqqdLJzhJ2HQA06lv"},
+    {"name": "Seqrite DPDP", "start_url": "https://www.seqrite.com/dpdp-act-and-compliance-solutions/", "run_id": "tWoKmLoDJDsDzGdGf", "dataset_id": "SBLbQGWvRgys2KpYr", "status": "SUCCEEDED", "pages": 1, "console": "https://console.apify.com/view/runs/tWoKmLoDJDsDzGdGf"},
+    {"name": "miniOrange DPDP", "start_url": "https://www.miniorange.com/data-privacy/dpdp/", "run_id": "e4xrQPfQxakyLBlIv", "dataset_id": "rTyQkYiMsd9dH2zfK", "status": "SUCCEEDED", "pages": 15, "console": "https://console.apify.com/view/runs/e4xrQPfQxakyLBlIv"},
+    {"name": "KavachOne", "start_url": "https://kavachone.com", "run_id": "qxyQ29STexbM6hyh8", "dataset_id": "JPQpgMyghvzEMQbmC", "status": "TIMED-OUT", "pages": 36, "console": "https://console.apify.com/view/runs/qxyQ29STexbM6hyh8"},
+    {"name": "Tsaaro", "start_url": "https://tsaaro.com", "run_id": "qsDJNmlrxwebVI3VT", "dataset_id": "m02HNtLYEDISOBjxY", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/qsDJNmlrxwebVI3VT"},
+    {"name": "DPO India", "start_url": "https://www.dpo-india.com", "run_id": "kI34ccXQ8m8og27qF", "dataset_id": "a5WClTLvN54qOe3fS", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/kI34ccXQ8m8og27qF"},
+    {"name": "DPDP Consultants", "start_url": "https://www.dpdpconsultants.com", "run_id": "Wza0nPOvutXUEN4vQ", "dataset_id": "bnTAMBMPsacebjhwn", "status": "SUCCEEDED", "pages": 40, "console": "https://console.apify.com/view/runs/Wza0nPOvutXUEN4vQ"}
+  ],
+  "skipped": [
+    {"name": "GoTrust India", "start_url": "https://gotrust.in"},
+    {"name": "Perfios", "start_url": "https://perfios.ai"},
+    {"name": "Leegality eSign parent", "start_url": "https://www.leegality.com"}
+  ],
+  "classified_out": "staging/harvest/classified_batch2_4.jsonl",
+  "stacked_total": 626,
+  "crawled_total": 652,
+  "publish": false,
+  "note": "19 remaining sites crawled. ConsentX and KavachOne timed out with usable partial pages. Training/certification dropped at classify time. Nothing published to the graph."
+}

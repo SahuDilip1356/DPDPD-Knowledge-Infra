@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../data/supabaseClient";
 import { ACTION_ITEMS } from "../../data/mockData";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import { 
   StatusBadge, 
   PriorityBadge, 
@@ -31,10 +32,11 @@ export default function DecisionsActions({ user }) {
         }
       }
     } catch (err) {
-      console.warn("Supabase load failed, falling back to mockData.js:", err);
+      console.warn("Supabase actions load failed:", err);
     }
-    setActionItems(ACTION_ITEMS);
-    setSelectedActionId(ACTION_ITEMS[0]?.id || "");
+    const fallbackActions = MOCKS_ENABLED ? ACTION_ITEMS : [];
+    setActionItems(fallbackActions);
+    setSelectedActionId(fallbackActions[0]?.id || "");
     setLoading(false);
   };
 
@@ -58,27 +60,27 @@ export default function DecisionsActions({ user }) {
   const handleUpdateStatus = async (status) => {
     if (!selectedAction) return;
     if (!user) {
-      alert("⚠️ Access Denied: You must be logged in as an administrator to change compliance action item status.");
+      alert("⚠️ Access Denied: You must be signed in to change a compliance action.");
+      return;
+    }
+    if (!supabase) {
+      alert("Action persistence is unavailable. No change was saved.");
       return;
     }
     
     try {
-      if (supabase) {
-        const { error } = await supabase
-          .from("action_items")
-          .update({ status })
-          .eq("id", selectedAction.id);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from("action_items")
+        .update({ status })
+        .eq("id", selectedAction.id);
+      if (error) throw error;
       
       // Update local state directly so UI reacts immediately
       setActionItems(prev => prev.map(a => a.id === selectedAction.id ? { ...a, status } : a));
       alert(`Status updated to ${status.replace("_", " ")} and saved to audit ledger.`);
     } catch (err) {
       console.error("Failed to update status:", err);
-      // Fallback update on local copy if Supabase is offline
-      setActionItems(prev => prev.map(a => a.id === selectedAction.id ? { ...a, status } : a));
-      alert(`Status updated locally to ${status.replace("_", " ")} (offline fallback).`);
+      alert("The status update failed. No change was saved.");
     }
   };
 

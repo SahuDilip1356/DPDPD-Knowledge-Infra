@@ -13,15 +13,19 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - PINECONE_API_KEY=${PINECONE_API_KEY}
       - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - APP_ENV=${APP_ENV:-development}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173}
       - SUBSCRIBER_WEBHOOK_URL=${SUBSCRIBER_WEBHOOK_URL}
     restart: unless-stopped
 
   # React Vite Frontend Client
   frontend:
     build:
-      context: ./frontend
+      context: ./deployments/dpdpa-wiki
       dockerfile: Dockerfile
     container_name: dpdpa_frontend
     ports:
@@ -29,6 +33,7 @@ services:
     environment:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
     restart: unless-stopped
     depends_on:
       - backend

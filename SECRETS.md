@@ -1,10 +1,11 @@
 # Secrets & Configuration Runbook
 
 **This file contains NO real keys — only names, sources and instructions.**
-Real values live in `.env` files on your machine (gitignored) and in the Vercel
-dashboard. Never paste a real key into this file, into any `.md`, or into chat.
+Real values live in `.env` files on your machine (gitignored) and in the relevant
+hosting platform's secret store. Never paste a real key into this file, into any
+`.md`, or into chat.
 
-Last reviewed: 2026-08-02
+Last reviewed: 2026-09-08
 
 ---
 
@@ -24,16 +25,17 @@ Last reviewed: 2026-08-02
 | `OPENROUTER_API_KEY` | ➖ Optional fallback | blank slot ready in root `.env` |
 | `GEMINI_API_KEY` | ➖ Optional | not needed — OpenAI covers it |
 | `DATABASE_URL` | ➖ Optional | blank; Supabase client used instead |
+| `ADMIN_API_KEY` | ❌ Required before backend deployment | Railway environment only; never `VITE_` |
 
 ### LLM provider chain
 
-The system tries providers in this order and uses the first one with a key:
+At startup the system selects the first configured provider in this order:
 
 **`GEMINI_API_KEY` → `OPENAI_API_KEY` → `OPENROUTER_API_KEY`**
 
-You currently have OpenAI, so that is what runs. To use OpenRouter as a genuine
-fallback, paste a key into `OPENROUTER_API_KEY` in the root `.env`; it activates
-automatically if the OpenAI key is ever removed or fails to load.
+You currently have OpenAI, so that is what runs. OpenRouter is selected when no
+OpenAI key is configured. Runtime failover after a provider request fails is not
+implemented; provider errors fail closed instead of silently changing models.
 
 > **Why OpenRouter is safe as a fallback:** it serves
 > `openai/text-embedding-3-small`, which produces **1536-dimensional** vectors —
@@ -50,8 +52,9 @@ paste into `OPENROUTER_API_KEY=` in the root `.env`.
 Optional `CHAT_MODEL` / `EMBED_MODEL` overrides exist if you ever want to pin a
 different model. Leave them blank to use sensible defaults.
 
-**Bottom line: you only need to fetch ONE new thing — the Pinecone key — plus
-create the Pinecone index.** Everything else is already in place.
+**Before backend deployment:** create the Pinecone key/index and generate an
+independent `ADMIN_API_KEY`. Confirm all other provider values directly in the
+Railway environment rather than relying on local configuration.
 
 ---
 
@@ -158,10 +161,17 @@ Vercel does **not** read your local `.env` files. You paste values into its dash
 | `VITE_SUPABASE_ANON_KEY` | copy from app `.env` | public |
 | `VITE_API_URL` | your deployed API URL | public |
 | `VITE_SHIKSHA_URL` | `https://dpdpa.shiksha` | public — **not** localhost |
-| `SUPABASE_SERVICE_KEY` | copy from root `.env` | 🔒 mark **Sensitive** |
-| `PINECONE_API_KEY` | from step 3a | 🔒 mark **Sensitive** |
-| `PINECONE_INDEX_NAME` | `dpdpa-knowledge` | |
-| `OPENAI_API_KEY` | copy from root `.env` | 🔒 mark **Sensitive** |
+
+Do not add the Supabase service key, Pinecone key, or model-provider keys to the
+frontend Vercel project. They belong only in the backend service environment.
+
+### Service: `dpdpa-backend` (Railway)
+
+Use `deployments/dpdpa-backend/.env.example` as the variable manifest. At minimum,
+configure the database/Supabase values, one model provider, Pinecone, an explicit
+origin allowlist, `APP_ENV=production`, and `ADMIN_API_KEY`. Generate the admin key
+with `openssl rand -base64 32` and store it only in Railway and the operator's
+password manager.
 
 ### Project: `dpdpa-shiksha`
 
@@ -186,12 +196,14 @@ Rotating means: create a new key, update everywhere, then delete the old one.
 
 | Key | How to rotate |
 | :--- | :--- |
-| `PINECONE_API_KEY` | Pinecone → API Keys → create new → update `.env` + Vercel → delete old |
-| `OPENAI_API_KEY` | platform.openai.com → API keys → create new → update → revoke old |
+| `PINECONE_API_KEY` | Pinecone → API Keys → create new → update `.env` + Railway → delete old |
+| `OPENAI_API_KEY` | platform.openai.com → API keys → create new → update Railway → revoke old |
 | `SUPABASE_SERVICE_KEY` | Supabase → Project Settings → API → **Roll** the service key ⚠️ breaks all running services until updated everywhere |
 | `VITE_SUPABASE_ANON_KEY` | Rarely needed — it is public by design and guarded by RLS |
+| `ADMIN_API_KEY` | Generate a replacement → update Railway and password manager → discard old value |
 
-**After rotating, redeploy both Vercel projects** so the new values are picked up.
+Redeploy each service that consumes a rotated value. Server-only key rotations do
+not require placing the key in or rebuilding the frontend bundle.
 
 ---
 

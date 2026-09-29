@@ -296,12 +296,6 @@ export const KNOWLEDGE_OBJECTS = [
       affected_roles: ["Compliance Officer", "DPO", "Legal Counsel"],
       affected_processes: ["Data Erasure", "DSAR Fulfillment", "Data Archiving"],
       action_required: "Configure automated deletion exemption rules for AML/KYC records."
-    },
-    business_impact: {
-      impact_summary: "Imposes a strict 72-hour regulatory notification SLA for data breaches.",
-      affected_roles: ["CISO", "Incident Response Commander", "DPO"],
-      affected_processes: ["Incident Response", "Breach Detection", "Regulatory Reporting"],
-      action_required: "Integrate 72-hour reporting triggers into SOC playbooks and draft standard notification templates."
     }
   },
   {
@@ -1746,4 +1740,3 @@ export function getTrustLabel(trust) {
   if (trust.source_authority < 0.5) return { label: "Lower-tier interpretation", level: "low" };
   return { label: "Incomplete evidence", level: "low" };
 }
-

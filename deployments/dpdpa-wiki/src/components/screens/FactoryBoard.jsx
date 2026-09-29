@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { FACTORY_DEPARTMENTS, PIPELINE_ITEMS } from "../../data/mockData";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import { PriorityBadge, EmptyState } from "../ui/SharedComponents";
 
 export default function FactoryBoard({ user, onSignInClick }) {
-  const [selectedItemId, setSelectedItemId] = useState(PIPELINE_ITEMS[0]?.id || "");
+  const pipelineItems = MOCKS_ENABLED ? PIPELINE_ITEMS : [];
+  const [selectedItemId, setSelectedItemId] = useState(pipelineItems[0]?.id || "");
   const [selectedPriority, setSelectedPriority] = useState("all");
-  const selectedItem = PIPELINE_ITEMS.find(i => i.id === selectedItemId);
+  const selectedItem = pipelineItems.find(i => i.id === selectedItemId);
 
   const handleApproveStage = () => {
     if (!selectedItem) return;
@@ -26,7 +28,7 @@ export default function FactoryBoard({ user, onSignInClick }) {
   };
 
   // Filter items by priority if selected
-  const filteredPipelineItems = PIPELINE_ITEMS.filter(item => {
+  const filteredPipelineItems = pipelineItems.filter(item => {
     if (selectedPriority !== "all" && item.priority !== selectedPriority) return false;
     return true;
   });
@@ -68,17 +70,17 @@ export default function FactoryBoard({ user, onSignInClick }) {
           {/* Telemetry Metrics */}
           <div style={{ display: "flex", gap: "16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", padding: "12px 20px", borderRadius: "12px" }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#34D399" }}>{PIPELINE_ITEMS.length}</div>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#34D399" }}>{pipelineItems.length}</div>
               <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Active Docs</div>
             </div>
             <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#60A5FA" }}>98.4%</div>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#60A5FA" }}>{MOCKS_ENABLED ? "98.4%" : "—"}</div>
               <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Validation Rate</div>
             </div>
             <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#FF9933" }}>18m</div>
+              <div style={{ fontSize: "20px", fontWeight: 800, color: "#FF9933" }}>{MOCKS_ENABLED ? "18m" : "—"}</div>
               <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Avg Stage Time</div>
             </div>
           </div>
@@ -109,7 +111,7 @@ export default function FactoryBoard({ user, onSignInClick }) {
             ))}
           </div>
           <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)" }}>
-            Showing {filteredPipelineItems.length} of {PIPELINE_ITEMS.length} pipeline items
+            Showing {filteredPipelineItems.length} of {pipelineItems.length} pipeline items
           </span>
         </div>
       </div>
@@ -372,4 +374,3 @@ export default function FactoryBoard({ user, onSignInClick }) {
     </div>
   );
 }
-

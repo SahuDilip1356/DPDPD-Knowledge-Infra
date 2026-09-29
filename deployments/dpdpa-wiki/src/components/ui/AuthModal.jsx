@@ -18,19 +18,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setErrorMsg("");
 
     if (!supabase) {
-      // Mock Auth Fallback Mode (offline)
-      setTimeout(() => {
-        setLoading(false);
-        const mockUser = { email, id: "mock-user-uuid-12345" };
-        onAuthSuccess(mockUser);
-        onClose();
-      }, 500);
+      setErrorMsg("Authentication is not configured for this deployment.");
+      setLoading(false);
       return;
     }
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
         });
@@ -59,15 +54,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       <div className="search-modal-container" style={{ maxWidth: "420px", width: "100%", padding: "var(--space-xl)", gap: "var(--space-md)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
           <h3 className="section-title" style={{ margin: 0 }}>
-            {isSignUp ? "🛡️ Register Admin" : "🛡️ Admin Authorization"}
+            {isSignUp ? "Create account" : "Sign in"}
           </h3>
           <button className="btn-icon" onClick={onClose} style={{ fontSize: "18px" }}>×</button>
         </div>
 
         <p className="text-meta" style={{ margin: 0 }}>
           {supabase 
-            ? "Sign in using your Supabase credentials to manage compliance and ingestion settings."
-            : "Sandbox Mode active: Enter any email/password to authenticate as a mock administrator."}
+            ? "Sign in with your Supabase account. Administrative permissions are assigned separately by the server."
+            : "Authentication is unavailable because Supabase is not configured."}
         </p>
 
         <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)", width: "100%", marginTop: "var(--space-sm)" }}>
@@ -110,7 +105,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           )}
 
           <button className="btn-primary" type="submit" disabled={loading} style={{ width: "100%", justifyContent: "center", marginTop: "var(--space-xs)" }}>
-            {loading ? "Authenticating..." : isSignUp ? "Create Admin Account" : "Authorize Session"}
+            {loading ? "Authenticating..." : isSignUp ? "Create Account" : "Sign In"}
           </button>
         </form>
 
@@ -124,7 +119,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             }}
             style={{ background: "none", border: "none", color: "var(--color-accent-blue)", cursor: "pointer", fontSize: "13px" }}
           >
-            {isSignUp ? "Already have an account? Sign In" : "Need an account? Register as Admin"}
+            {isSignUp ? "Already have an account? Sign In" : "Need an account? Register"}
           </button>
         </div>
       </div>
