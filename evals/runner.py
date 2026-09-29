@@ -241,16 +241,52 @@ def run_eval_suite(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run AI Evals & Reliability Suite")
-    parser.add_argument("--dataset", type=str, default=DATASET_PATH, help="Path to dataset.jsonl")
-    parser.add_argument("--runs", type=int, default=3, help="Number of runs per case (spread measurement)")
+    parser.add_argument("--corpus", choices=["synthetic", "real"], default="synthetic",
+                        help="synthetic: one made-up knowledge object (regression check only). "
+                             "real: the verified law + answer objects, scored on citations "
+                             "(evals/real_corpus.py)")
+    parser.add_argument("--dataset", type=str, default=None,
+                        help="Cases file (default: dataset.jsonl, or golden_corpus.jsonl for --corpus real)")
+    parser.add_argument("--runs", type=int, default=None,
+                        help="Number of runs per case (default: 3 synthetic, 1 real)")
     parser.add_argument("--offline", action="store_true", help="Run with deterministic offline mock client")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of test cases")
     parser.add_argument("--judge", action="store_true", help="Include LLM-as-a-judge rubric evaluation")
+    real = parser.add_argument_group("--corpus real")
+    real.add_argument("--live", action="store_true",
+                      help="Call the configured model (costs money). Without it the run is offline.")
+    real.add_argument("--max-cost-usd", type=float, default=1.0,
+                      help="Stop a live run before any call that would exceed this (default 1.00)")
+    real.add_argument("--price-in", type=float, default=None, help="USD per million input tokens")
+    real.add_argument("--price-out", type=float, default=None, help="USD per million output tokens")
+    real.add_argument("--no-holdout", action="store_true",
+                      help="Keep each case's own answer object in the corpus")
+    real.add_argument("--baseline", type=str, default=None,
+                      help="Baseline to hold offline metrics to (default: evals/baselines/real_corpus_offline.json)")
+    real.add_argument("--write-baseline", action="store_true",
+                      help="Record this offline run as the new baseline")
     args = parser.parse_args()
 
+    if args.corpus == "real":
+        from evals.real_corpus import BASELINE_PATH, GOLDEN_PATH, run_real_corpus_suite
+        if args.live and args.offline:
+            parser.error("--live and --offline are mutually exclusive")
+        sys.exit(run_real_corpus_suite(
+            golden_path=args.dataset or GOLDEN_PATH,
+            runs_per_case=args.runs or 1,
+            live=args.live,
+            holdout=not args.no_holdout,
+            limit=args.limit,
+            max_cost_usd=args.max_cost_usd,
+            price_in=args.price_in,
+            price_out=args.price_out,
+            baseline_path=None if args.live else (args.baseline or BASELINE_PATH),
+            write_baseline=args.write_baseline,
+        ))
+
     run_eval_suite(
-        dataset_path=args.dataset,
-        runs_per_case=args.runs,
+        dataset_path=args.dataset or DATASET_PATH,
+        runs_per_case=args.runs or 3,
         offline=args.offline,
         limit=args.limit,
         use_judge=args.judge
