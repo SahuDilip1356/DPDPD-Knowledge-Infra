@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { CitationCard, EmptyState, StatusBadge } from "../ui/SharedComponents";
+import { CitationCard, StatusBadge } from "../ui/SharedComponents";
 
 export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http://localhost:8000" }) {
   const [messages, setMessages] = useState([

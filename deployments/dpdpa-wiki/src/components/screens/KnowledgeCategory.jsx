@@ -66,10 +66,12 @@ function applyTypeFilter(list, allowedTypes) {
   return list.filter((item) => normalized.includes((item.type || "").toLowerCase()));
 }
 
+const NO_TYPES = [];
+
 export default function KnowledgeCategory({
   title = "Knowledge",
   description = "Regulatory knowledge objects grouped by category.",
-  allowedTypes = []
+  allowedTypes = NO_TYPES
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,6 @@ export default function KnowledgeCategory({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const typeFilterSignature = useMemo(() => allowedTypes.join("|"), [allowedTypes]);
 
   useEffect(() => {
     let alive = true;
@@ -147,12 +148,12 @@ export default function KnowledgeCategory({
     return () => {
       alive = false;
     };
-  }, [typeFilterSignature]);
+  }, [allowedTypes]);
 
   const filteredItems = useMemo(() => {
     const base = applyTypeFilter(allItems, allowedTypes);
     return base.filter((item) => matchesSearchText(item, searchTerm));
-  }, [allItems, allowedTypes, searchTerm, typeFilterSignature]);
+  }, [allItems, allowedTypes, searchTerm]);
 
   useEffect(() => {
     if (!selectedUrn && filteredItems.length > 0) {

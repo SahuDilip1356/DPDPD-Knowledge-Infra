@@ -10,9 +10,9 @@ import sys
 # Ensure project root is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-# Use a file-based SQLite database for tests to share data across FastAPI routing threads safely
-TEST_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_api.db"))
-os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+# The API's shared DatabaseClient is a process-wide in-memory SQLite database
+# (one connection, safe across FastAPI's threads). Tests reset its tables
+# before each test rather than swapping in a file that other modules share.
 os.environ["ADMIN_API_KEY"] = "test-admin-key"
 
 import pytest
@@ -34,16 +34,6 @@ ADMIN_HEADERS = {"X-Admin-Key": "test-admin-key"}
 
 
 # ─── Setup Test Data ─────────────────────────────────────────────────────────
-
-@pytest.fixture(scope="module", autouse=True)
-def cleanup_db_file():
-    yield
-    if os.path.exists(TEST_DB_PATH):
-        try:
-            os.remove(TEST_DB_PATH)
-        except Exception:
-            pass
-
 
 @pytest.fixture(autouse=True)
 def setup_test_db():

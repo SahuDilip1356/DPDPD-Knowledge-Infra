@@ -4,8 +4,7 @@ import { supabase } from "../../data/supabaseClient";
 import CometCascadeHeroBackground from "../marketing/CometCascadeHeroBackground";
 import { 
   KNOWLEDGE_OBJECTS, 
-  OPINIONS, 
-  CONSTITUTIONAL_NOUNS 
+  OPINIONS
 } from "../../data/mockData";
 import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import {

@@ -18,10 +18,17 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
-# Ensure project root is in sys.path
+# Evaluate the backend that is deployed (deployments/dpdpa-backend), not the
+# older copy under the repository root's src/, which has drifted from it.
+# `src.*` must resolve to the canonical tree, so it goes first on sys.path;
+# the repository root follows so `evals.*` still imports.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+BACKEND_ROOT = os.path.join(PROJECT_ROOT, "deployments", "dpdpa-backend")
+for path in (PROJECT_ROOT, BACKEND_ROOT):
+    if path in sys.path:
+        sys.path.remove(path)
+sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, BACKEND_ROOT)
 
 from src.reasoning.reasoning_engine import GroundedReasoningEngine
 from src.reasoning.model_client import ModelClient, MockModelClient

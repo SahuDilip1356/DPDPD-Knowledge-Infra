@@ -12,14 +12,31 @@ except ImportError:
     create_client = None
     Client = None
 
+def _make_engine(database_url: str):
+    """SQLite needs care under FastAPI's thread pool.
+
+    An in-memory SQLite database exists per connection, so the default pool
+    hands a request thread a fresh, empty database with no tables. One shared
+    connection (StaticPool) keeps a single in-memory database for the process.
+    SQLite also refuses cross-thread use unless check_same_thread is off.
+    """
+    if database_url.startswith("sqlite"):
+        from sqlalchemy.pool import StaticPool
+        kwargs = {"connect_args": {"check_same_thread": False}}
+        if ":memory:" in database_url or database_url in ("sqlite://", "sqlite:///"):
+            kwargs["poolclass"] = StaticPool
+        return create_engine(database_url, **kwargs)
+    return create_engine(database_url)
+
+
 class DatabaseClient:
     def __init__(self, database_url: str = "sqlite:///:memory:"):
         """
         Initializes the DB Client. Defaults to in-memory SQLite for testing/MVP.
         Syncs automatically to Supabase if environment variables are provided.
         """
-        self.engine = create_engine(database_url)
-        Base.metadata.create_create_all = Base.metadata.create_all(self.engine)
+        self.engine = _make_engine(database_url)
+        Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
         
         # Optional Supabase integration
@@ -93,7 +110,12 @@ class DatabaseClient:
                 body=ko_data,
                 business_impact=ko_data["business_impact"],
                 evidence=ko_data["evidence"],
-                linked_objects=ko_data["linked_objects"]
+                linked_objects=ko_data["linked_objects"],
+                entities=ko_data.get("entities", []),
+                relations=ko_data.get("relations", []),
+                interpretation_stance=ko_data.get("interpretation_stance"),
+                source_credibility=ko_data.get("source_credibility"),
+                forum_published=ko_data.get("forum_published"),
             )
             # Extract type from URN if default
             if db_ko.type == "node" or not db_ko.type:

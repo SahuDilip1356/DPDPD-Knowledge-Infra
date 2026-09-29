@@ -121,3 +121,24 @@ def test_db_client_relations():
     assert len(edges) == 1
     assert edges[0].target_urn == "urn:ki:in:dpdp:act:sec-6"
     assert edges[0].edge_type == "Implements"
+
+
+def test_trust_metadata_round_trips_through_the_orm():
+    """Supabase stores stance/credibility; the ORM must not silently drop them."""
+    db = DatabaseClient("sqlite:///:memory:")
+    db.supabase = None
+    from src.tests.test_reasoning_pipeline import make_ko
+    ko = make_ko(urn="urn:ki:in:dpdp:act:2023:sec:6", title="Section 6 — Consent", entities=["Consent"])
+    ko.update({"interpretation_stance": "verbatim", "source_credibility": "primary",
+               "entities": ["Consent"], "forum_published": "Gazette of India"})
+    db.publish_ko(ko)
+    session = db.Session()
+    try:
+        from src.storage.models import KnowledgeObject
+        row = session.query(KnowledgeObject).filter(KnowledgeObject.urn == ko["urn"]).one()
+        assert row.interpretation_stance == "verbatim"
+        assert row.source_credibility == "primary"
+        assert row.forum_published == "Gazette of India"
+        assert row.entities == ["Consent"]
+    finally:
+        session.close()

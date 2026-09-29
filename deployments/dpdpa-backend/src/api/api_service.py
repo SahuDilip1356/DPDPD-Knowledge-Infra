@@ -109,6 +109,9 @@ def _serialize_knowledge_object(
         "business_impact": ko.business_impact,
         "evidence": ko.evidence,
         "linked_objects": ko.linked_objects,
+        "interpretation_stance": ko.interpretation_stance,
+        "source_credibility": ko.source_credibility,
+        "forum_published": ko.forum_published,
         "relations": [
             {"target_urn": edge.target_urn, "edge_type": edge.edge_type}
             for edge in db_client.get_relations(ko.urn, ko.version)
