@@ -157,6 +157,33 @@ def existing_urns() -> set:
 
 
 # ---------------------------------------------------------------- primary
+def primary_row(label: str, provision: dict, in_force, law: dict, urn: str, version: int = 1) -> dict:
+    """The canonical verbatim knowledge object for one provision of the Act or Rules."""
+    act_provision = is_act(label)
+    text = provision["text"]
+    title = ("The Schedule — Penalties (DPDPA 2023)" if label == "ACT-SCHEDULE" else
+             f"Section {label[1:]} — {provision['title']}" if act_provision else
+             f"{provision['title']} — DPDP Rules 2025" if label.startswith("SCH") else
+             f"Rule {label[1:]} — {provision['title']} (DPDP Rules 2025)")
+    return {
+        "urn": urn, "version": version,
+        "type": "Act" if act_provision else "Rule",
+        "title": title,
+        "summary": text[:1500] + (" …" if len(text) > 1500 else ""),
+        "confidence_score": 1.0,
+        "source_credibility": "primary",
+        "interpretation_stance": "verbatim",
+        "legal_time_start": "2023-08-11" if act_provision else (in_force or "2025-11-13"),
+        "body": {"full_text": text, "provision": label, "reference": provision_ref(label),
+                 "in_force_from": in_force, "entities": []},
+        "business_impact": {},
+        "evidence": [evidence_item(label, text[:300], law, 1)],
+        "linked_objects": [ACT_DOC if act_provision else RULES_DOC],
+        "entities": [],
+        "relations": [{"edge_type": "Depends On", "target_urn": ACT_DOC if act_provision else RULES_DOC}],
+    }
+
+
 def build_primary():
     law, commencement = load_law()
     live = existing_urns()
@@ -167,30 +194,7 @@ def build_primary():
         if urn in live:
             skipped.append(urn)
             continue
-        act_provision = is_act(label)
-        text = provision["text"]
-        in_force = commencement.get(label)
-        title = ("The Schedule — Penalties (DPDPA 2023)" if label == "ACT-SCHEDULE" else
-                 f"Section {label[1:]} — {provision['title']}" if act_provision else
-                 f"{provision['title']} — DPDP Rules 2025" if label.startswith("SCH") else
-                 f"Rule {label[1:]} — {provision['title']} (DPDP Rules 2025)")
-        rows.append({
-            "urn": urn, "version": 1,
-            "type": "Act" if act_provision else "Rule",
-            "title": title,
-            "summary": text[:1500] + (" …" if len(text) > 1500 else ""),
-            "confidence_score": 1.0,
-            "source_credibility": "primary",
-            "interpretation_stance": "verbatim",
-            "legal_time_start": "2023-08-11" if act_provision else (in_force or "2025-11-13"),
-            "body": {"full_text": text, "provision": label, "reference": provision_ref(label),
-                     "in_force_from": in_force, "entities": []},
-            "business_impact": {},
-            "evidence": [evidence_item(label, text[:300], law, 1)],
-            "linked_objects": [ACT_DOC if act_provision else RULES_DOC],
-            "entities": [],
-            "relations": [{"edge_type": "Depends On", "target_urn": ACT_DOC if act_provision else RULES_DOC}],
-        })
+        rows.append(primary_row(label, provision, commencement.get(label), law, urn))
     with open(PRIMARY_FILE, "w") as f:
         f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
     print(f"primary: {len(rows)} new provision KOs, {len(skipped)} already live (left untouched)")
@@ -530,7 +534,7 @@ def revise(dry_run: bool):
     """
     from datetime import datetime, timezone
     from supabase import create_client
-    law, _ = load_law()
+    law, commencement = load_law()
     client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
     urns = {provision_urn(label): label for label in law}
     live = []
@@ -539,16 +543,15 @@ def revise(dry_run: bool):
     changed = []
     for row in live:
         label = urns[row["urn"]]
-        text = law[label]["text"]
-        if (row.get("body") or {}).get("full_text") == text:
+        canonical = primary_row(label, law[label], commencement.get(label), law, row["urn"], row["version"] + 1)
+        same = ((row.get("body") or {}).get("full_text") == canonical["body"]["full_text"]
+                and row.get("interpretation_stance") == "verbatim"
+                and row.get("source_credibility") == "primary"
+                and (row.get("body") or {}).get("provision") == label)
+        if same:
             continue
-        new = {k: v for k, v in row.items() if k not in ("system_time_start", "system_time_end")}
-        new["version"] = row["version"] + 1
-        new["summary"] = text[:1500] + (" …" if len(text) > 1500 else "")
-        new["body"] = {**(row.get("body") or {}), "full_text": text}
-        new["evidence"] = [evidence_item(label, text[:300], law, 1)]
-        changed.append((row, new))
-    print(f"revise: {len(live)} live provision KOs, {len(changed)} with changed gazette text")
+        changed.append((row, canonical))
+    print(f"revise: {len(live)} live provision KOs, {len(changed)} whose text or primary metadata is stale")
     for old, new in changed:
         print(f"  {old['urn']}  v{old['version']} -> v{new['version']}")
     if dry_run or not changed:
@@ -561,10 +564,10 @@ def revise(dry_run: bool):
         client.table("knowledge_objects").update({"system_time_end": now}) \
             .eq("urn", old["urn"]).eq("version", old["version"]).execute()
         edges = client.table("graph_edges").select("*").eq("source_urn", old["urn"]).eq("source_version", old["version"]).execute().data
-        if edges:
-            client.table("graph_edges").insert([
-                {"source_urn": e["source_urn"], "source_version": new["version"],
-                 "target_urn": e["target_urn"], "edge_type": e["edge_type"]} for e in edges]).execute()
+        keep = {(e["target_urn"], e["edge_type"]) for e in edges} | {(r["target_urn"], r["edge_type"]) for r in new["relations"]}
+        client.table("graph_edges").insert([
+            {"source_urn": new["urn"], "source_version": new["version"], "target_urn": t, "edge_type": et}
+            for t, et in sorted(keep)]).execute()
     print(f"revise: supabase ok — {len(changed)} new versions, previous versions closed at {now}")
 
     kos = [new for _, new in changed]
