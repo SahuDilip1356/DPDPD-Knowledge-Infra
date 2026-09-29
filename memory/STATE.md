@@ -24,7 +24,7 @@ intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 
 |---|---|
 | `deployments/dpdpa-wiki/` | Public site + workspace (React 19, Vite 8, custom prerender). `npm run build && npx vitest run` |
 | `deployments/dpdpa-backend/` | Canonical FastAPI backend. `python -m pytest -q` (98 tests) |
-| `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` |
+| `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` (synthetic); `--corpus real` scores citations over the verified law + 511 answer objects (`golden_corpus.jsonl`, rebuilt by `build_golden.py`); `--live` calls the model and prints cost |
 | `src/competitive_intel/` | Crawl, ground truth, claims, question graph, knowledge-object builder |
 | `src/` (api, reasoning, storage, tests) | **Legacy copy** of the backend, drifted from the canonical tree; not deployed |
 | `specs/dpdpa-wiki-reimagine/` | Intent → spec → plan for the site (validator passes) |
@@ -37,7 +37,9 @@ intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 
 3. **Corpus integrity (M2):** 12 questionable live objects (fake "Consent Notice Rules 2024", mock notice-test,
    duplicate Rule 7, draft Rule 4, 7 unsourced opinions) await "close them"; seed script objects are
    schema-invalid.
-4. **Evals are synthetic** (one fabricated object, mock model) — add real-corpus cases.
+4. **Retrieval is unranked.** The real-corpus eval (offline, 64 cases) shows the keyword fallback returns the whole
+   corpus for every question (~582 objects, ~287k-token prompts): citation recall 1.4%, withheld-support cases
+   never refused. Rank and cap the fallback; then run `--corpus real --live` once for a model-quality number.
 5. **Bundle:** public JS 229–231 KB gz vs 200 KB budget — route-level splitting task running separately.
 6. **Not built:** server-enforced roles, persistent Factory review board, hosted Ask end to end, email delivery.
 7. **Video pilot (spec T20–T21):** provisions not chosen (recommendation S6, S8, R7).
