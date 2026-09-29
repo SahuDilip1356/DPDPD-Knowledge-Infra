@@ -1,6 +1,6 @@
 # Plan — dpdpa.wiki reimagined
 
-**Status:** in progress — phase 1 (gate 1) started 2026-09-28
+**Status:** in progress — gate 1 signed off 2026-09-28; phase 2 (course, tools, home) built 2026-09-29; preview gate 2 pending
 **Spec:** ./spec.md
 **Date:** 2026-09-27
 
@@ -212,6 +212,7 @@ for the founder but is unlinked and `noindex`.
          every public page has `og:image`.
 
 ### T12 — Author module 1: What is DPDPA
+- status: done (2026-09-29)
 - implements: AC5, AC6
 - depends_on: T6
 - files: deployments/dpdpa-wiki/src/content/modules/01-what-is-dpdpa.md
@@ -228,6 +229,7 @@ for the founder but is unlinked and `noindex`.
          S44 (what changed), the commencement timeline (R1).
 
 ### T23 — Author module 2: The core rules
+- status: done (2026-09-29)
 - implements: AC5, AC6
 - depends_on: T6
 - files: deployments/dpdpa-wiki/src/content/modules/02-core-rules.md
@@ -238,6 +240,7 @@ for the founder but is unlinked and `noindex`.
          (valid consent, notice, legitimate uses, DPO, breach, retention). Same rules as T12.
 
 ### T24 — Author module 3: People's rights
+- status: done (2026-09-29)
 - implements: AC5, AC6
 - depends_on: T6
 - files: deployments/dpdpa-wiki/src/content/modules/03-peoples-rights.md
@@ -247,6 +250,7 @@ for the founder but is unlinked and `noindex`.
 - notes: Covers S9, S11–S15, R9–R14. Same rules as T12.
 
 ### T25 — Author module 4: Special cases
+- status: done (2026-09-29)
 - implements: AC5, AC6
 - depends_on: T6
 - files: deployments/dpdpa-wiki/src/content/modules/04-special-cases.md
@@ -257,6 +261,7 @@ for the founder but is unlinked and `noindex`.
          Schedule. Same rules as T12.
 
 ### T26 — Author module 5: Enforcement
+- status: done (2026-09-29)
 - implements: AC5, AC6
 - depends_on: T6
 - files: deployments/dpdpa-wiki/src/content/modules/05-enforcement.md
@@ -266,6 +271,7 @@ for the founder but is unlinked and `noindex`.
 - notes: Covers S18–S39, the Act's Schedule (7 penalty rows), R17–R22. Same rules as T12.
 
 ### T13 — Module 6 and the handoff to saralprivacy.com
+- status: done (2026-09-29)
 - implements: AC5
 - depends_on: T12
 - files: deployments/dpdpa-wiki/src/content/modules/06-in-your-business.md
@@ -277,6 +283,7 @@ for the founder but is unlinked and `noindex`.
          at the provision and then at the SaralPrivacy tool. Sets `handoff`, `next: null`.
 
 ### T14 — Module pages, course index, next/previous
+- status: done (2026-09-29)
 - implements: AC5, AC4, AC13
 - depends_on: T4, T12, T13, T23, T24, T25, T26
 - files: deployments/dpdpa-wiki/src/lib/modules.js, deployments/dpdpa-wiki/src/components/screens/Module.jsx,
@@ -292,6 +299,7 @@ for the founder but is unlinked and `noindex`.
          handoff URL and no `/learn/` next link; `/learn` lists 6 in order.
 
 ### T15 — Quizzes
+- status: done (2026-09-29)
 - implements: AC7
 - depends_on: T14
 - files: deployments/dpdpa-wiki/src/components/screens/Quiz.jsx, deployments/dpdpa-wiki/src/lib/modules.js,
@@ -307,6 +315,7 @@ for the founder but is unlinked and `noindex`.
          plain text before submit (render answers from JSON in script, not markup).
 
 ### T16 — Decision aids
+- status: done (2026-09-29)
 - implements: AC8
 - depends_on: T4
 - files: deployments/dpdpa-wiki/src/data/tools/decision-trees.json,
@@ -336,6 +345,7 @@ for the founder but is unlinked and `noindex`.
          verifies at 375px on the preview (tier2 + preview gate).
 
 ### T18 — Home page rewired to the course
+- status: done (2026-09-28)
 - implements: AC9
 - depends_on: T14, T16
 - files: deployments/dpdpa-wiki/src/data/homeContent.js, deployments/dpdpa-wiki/src/components/screens/Home.jsx,
@@ -350,6 +360,7 @@ for the founder but is unlinked and `noindex`.
          FAQ answers each contain a `/act/` or `/rules/` link.
 
 ### T19 — Retire or canonicalise the MSME guide
+- status: done (2026-09-28)
 - implements: AC12
 - depends_on: T14
 - files: deployments/dpdpa-wiki/vercel.json, deployments/dpdpa-wiki/src/lib/seo.js,

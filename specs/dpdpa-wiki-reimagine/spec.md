@@ -269,3 +269,5 @@ section; user accounts or server-side progress; comments; search within the site
   blocks: AC17
 - **Q4** — Does dpdpa.wiki get its own logo, or keep the SaralPrivacy mark? Owner: Dilip ·
   by: 2026-10-10 · blocks: nothing (branding task waits)
+  **Decided 2026-09-28: the site is named "DPDPA Wiki" with the owner line "SaralPrivacy Knowledge
+  Infra"; the SaralPrivacy mark stays as the icon.**

@@ -1,5 +1,7 @@
 import { listGuides, getGuide } from "./guides";
 import { FAQ } from "../data/homeContent";
+import { moduleRoutes, headForModule } from "./modules";
+import { toolRoutes, headForTool } from "./tools";
 import {
   DOCS, CHAPTERS, listProvisions, getByRoute, provisionRoutes, documentOf, displayLabel,
   isInForce, pageTitle, heading, excerpt, routeFor,
@@ -8,6 +10,8 @@ import {
 } from "./law";
 
 export const SITE = "https://dpdpa.wiki";
+export const SITE_NAME = "DPDPA Wiki";
+export const OWNER = "SaralPrivacy Knowledge Infra";
 /* One image for every page until per-page cards exist. The file itself is
    produced by a separate task; the tag is emitted regardless so unfurlers
    never see a page with no image at all. */
@@ -33,9 +37,9 @@ export function headFor(path) {
 
   if (clean === "/") {
     return tags({
-      title: "DPDP Act 2023 — Understand and implement India's data protection law | dpdpa.wiki",
+      title: "DPDPA Wiki — Learn India's DPDP Act, from the basics to your business | SaralPrivacy Knowledge Infra",
       description:
-        "A citation-grounded reference for India's Digital Personal Data Protection Act, 2023. Obligations, rights, penalties, consent and breach response — every claim traced to its section, rule or gazette notification.",
+        "A free six-module course and the full text of India's DPDP Act, 2023 and DPDP Rules, 2025, in the gazette's words. Every statement cites its section or rule. By SaralPrivacy Knowledge Infra.",
       canonical: `${SITE}/`,
       ogType: "website",
       // The FAQ answers are the homepage's most search-visible content, so the
@@ -54,7 +58,7 @@ export function headFor(path) {
 
   if (clean === "/guide") {
     return tags({
-      title: "Guides to the DPDP Act | dpdpa.wiki",
+      title: "Guides to the DPDP Act | DPDPA Wiki",
       description:
         "Long-form guides to India's Digital Personal Data Protection Act, in plain language, with worked examples from Indian businesses and the sections cited throughout.",
       canonical: `${SITE}/guide`,
@@ -113,6 +117,14 @@ export function headFor(path) {
     return term ? glossaryEntryHead(term) : "";
   }
 
+  if (clean === "/learn" || clean.startsWith("/learn/")) {
+    const m = headForModule(clean);
+    if (m) return tags(m);
+  }
+  if (clean.startsWith("/tools/")) {
+    const t = headForTool(clean);
+    if (t) return tags(t);
+  }
   return "";
 }
 
@@ -250,8 +262,9 @@ function tags({ title, description, canonical, ogType, ogImage = OG_IMAGE, jsonl
 export function publicRoutes() {
   return [
     "/",
-    "/guide",
-    ...listGuides().map((g) => `/guide/${g.slug}`),
+    ...moduleRoutes(),
+    ...toolRoutes(),
+    // Guides retired 2026-09-28 (spec Q1, plan T19 branch A): /guide/* 301s to the course.
     "/act",
     "/rules",
     ...provisionRoutes(),

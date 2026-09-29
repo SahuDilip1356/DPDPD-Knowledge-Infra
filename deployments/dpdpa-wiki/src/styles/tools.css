@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════════════
+   TOOLS — decision aids
+
+   Shares the law page header (law.css) so a tool reads as part of the
+   same reference. The body is one question at a time: a serif question,
+   the provisions it rests on, and large buttons for the answers. Colour
+   tokens come from home.css; spacing and radii from design-tokens.css.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.tool-run {
+  max-width: 72ch;
+}
+
+.tool-step-count {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  margin: 0 0 10px;
+}
+
+.tool-question {
+  font-family: var(--font-serif);
+  font-size: clamp(1.375rem, 3vw, 1.75rem);
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 var(--space-4);
+  text-wrap: pretty;
+}
+.tool-question:focus, .tool-verdict:focus { outline: none; }
+.tool-question:focus-visible, .tool-verdict:focus-visible {
+  outline: 2px solid var(--saffron);
+  outline-offset: 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Provisions a step rests on ──────────────────────────────────── */
+.tool-cites {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  margin-bottom: var(--space-6);
+}
+.tool-cites-label {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--quiet);
+}
+.tool-cites-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tool-cite {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--ivory-warm);
+  text-decoration: none;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.tool-cite:hover { border-color: var(--ink); text-decoration: none; }
+.tool-cite:hover .tool-cite-title { text-decoration: underline; text-underline-offset: 2px; }
+.tool-cite-label { font-weight: 600; }
+.tool-cite-title { color: var(--body); }
+.tool-cite-date {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--saffron);
+}
+
+/* ── Answers ─────────────────────────────────────────────────────── */
+.tool-options {
+  display: grid;
+  gap: 10px;
+  margin-bottom: var(--space-6);
+}
+.tool-option {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 18px;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.tool-option:hover { background: var(--ink); color: #fff; }
+.tool-option:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.tool-option:active { transform: translateY(1px); }
+
+/* ── Result ──────────────────────────────────────────────────────── */
+.tool-result {
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rule);
+  border-left: 5px solid var(--ink);
+  background: var(--ivory-warm);
+  margin-bottom: var(--space-6);
+}
+.tool-result-yes { border-left-color: var(--verified); }
+.tool-result-no { border-left-color: var(--ink); }
+.tool-result-partly { border-left-color: var(--saffron); }
+.tool-verdict {
+  font-family: var(--font-serif);
+  font-size: clamp(1.375rem, 3vw, 1.75rem);
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0 0 var(--space-3);
+  text-wrap: balance;
+}
+.tool-explanation {
+  font-family: var(--font-serif);
+  font-size: var(--text-read);
+  line-height: 1.65;
+  color: var(--body);
+  margin: 0 0 var(--space-4);
+}
+.tool-result .tool-cites { margin-bottom: var(--space-3); }
+.tool-result .tool-cite { background: #fff; }
+.tool-anchor {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--body);
+  margin: 0;
+}
+.tool-anchor a { color: var(--saffron); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Back / start over ───────────────────────────────────────────── */
+.tool-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.tool-nav-btn {
+  min-height: 44px;
+  padding: 10px 18px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.tool-nav-btn:hover:not(:disabled) { border-color: var(--ink); }
+.tool-nav-btn:disabled { color: var(--quiet); cursor: not-allowed; opacity: 0.7; }
+.tool-nav-btn:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.tool-nav-quiet { border-color: transparent; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── All steps (collapsed) ───────────────────────────────────────── */
+.tool-steps {
+  margin-top: var(--space-12);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--ink);
+  max-width: 72ch;
+}
+.tool-steps-summary {
+  font-family: var(--font-serif);
+  font-size: clamp(1.25rem, 2.6vw, 1.5rem);
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.tool-steps-summary::marker { color: var(--saffron); }
+.tool-steps-list {
+  margin: var(--space-4) 0 0;
+  padding-left: 1.5rem;
+}
+.tool-steps-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.tool-steps-item::marker { font-family: var(--font-sans); font-size: 13px; color: var(--quiet); }
+.tool-steps-text {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.tool-steps-result .tool-steps-text strong { font-weight: 600; }
+.tool-steps-options {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 6px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--body);
+}
+.tool-steps-options a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.tool-steps-explanation {
+  font-family: var(--font-serif);
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--body);
+  margin: 0 0 6px;
+}
+.tool-steps-cites {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--quiet);
+  margin: 0;
+}
+.tool-steps-cites a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── Phone width ─────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .tool-option { padding: 12px 14px; }
+  .tool-result { padding: 16px; }
+}

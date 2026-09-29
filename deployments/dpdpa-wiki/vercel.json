@@ -2,6 +2,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
+    { "source": "/guide/dpdp-act-explained-indian-msmes", "destination": "/learn/what-is-dpdpa", "permanent": true },
+    { "source": "/guide", "destination": "/learn", "permanent": true },
     { "source": "/today", "destination": "/workspace/today", "permanent": true },
     { "source": "/infographic", "destination": "/workspace/infographic", "permanent": true },
     { "source": "/changes", "destination": "/workspace/changes", "permanent": true },

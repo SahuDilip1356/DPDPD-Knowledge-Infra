@@ -4,8 +4,7 @@ import {
   KNOWLEDGE_OBJECTS, 
   OPINIONS, 
   CONSTITUTIONAL_NOUNS, 
-  getKOByUrn, 
-  getOpinionsForKO 
+  getKOByUrn 
 } from "../../data/mockData";
 import { 
   StatusBadge, 

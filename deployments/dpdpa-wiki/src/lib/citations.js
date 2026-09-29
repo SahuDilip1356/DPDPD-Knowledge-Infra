@@ -41,7 +41,8 @@ const LIST = String.raw`\d+(?:\s*\([^)]{1,4}\))*(?:\s*(?:,|and|&|or|to|-|–)\s*
 const SECTION = new RegExp(String.raw`\b(?:sections?|ss?\.)\s*(${LIST})`, "gi");
 const RULE = new RegExp(String.raw`\b(?:rules?|rr?\.)\s*(${LIST})`, "gi");
 const RULES_SCHEDULE = /\b(first|second|third|fourth|fifth|sixth|seventh)\s+schedule\b/gi;
-const ACT_SCHEDULE = /\b(?:the\s+schedule(?:\s+to\s+the\s+act)?|schedule\s+to\s+the\s+act|act'?s\s+schedule)\b/gi;
+// Case-sensitive on "Schedule": prose such as "build the retention schedule" is not a citation.
+const ACT_SCHEDULE = /\b(?:[Tt]he\s+Schedule(?:\s+to\s+the\s+Act)?|Schedule\s+to\s+the\s+Act|Act'?s\s+Schedule)\b/g;
 
 /** Labels cited in a piece of text, in order of first appearance, de-duplicated. */
 export function extractCitations(text) {

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { SaralPrivacyLogo } from "../ui/SaralPrivacyLogo";
+import { DpdpaWikiLogo } from "../ui/SaralPrivacyLogo";
 import "../../styles/home.css";
 
 const SHIKSHA_URL = import.meta.env.VITE_SHIKSHA_URL || "https://dpdpa.shiksha";
@@ -18,10 +18,10 @@ const SARAL_ASSESSMENT = "https://saralprivacy.com/assessment";
  * than no link.
  */
 export const PUBLIC_NAV = [
+  { to: "/learn", label: "Learn" },
   { to: "/act", label: "The Act" },
   { to: "/rules", label: "The Rules" },
-  { to: "/glossary", label: "Glossary" },
-  { to: "/guide", label: "Guides" }
+  { to: "/glossary", label: "Glossary" }
 ];
 
 export default function PublicShell({ children }) {
@@ -33,8 +33,8 @@ export default function PublicShell({ children }) {
 
       <header className="pub-header">
         <div className="pub-container pub-header-inner">
-          <Link to="/" className="pub-brand" aria-label="dpdpa.wiki home">
-            <SaralPrivacyLogo lockup="compact" theme="light" size={30} showTagline={false} />
+          <Link to="/" className="pub-brand" aria-label="DPDPA Wiki home">
+            <DpdpaWikiLogo theme="light" size={32} />
           </Link>
 
           <button
@@ -65,7 +65,7 @@ export default function PublicShell({ children }) {
       <footer className="pub-footer">
         <div className="pub-container pub-footer-inner">
           <div className="pub-footer-brand">
-            <SaralPrivacyLogo lockup="compact" theme="dark" size={28} showTagline={false} />
+            <DpdpaWikiLogo theme="dark" size={30} />
             <p className="pub-footer-note">
               India's Digital Personal Data Protection Act, 2023 and the DPDP Rules, 2025,
               in the gazette's own words. Every statement carries its provision.
@@ -82,7 +82,10 @@ export default function PublicShell({ children }) {
             </div>
             <div>
               <h2 className="pub-footer-heading">Learn</h2>
-              <Link to="/guide">Guides</Link>
+              <Link to="/learn">The course</Link>
+              <Link to="/tools/does-dpdpa-apply">Does the Act apply to me?</Link>
+              <Link to="/tools/is-this-consent-valid">Is this consent valid?</Link>
+              <Link to="/tools/significant-data-fiduciary">Am I a Significant Data Fiduciary?</Link>
               <a href={SHIKSHA_URL}>Certification ↗</a>
             </div>
             <div>
@@ -95,7 +98,7 @@ export default function PublicShell({ children }) {
         </div>
 
         <div className="pub-container pub-footer-base">
-          <span>A SaralPrivacy initiative</span>
+          <span>DPDPA Wiki · SaralPrivacy Knowledge Infra</span>
           <span className="pub-footer-legal">
             Reference material, not legal advice.
           </span>

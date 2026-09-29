@@ -5,7 +5,7 @@ describe("build output", () => {
   it("prerendered the home page with a title", () => {
     const html = readPage("/");
     expect(html, "run `npm run build` first").toBeTruthy();
-    expect(title(html)).toMatch(/dpdpa\.wiki/);
+    expect(title(html)).toMatch(/DPDPA Wiki/);
   });
 
   it("wrote at least one route", () => {

@@ -29,7 +29,7 @@ function unquote(value) {
   return v;
 }
 
-function parseFrontmatter(source) {
+export function parseFrontmatter(source) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source);
   if (!match) return { data: {}, body: source };
 

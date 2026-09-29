@@ -9,7 +9,7 @@ export default function GuideIndex() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = "Guides to the DPDP Act | dpdpa.wiki";
+    document.title = "Guides to the DPDP Act | DPDPA Wiki";
     return () => { document.title = prev; };
   }, []);
 

@@ -29,7 +29,7 @@ for (const p of provisions) {
 
 // ── Modules ──
 const modDir = path.join(root, "src/content/modules");
-const files = fs.existsSync(modDir) ? fs.readdirSync(modDir).filter((f) => f.endsWith(".md")).sort() : [];
+const files = fs.existsSync(modDir) ? fs.readdirSync(modDir).filter((f) => /^\d\d-.*\.md$/.test(f)).sort() : [];
 for (const f of files) {
   const src = fs.readFileSync(path.join(modDir, f), "utf8");
   const fm = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(src);
@@ -53,7 +53,8 @@ for (const f of files) {
     }
   }
   // quiz items: each "cites:" line inside the front-matter quiz block
-  for (const m of fm[1].matchAll(/^\s+cites:\s*\[([^\]]*)\]/gm)) {
+  // both "cites: [S4, R7]" and "cites: S4, R7"
+  for (const m of fm[1].matchAll(/^\s+cites:\s*\[?([^\]\n]*)\]?\s*$/gm)) {
     for (const l of m[1].split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean)) {
       if (!listed.includes(l)) problems.push(`${f} quiz cites ${l}, outside the module's provisions`);
     }

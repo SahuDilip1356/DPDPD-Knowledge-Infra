@@ -492,6 +492,17 @@
 }
 .pub-footer-legal { text-transform: none; letter-spacing: 0; }
 
+/* ── Course list ─────────────────────────────────────────────────── */
+.course { list-style: none; padding: 0; margin: 24px 0 0; border-top: 1px solid var(--rule); }
+.course-item { border-bottom: 1px solid var(--rule); }
+.course-link { display: flex; gap: 18px; padding: 18px 4px; min-height: 44px; text-decoration: none; color: inherit; }
+.course-link:hover .course-title { color: var(--saffron); }
+.course-num { font-family: var(--font-mono); font-size: 13px; color: var(--quiet); padding-top: 4px; min-width: 28px; }
+.course-body { display: flex; flex-direction: column; gap: 4px; }
+.course-title { font-family: var(--font-serif); font-size: 20px; color: var(--ink); }
+.course-blurb { font-size: 15px; color: var(--body); line-height: 1.55; }
+.faq-cite { margin-top: 8px; font-size: 14px; }
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 860px) {
   .pub-menu-btn { display: inline-flex; }

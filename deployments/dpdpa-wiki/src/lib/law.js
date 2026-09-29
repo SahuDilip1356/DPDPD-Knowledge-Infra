@@ -231,9 +231,9 @@ export function clauseLines(text) {
 
 /* ── Page copy shared by the screen and the head tags ─────────────── */
 
-export const ACT_INDEX_TITLE = "The Act — 44 sections and the Schedule | DPDPA 2023 | dpdpa.wiki";
-export const RULES_INDEX_TITLE = "The Rules — 23 rules and 7 schedules | DPDP Rules 2025 | dpdpa.wiki";
-export const GLOSSARY_TITLE = "Glossary — every term defined in Section 2 and Rule 2 | DPDPA 2023 | dpdpa.wiki";
+export const ACT_INDEX_TITLE = "The Act — 44 sections and the Schedule | DPDPA 2023 | DPDPA Wiki";
+export const RULES_INDEX_TITLE = "The Rules — 23 rules and 7 schedules | DPDP Rules 2025 | DPDPA Wiki";
+export const GLOSSARY_TITLE = "Glossary — every term defined in Section 2 and Rule 2 | DPDPA 2023 | DPDPA Wiki";
 
 /** "core-rules" → "Core Rules". */
 export function moduleTitle(slug) {
@@ -251,7 +251,7 @@ export function heading(p) {
 }
 
 export function pageTitle(p) {
-  return `${heading(p)} | ${documentOf(p).shortName} | dpdpa.wiki`;
+  return `${heading(p)} | ${documentOf(p).shortName} | DPDPA Wiki`;
 }
 
 /** The first ~155 characters of a text, cut at a word boundary. */
@@ -297,5 +297,5 @@ export function glossaryGroups() {
 }
 
 export function glossaryTitle(g) {
-  return `${g.term} — definition, ${g.clause} | ${g.provision === "S2" ? DOCS.act.shortName : DOCS.rules.shortName} | dpdpa.wiki`;
+  return `${g.term} — definition, ${g.clause} | ${g.provision === "S2" ? DOCS.act.shortName : DOCS.rules.shortName} | DPDPA Wiki`;
 }

@@ -27,6 +27,10 @@ import AskIntelligence from "./components/screens/AskIntelligence";
 import AdminAudit from "./components/screens/AdminAudit";
 import Bible from "./components/screens/Bible";
 import NotFound from "./components/screens/NotFound";
+import LearnIndex from "./components/screens/LearnIndex";
+import Module from "./components/screens/Module";
+import Quiz from "./components/screens/Quiz";
+import DecisionAid from "./components/screens/DecisionAid";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -144,6 +148,10 @@ export default function App({ Router = BrowserRouter, routerProps = {} }) {
         <Route path="/rules/:slug" element={<Provision />} />
         <Route path="/glossary" element={<GlossaryIndex />} />
         <Route path="/glossary/:slug" element={<GlossaryEntry />} />
+        <Route path="/learn" element={<LearnIndex />} />
+        <Route path="/learn/:slug" element={<Module />} />
+        <Route path="/learn/:slug/quiz" element={<Quiz />} />
+        <Route path="/tools/:slug" element={<DecisionAid />} />
 
         {/* Workspace — the founder's working surface. Reached by URL only,
             never from public navigation, and served with noindex (spec AC9, AC14). */}

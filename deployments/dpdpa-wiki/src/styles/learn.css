@@ -1,0 +1,65 @@
+/* Course pages: /learn, /learn/{module}, /learn/{module}/quiz.
+   Builds on law.css (header, wrap, pager) and home.css tokens. */
+
+.learn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.learn-card-link {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 20px 22px; min-height: 44px;
+  border: 1px solid var(--rule); border-radius: 6px; background: #fff;
+  color: inherit; text-decoration: none;
+}
+.learn-card-link:hover { border-color: var(--ink); text-decoration: none; }
+.learn-card-num { font-family: var(--font-sans); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--saffron); }
+.learn-card-title { font-family: var(--font-serif); font-size: 1.375rem; color: var(--ink); line-height: 1.3; }
+.learn-card-summary { font-size: 16px; line-height: 1.55; color: var(--body); }
+.learn-card-meta { font-size: 13px; color: var(--quiet); }
+
+.learn-provisions { margin-bottom: 28px; padding: 14px 16px; background: var(--ivory-warm); border-radius: 6px; }
+.learn-provisions-h { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--quiet); margin-bottom: 8px; }
+.learn-provisions ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.learn-provisions a { font-size: 14px; display: inline-block; padding-block: 6px; }
+
+.learn-toc { margin-bottom: 32px; }
+.learn-toc ol { margin: 0; padding-inline-start: 22px; line-height: 1.9; font-size: 15px; }
+
+.learn-lesson { max-width: 72ch; margin-bottom: 40px; }
+.learn-lesson-h { font-family: var(--font-serif); font-size: clamp(1.375rem, 3vw, 1.625rem); color: var(--ink); line-height: 1.3; margin: 0 0 14px; scroll-margin-top: 84px; }
+.learn-prose { font-family: var(--font-serif); font-size: 17px; line-height: 1.72; color: #222; max-width: 72ch; }
+.learn-prose p { margin: 0 0 1em; }
+.learn-prose ul, .learn-prose ol { padding-inline-start: 22px; margin: 0 0 1em; }
+.learn-prose li { margin-bottom: 0.4em; }
+.learn-prose blockquote { margin: 0 0 1em; padding-inline-start: 16px; border-inline-start: 3px solid var(--rule); color: var(--body); }
+
+a.cite { color: var(--ink); text-decoration: underline; text-decoration-color: var(--saffron); text-underline-offset: 3px; }
+a.cite:hover { color: var(--saffron); }
+.cite-badge {
+  display: inline-block; margin-inline-start: 6px; padding: 1px 7px;
+  font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; line-height: 1.6;
+  background: var(--saffron-lo); color: #7A4A12; border-radius: 3px; vertical-align: 2px; white-space: nowrap;
+}
+
+.learn-foot { border-top: 1px solid var(--rule); padding-top: 28px; display: flex; flex-direction: column; gap: 24px; }
+.learn-quiz-link { align-self: flex-start; min-height: 44px; }
+.learn-handoff { padding: 20px; background: var(--ink); color: #fff; border-radius: 6px; }
+.learn-handoff p { margin: 0 0 14px; font-size: 17px; }
+.learn-last { margin-top: 10px; font-size: 14px; color: rgba(255,255,255,0.8); }
+
+.quiz { max-width: 72ch; }
+.quiz-item { border: 1px solid var(--rule); border-radius: 6px; padding: 18px 18px 12px; margin: 0 0 18px; background: #fff; }
+.quiz-item.is-right { border-color: var(--verified); }
+.quiz-item.is-wrong { border-color: #B42318; }
+.quiz-q { font-family: var(--font-serif); font-size: 18px; color: var(--ink); line-height: 1.45; padding: 0; margin-bottom: 10px; }
+.quiz-n { font-family: var(--font-mono); font-size: 13px; color: var(--quiet); }
+.quiz-opt { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 10px 8px; border-radius: 4px; font-size: 16px; line-height: 1.5; cursor: pointer; }
+.quiz-opt:hover { background: var(--ivory); }
+.quiz-opt input { margin-top: 5px; width: 18px; height: 18px; flex-shrink: 0; }
+.quiz-opt.is-answer { background: #EAF6E8; }
+.quiz-feedback { margin: 10px 0 4px; font-size: 15px; line-height: 1.55; }
+.quiz-cite { margin-inline-start: 8px; }
+.quiz-submit { min-height: 44px; }
+.quiz-score { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.quiz-score p { margin: 0; font-size: 18px; width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-card-link, .quiz-opt { transition: none; }
+}

@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
 import { supabase } from "../../data/supabaseClient";
-import {
-  HERO, JOURNEYS, RESOURCES, ASSESSMENT, ASSESSMENT_BANDS, FAQ, TRUST, CAPTURE
-} from "../../data/homeContent";
+import { HERO, JOURNEYS, RESOURCES, COURSE, READINESS, FAQ, TRUST, CAPTURE } from "../../data/homeContent";
+import { listModules } from "../../lib/modules";
 import "../../styles/home.css";
 
 /* ── Email capture ──────────────────────────────────────────────────
@@ -86,93 +85,14 @@ function SubscribeForm({ intent = "checklist", score = null, compact = false }) 
   );
 }
 
-/* ── Readiness assessment ─────────────────────────────────────────── */
-function Assessment() {
-  const [answers, setAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const total = useMemo(
-    () => Object.values(answers).reduce((sum, n) => sum + n, 0),
-    [answers]
-  );
-  const complete = Object.keys(answers).length === ASSESSMENT.length;
-  const band = ASSESSMENT_BANDS.find((b) => total >= b.min) || ASSESSMENT_BANDS.at(-1);
-  const maxScore = ASSESSMENT.length * 2;
-
-  return (
-    <section className="pub-section assess" id="assessment" aria-labelledby="assess-h">
-      <div className="pub-container">
-        <p className="pub-eyebrow">Readiness</p>
-        <h2 id="assess-h" className="pub-h2">How ready is your organisation?</h2>
-        <p className="pub-lede">
-          Five questions, each tied to a specific obligation. Nothing is stored unless you ask for the result.
-        </p>
-
-        <ol className="assess-list">
-          {ASSESSMENT.map((q, i) => (
-            <li key={q.id} className="assess-item">
-              <div className="assess-q">
-                <span className="assess-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                <div>
-                  <p className="assess-question">{q.question}</p>
-                  <p className="assess-section">{q.section}</p>
-                </div>
-              </div>
-              <div className="assess-options" role="group" aria-label={q.question}>
-                {q.options.map((opt) => {
-                  const active = answers[q.id] === opt.score;
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      className={`assess-opt ${active ? "is-active" : ""}`}
-                      aria-pressed={active}
-                      onClick={() => {
-                        setAnswers((a) => ({ ...a, [q.id]: opt.score }));
-                        setSubmitted(false);
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </li>
-          ))}
-        </ol>
-
-        {!submitted ? (
-          <button
-            className="pub-btn pub-btn-primary assess-submit"
-            type="button"
-            disabled={!complete}
-            onClick={() => setSubmitted(true)}
-          >
-            {complete ? "See where you stand" : `Answer all ${ASSESSMENT.length} questions`}
-          </button>
-        ) : (
-          <div className="assess-result" role="status">
-            <div className="assess-score">
-              <span className="assess-score-num">{total}</span>
-              <span className="assess-score-of">of {maxScore}</span>
-            </div>
-            <div>
-              <h3 className="assess-band">{band.label}</h3>
-              <p className="assess-note">{band.note}</p>
-              <p className="assess-followup">
-                Want the gaps written up against each section?
-              </p>
-              <SubscribeForm intent="assessment" score={total} compact />
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
 /* ── Page ───────────────────────────────────────────────────────────── */
 export default function Home() {
+  // Authored module titles win over the fallback list once the files exist.
+  const authored = listModules();
+  const course = COURSE.map((c) => {
+    const m = authored.find((x) => x.slug === c.slug);
+    return m ? { ...c, title: m.title, blurb: m.summary || c.blurb } : c;
+  });
   // The hero search used to hand off to Ask Intelligence, which is not
   // public this cycle (spec NG2); the provision index is the way in.
 
@@ -190,7 +110,7 @@ export default function Home() {
           <p className="hero-sub">{HERO.subtitle}</p>
 
           <div className="hero-actions">
-            <a className="pub-btn pub-btn-primary" href="#checklist">{HERO.primaryCta.label}</a>
+            <Link className="pub-btn pub-btn-primary" to={HERO.primaryCta.href}>{HERO.primaryCta.label}</Link>
             <Link className="pub-btn pub-btn-ghost" to={HERO.secondaryCta.href}>
               {HERO.secondaryCta.label} <span aria-hidden="true">→</span>
             </Link>
@@ -235,8 +155,37 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Assessment ───────────────────────────────────────────── */}
-      <Assessment />
+      {/* ── The course ───────────────────────────────────────────── */}
+      <section className="pub-section" aria-labelledby="course-h">
+        <div className="pub-container">
+          <p className="pub-eyebrow">The course</p>
+          <h2 id="course-h" className="pub-h2">Six modules, from the basics to your business</h2>
+          <p className="pub-lede">Read them in order. Each one ends with a short self-test and a link to the next.</p>
+          <ol className="course">
+            {course.map((m, i) => (
+              <li key={m.slug} className="course-item">
+                <Link to={`/learn/${m.slug}`} className="course-link">
+                  <span className="course-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="course-body">
+                    <span className="course-title">{m.title}</span>
+                    <span className="course-blurb">{m.blurb}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Readiness: SaralPrivacy owns the assessment ───────────── */}
+      <section className="pub-section pub-section-alt" id="assessment" aria-labelledby="ready-h">
+        <div className="pub-container">
+          <p className="pub-eyebrow">{READINESS.eyebrow}</p>
+          <h2 id="ready-h" className="pub-h2">{READINESS.title}</h2>
+          <p className="pub-lede">{READINESS.body}</p>
+          <a className="pub-btn pub-btn-primary" href={READINESS.cta.href} rel="noopener">{READINESS.cta.label}</a>
+        </div>
+      </section>
 
       {/* ── Trust ────────────────────────────────────────────────── */}
       <section className="trust" aria-labelledby="trust-h">
@@ -263,6 +212,9 @@ export default function Home() {
               <article key={item.q} className="faq-item">
                 <h3 className="faq-q">{item.q}</h3>
                 <p className="faq-a">{item.a}</p>
+                {item.cite && (
+                  <p className="faq-cite"><Link to={item.cite}>Read the provision →</Link></p>
+                )}
               </article>
             ))}
           </div>

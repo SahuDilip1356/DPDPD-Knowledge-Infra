@@ -11,10 +11,10 @@
 
 export const HERO = {
   eyebrow: "The Digital Personal Data Protection Act, 2023",
-  title: "Understand and implement India's DPDP Act",
+  title: "Learn India's DPDP Act, from the basics to your business",
   subtitle:
-    "Every obligation traced to its section, every answer carrying its citation. Built for the people who have to act on the law, not only read it.",
-  primaryCta: { label: "Get the compliance checklist", intent: "checklist" },
+    "A six-module course and the full text of the Act and the Rules, in the gazette's own words. Every statement carries the provision it rests on.",
+  primaryCta: { label: "Start the course", href: "/learn/what-is-dpdpa" },
   secondaryCta: { label: "Read the Act", href: "/act" },
   searchPlaceholder: "Search the DPDP Act, rules, and guidance"
 };
@@ -25,8 +25,8 @@ export const JOURNEYS = [
     id: "founder",
     label: "Founders",
     lede: "You need to know what applies to you and what it costs to get wrong.",
-    firstStep: "Start with who the Act applies to",
-    href: "/act/section-3"
+    firstStep: "Find out whether the Act applies to you",
+    href: "/tools/does-dpdpa-apply"
   },
   {
     id: "legal",
@@ -39,15 +39,15 @@ export const JOURNEYS = [
     id: "product",
     label: "Product teams",
     lede: "You need consent and notice that hold up in a real user flow.",
-    firstStep: "See what a notice has to contain",
-    href: "/act/section-5"
+    firstStep: "Check whether a consent flow is valid",
+    href: "/tools/is-this-consent-valid"
   },
   {
     id: "developer",
     label: "Developers",
     lede: "You need retention, access control, and breach handling in code.",
-    firstStep: "Review the obligations of a Data Fiduciary",
-    href: "/act/section-8"
+    firstStep: "Learn the core rules: notice, consent, security, breach",
+    href: "/learn/core-rules"
   }
 ];
 
@@ -166,38 +166,63 @@ export const ASSESSMENT_BANDS = [
   }
 ];
 
+/** The six modules in order. Slugs are fixed by the spec; titles are fallbacks until the module files exist. */
+export const COURSE = [
+  { slug: "what-is-dpdpa", title: "What is the DPDPA?", blurb: "What the Act is, who it applies to, the key terms, and when the Rules apply." },
+  { slug: "core-rules", title: "The core rules", blurb: "Lawful grounds, notice, consent, legitimate uses, security safeguards, breach, retention." },
+  { slug: "peoples-rights", title: "People's rights", blurb: "Children's data, access, correction and erasure, grievances, nomination, duties." },
+  { slug: "special-cases", title: "Special cases", blurb: "Significant Data Fiduciaries, Consent Managers, cross-border transfer, exemptions." },
+  { slug: "enforcement", title: "Enforcement and penalties", blurb: "The Data Protection Board, appeals, undertakings, and the Schedule of penalties." },
+  { slug: "in-your-business", title: "In your business", blurb: "A first-90-days sequence, then a handoff to SaralPrivacy's tools." }
+];
+
+export const READINESS = {
+  eyebrow: "Readiness",
+  title: "How ready is your organisation?",
+  body: "SaralPrivacy runs the readiness assessment: your gaps written up against each provision, with the templates to close them.",
+  cta: { label: "Take the assessment on SaralPrivacy ↗", href: "https://saralprivacy.com/assessment" }
+};
+
 /** Written against the questions people actually search, not the ones we'd prefer to answer. */
 export const FAQ = [
   {
     q: "Who does the DPDP Act apply to?",
+    cite: "/act/section-3",
     a: "It applies to anyone processing digital personal data in India, and to processing outside India where goods or services are offered to people in India. It does not cover personal data processed for a purely personal or domestic purpose, or data made publicly available by the person themselves or under a legal obligation."
   },
   {
     q: "What is the penalty for a data breach in India?",
+    cite: "/act/schedule",
     a: "Failing to take reasonable security safeguards carries a penalty of up to ₹250 crore. Failing to notify the Data Protection Board or affected Data Principals of a breach carries up to ₹200 crore. Penalties are set by the Board after an inquiry, weighing the nature, gravity, and duration of the breach."
   },
   {
     q: "What must a consent notice contain?",
+    cite: "/act/section-5",
     a: "It must describe the personal data being sought, the purpose of processing, how a Data Principal may exercise their rights, and how to complain to the Board. It must be standalone, itemised, and written in plain language, and be available in English or any of the 22 languages in the Eighth Schedule."
   },
   {
     q: "What is a Significant Data Fiduciary?",
+    cite: "/act/section-10",
     a: "A class the Central Government may notify based on the volume and sensitivity of data processed, risk to Data Principals, and impact on sovereignty, electoral democracy, and public order. Additional obligations follow: appointing a Data Protection Officer based in India, an independent data auditor, and periodic Data Protection Impact Assessments."
   },
   {
     q: "How is children's data treated under the DPDP Act?",
+    cite: "/act/section-9",
     a: "Anyone under 18 is a child. Verifiable consent from a parent or lawful guardian is required before processing. Tracking, behavioural monitoring, and targeted advertising directed at children are prohibited, though the Government may exempt certain classes of Data Fiduciary."
   },
   {
     q: "When do the DPDP Rules come into force?",
+    cite: "/rules/rule-1",
     a: "The Rules were notified on 13 November 2025. Rules 1, 2 and 17 to 21 (definitions and the Data Protection Board) apply from that date; Rule 4 (Consent Manager registration) from 13 November 2026; the remaining rules, including notice, security safeguards, breach intimation and children's consent, from 13 May 2027. Each rule page shows its own date."
   },
   {
     q: "Do I need a Data Protection Officer?",
+    cite: "/act/section-10",
     a: "Only Significant Data Fiduciaries must appoint a Data Protection Officer, who has to be based in India and answerable to the board of directors or equivalent. Every Data Fiduciary must nevertheless publish the contact details of someone able to answer questions about processing."
   },
   {
     q: "What rights do individuals have?",
+    cite: "/act/section-11",
     a: "A Data Principal can obtain a summary of the personal data being processed and the identities of others it has been shared with, ask for correction or erasure, nominate someone to act on their behalf in the event of death or incapacity, and use a grievance redressal route before approaching the Board."
   }
 ];

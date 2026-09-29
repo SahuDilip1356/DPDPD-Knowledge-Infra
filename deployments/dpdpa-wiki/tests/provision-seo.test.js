@@ -7,8 +7,8 @@ const types = (html) => jsonLd(html).map((b) => b["@type"]);
 
 describe("provision head tags (T5)", () => {
   it.each([
-    ["/act/section-6", /^Section 6 — Consent \| DPDPA 2023 \| dpdpa\.wiki$/],
-    ["/rules/rule-7", /^Rule 7 — Intimation of personal data breach \| DPDP Rules 2025 \| dpdpa\.wiki$/]
+    ["/act/section-6", /^Section 6 — Consent \| DPDPA 2023 \| DPDPA Wiki$/],
+    ["/rules/rule-7", /^Rule 7 — Intimation of personal data breach \| DPDP Rules 2025 \| DPDPA Wiki$/]
   ])("%s has a title, description, canonical, og:image and Legislation + BreadcrumbList", (route, pattern) => {
     const html = readPage(route);
     expect(html, "run `npm run build` first").toBeTruthy();
@@ -26,8 +26,8 @@ describe("provision head tags (T5)", () => {
   });
 
   it("the Schedule and a rules schedule follow the title pattern", () => {
-    expect(title(readPage("/act/schedule"))).toBe("The Schedule — Penalties | DPDPA 2023 | dpdpa.wiki");
-    expect(title(readPage("/rules/schedule-first"))).toMatch(/^First Schedule — .+ \| DPDP Rules 2025 \| dpdpa\.wiki$/);
+    expect(title(readPage("/act/schedule"))).toBe("The Schedule — Penalties | DPDPA 2023 | DPDPA Wiki");
+    expect(title(readPage("/rules/schedule-first"))).toMatch(/^First Schedule — .+ \| DPDP Rules 2025 \| DPDPA Wiki$/);
   });
 
   it("Legislation objects carry identifier, parent, date and (for Rules) legal force", () => {
@@ -78,7 +78,7 @@ describe("provision head tags (T5)", () => {
   });
 
   it("existing routes now carry og:image and twitter:card exactly once", () => {
-    for (const route of ["/", "/guide"]) {
+    for (const route of ["/"]) {
       const html = readPage(route);
       expect(meta(html, "og:image"), route).toBe(`${SITE}/og-default.png`);
       expect((html.match(/name="twitter:card"/g) || []).length, route).toBe(1);

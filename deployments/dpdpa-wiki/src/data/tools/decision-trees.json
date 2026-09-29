@@ -1,0 +1,834 @@
+[
+  {
+    "slug": "does-dpdpa-apply",
+    "title": "Does the DPDP Act apply?",
+    "summary": "Work through Section 3 of the Digital Personal Data Protection Act, 2023 — and the exemptions in Section 17 — to see whether the Act reaches a given processing of personal data.",
+    "intro": "Section 3 says what the Act applies to and what it leaves out. Section 17 then lifts parts of the Act for particular purposes and particular fiduciaries. Answer each step from the facts of your own processing; every step shows the text it rests on.",
+    "start": "q_digital",
+    "nodes": {
+      "q_digital": {
+        "type": "question",
+        "text": "Is the personal data in digital form, or was it collected in non-digital form and digitised afterwards?",
+        "cites": [
+          "S3",
+          "S2"
+        ],
+        "options": [
+          {
+            "label": "Yes — it is digital, or it was digitised",
+            "next": "q_where"
+          },
+          {
+            "label": "No — it exists only on paper and is never digitised",
+            "next": "r_not_digital"
+          }
+        ]
+      },
+      "r_not_digital": {
+        "type": "result",
+        "text": "The Act does not apply: the personal data is not digital.",
+        "cites": [
+          "S3",
+          "S2"
+        ],
+        "result": {
+          "verdict": "The Act does not apply",
+          "explanation": "Section 3(a) and Section 3(b) reach only the processing of digital personal data: personal data collected in digital form, or collected in non-digital form and digitised subsequently (Section 3(a)(i) and (ii)). Section 2(n) defines digital personal data as personal data in digital form. Personal data that is never digitised is outside what Section 3 brings within the Act. If the same data is later digitised, run this check again from the start.",
+          "cites": [
+            "S3",
+            "S2"
+          ]
+        }
+      },
+      "q_where": {
+        "type": "question",
+        "text": "Where does the processing take place?",
+        "cites": [
+          "S3"
+        ],
+        "options": [
+          {
+            "label": "Within the territory of India",
+            "next": "q_personal"
+          },
+          {
+            "label": "Outside the territory of India",
+            "next": "q_offering"
+          }
+        ]
+      },
+      "q_offering": {
+        "type": "question",
+        "text": "Is the processing outside India in connection with any activity related to offering goods or services to Data Principals within the territory of India?",
+        "cites": [
+          "S3"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_personal"
+          },
+          {
+            "label": "No",
+            "next": "r_outside"
+          }
+        ]
+      },
+      "r_outside": {
+        "type": "result",
+        "text": "The Act does not apply: processing outside India with no connection to offering goods or services in India.",
+        "cites": [
+          "S3",
+          "S17"
+        ],
+        "result": {
+          "verdict": "The Act does not apply",
+          "explanation": "Section 3(b) is the only limb of Section 3 that reaches processing outside the territory of India, and it does so only where the processing is in connection with any activity related to offering goods or services to Data Principals within India. On these facts that connection is absent, so Section 3 does not bring the processing within the Act. A different situation is covered by Section 17(1)(d): a person based in India who processes the personal data of Data Principals outside India under a contract with a person outside India is within the Act but exempt from most of Chapters II and III.",
+          "cites": [
+            "S3",
+            "S17"
+          ]
+        }
+      },
+      "q_personal": {
+        "type": "question",
+        "text": "Is the personal data processed by an individual for a personal or domestic purpose?",
+        "cites": [
+          "S3"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "r_personal"
+          },
+          {
+            "label": "No",
+            "next": "q_public"
+          }
+        ]
+      },
+      "r_personal": {
+        "type": "result",
+        "text": "The Act does not apply: personal or domestic processing by an individual.",
+        "cites": [
+          "S3"
+        ],
+        "result": {
+          "verdict": "The Act does not apply",
+          "explanation": "Section 3(c)(i) says the Act does not apply to personal data processed by an individual for any personal or domestic purpose. The exclusion speaks of processing by an individual, so it does not extend to processing by a company, firm or other organisation, however small.",
+          "cites": [
+            "S3"
+          ]
+        }
+      },
+      "q_public": {
+        "type": "question",
+        "text": "Was the personal data made publicly available by the Data Principal herself, or by another person who is under a legal obligation in India to make it publicly available?",
+        "cites": [
+          "S3"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "r_public"
+          },
+          {
+            "label": "No",
+            "next": "q_s17_2"
+          }
+        ]
+      },
+      "r_public": {
+        "type": "result",
+        "text": "The Act does not apply: personal data made publicly available by the Data Principal or under a legal obligation.",
+        "cites": [
+          "S3"
+        ],
+        "result": {
+          "verdict": "The Act does not apply",
+          "explanation": "Section 3(c)(ii) excludes personal data that is made or caused to be made publicly available by (A) the Data Principal to whom it relates, or (B) any other person who is under an obligation under any law in force in India to make it publicly available. The Illustration to Section 3 gives the example of an individual who publicly shares her personal data on social media while blogging her views. Personal data made public by anyone else, without such a legal obligation, is not within this exclusion.",
+          "cites": [
+            "S3"
+          ]
+        }
+      },
+      "q_s17_2": {
+        "type": "question",
+        "text": "Is the processing either (a) by an instrumentality of the State that the Central Government has notified under Section 17(2)(a), or (b) necessary for research, archiving or statistical purposes, where the personal data will not be used to take any decision specific to a Data Principal and the processing follows the prescribed standards?",
+        "cites": [
+          "S17",
+          "R16",
+          "SCH-SECOND"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "r_s17_2"
+          },
+          {
+            "label": "No",
+            "next": "q_s17_1"
+          }
+        ]
+      },
+      "r_s17_2": {
+        "type": "result",
+        "text": "The Act does not apply: Section 17(2) exempts this processing entirely.",
+        "cites": [
+          "S3",
+          "S17",
+          "R16",
+          "SCH-SECOND"
+        ],
+        "result": {
+          "verdict": "The Act does not apply",
+          "explanation": "Section 3 would bring this processing within the Act, but Section 17(2) says the provisions of the Act shall not apply in respect of it. For an instrumentality of the State the exemption depends on a Central Government notification made in the interests listed in Section 17(2)(a). For research, archiving or statistical purposes it depends on the personal data not being used to take any decision specific to a Data Principal and on the processing following prescribed standards; Rule 16, which applies from 13 May 2027, sets those standards in the Second Schedule. If either condition is not met, go back one step and continue.",
+          "cites": [
+            "S3",
+            "S17",
+            "R16",
+            "SCH-SECOND"
+          ]
+        }
+      },
+      "q_s17_1": {
+        "type": "question",
+        "text": "Is the processing for one of the purposes in Section 17(1): enforcing a legal right or claim; by a court, tribunal or a body entrusted by law with a judicial, quasi-judicial, regulatory or supervisory function, where necessary for that function; the prevention, detection, investigation or prosecution of an offence or contravention of Indian law; personal data of Data Principals outside India processed by a person based in India under a contract with a person outside India; a court-approved merger, amalgamation, demerger or similar scheme; or ascertaining the financial information, assets and liabilities of a defaulter on a loan from a financial institution?",
+        "cites": [
+          "S17"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "r_s17_1"
+          },
+          {
+            "label": "No",
+            "next": "q_s17_3"
+          }
+        ]
+      },
+      "r_s17_1": {
+        "type": "result",
+        "text": "The Act applies with exemptions: most of Chapters II and III, and Section 16, do not apply to this processing.",
+        "cites": [
+          "S3",
+          "S17",
+          "S8",
+          "S16"
+        ],
+        "result": {
+          "verdict": "The Act applies with exemptions",
+          "explanation": "Section 3 brings the processing within the Act, but for the purposes listed in Section 17(1) the provisions of Chapter II (except sub-sections (1) and (5) of Section 8), Chapter III and Section 16 do not apply. Chapter II carries the obligations of Data Fiduciaries, Chapter III the rights and duties of Data Principals, and Section 16 the Central Government's power to restrict transfers outside India. Two obligations survive in Chapter II: Section 8(1), which keeps the Data Fiduciary responsible for complying with the Act in respect of processing done by it or by its Data Processor, and Section 8(5), which requires reasonable security safeguards to prevent personal data breach. The rest of the Act, including the Board, penalties and the Schedule, continues to apply.",
+          "cites": [
+            "S3",
+            "S17",
+            "S8",
+            "S16",
+            "ACT-SCHEDULE"
+          ]
+        }
+      },
+      "q_s17_3": {
+        "type": "question",
+        "text": "Has the Central Government notified you — individually or as part of a class of Data Fiduciaries, such as recognised startups — under Section 17(3) as a Data Fiduciary to whom Section 5, sub-sections (3) and (7) of Section 8, and Sections 10 and 11 do not apply?",
+        "cites": [
+          "S17",
+          "S5",
+          "S8",
+          "S10",
+          "S11"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "r_s17_3"
+          },
+          {
+            "label": "No",
+            "next": "r_applies"
+          }
+        ]
+      },
+      "r_s17_3": {
+        "type": "result",
+        "text": "The Act applies with exemptions: a Section 17(3) notification lifts Sections 5, 8(3), 8(7), 10 and 11.",
+        "cites": [
+          "S3",
+          "S17",
+          "S5",
+          "S8",
+          "S10",
+          "S11"
+        ],
+        "result": {
+          "verdict": "The Act applies with exemptions",
+          "explanation": "Section 17(3) lets the Central Government, having regard to the volume and nature of personal data processed, notify certain Data Fiduciaries or classes of Data Fiduciaries, including startups, as fiduciaries to whom Section 5 (notice), sub-sections (3) and (7) of Section 8 (accuracy of data used for decisions or disclosed, and erasure), Section 10 (Significant Data Fiduciary obligations) and Section 11 (right to access information) do not apply. Everything else in the Act, including consent under Section 6 and the remaining obligations in Section 8, still applies. The exemption exists only if the notification names you or your class; nobody can assume it.",
+          "cites": [
+            "S3",
+            "S17",
+            "S5",
+            "S6",
+            "S8",
+            "S10",
+            "S11"
+          ]
+        }
+      },
+      "r_applies": {
+        "type": "result",
+        "text": "The Act applies.",
+        "cites": [
+          "S3",
+          "S17",
+          "S4"
+        ],
+        "result": {
+          "verdict": "The Act applies",
+          "explanation": "On these facts Section 3 brings the processing within the Act: it is the processing of digital personal data within India, or outside India in connection with offering goods or services to Data Principals in India, and neither exclusion in Section 3(c) is met. None of the exemptions in Section 17 you were asked about applies. Two further routes in Section 17 depend on who you are: Section 17(4) narrows specific provisions for processing by the State or its instrumentalities, and Section 17(5) lets the Central Government, within five years of commencement, declare by notification that a provision does not apply to a Data Fiduciary or class for a specified period. Start with the grounds for processing in Section 4.",
+          "cites": [
+            "S3",
+            "S17",
+            "S4"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "is-this-consent-valid",
+    "title": "Is this consent valid?",
+    "summary": "Test a consent against Section 6(1) of the DPDP Act — free, specific, informed, unconditional, unambiguous, a clear affirmative action — with the Section 5 notice and the right to withdraw, and see when Section 7 means consent is not needed at all.",
+    "intro": "Section 4 allows processing on one of two grounds: the Data Principal's consent, or one of the legitimate uses in Section 7. If consent is the ground, Section 6 sets the tests it must meet and Section 5 the notice that must go with it. Answer from the facts of one specific request for consent.",
+    "start": "q_ground",
+    "nodes": {
+      "q_ground": {
+        "type": "question",
+        "text": "Which ground do you rely on for this processing?",
+        "cites": [
+          "S4"
+        ],
+        "options": [
+          {
+            "label": "The Data Principal's consent — Section 4(1)(a)",
+            "next": "q_notice"
+          },
+          {
+            "label": "One of the legitimate uses in Section 7 — Section 4(1)(b)",
+            "next": "r_legit"
+          }
+        ]
+      },
+      "r_legit": {
+        "type": "result",
+        "text": "Consent is not required where one of the legitimate uses in Section 7 applies.",
+        "cites": [
+          "S4",
+          "S7",
+          "S2"
+        ],
+        "result": {
+          "verdict": "Consent not required — a legitimate use applies",
+          "explanation": "Section 4(1)(b) permits processing for a lawful purpose for certain legitimate uses, and Section 2(d) says those are the uses set out in Section 7. Section 7 lists them: the specified purpose for which the Data Principal voluntarily provided her personal data and in respect of which she has not indicated that she does not consent (clause (a)); certain processing by the State and its instrumentalities (clauses (b), (c) and (d)); compliance with a judgment, decree or order (clause (e)); a medical emergency (clause (f)); epidemics and other threats to public health (clause (g)); disasters and breakdown of public order (clause (h)); and employment-related purposes (clause (i)). The processing must fit the words of the clause you rely on. Under clause (a), once the Data Principal indicates that she no longer wants the processing, it must stop — see Illustration (II) to Section 7.",
+          "cites": [
+            "S4",
+            "S7",
+            "S2"
+          ]
+        }
+      },
+      "q_notice": {
+        "type": "question",
+        "text": "Was the request for consent accompanied or preceded by a notice telling the Data Principal (i) the personal data and the purpose of processing, (ii) how she may exercise her rights under Section 6(4) and Section 13, and (iii) how she may complain to the Board?",
+        "cites": [
+          "S5",
+          "S6",
+          "S13"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_free"
+          },
+          {
+            "label": "No",
+            "next": "f_notice"
+          }
+        ]
+      },
+      "f_notice": {
+        "type": "result",
+        "text": "Not valid: no notice accompanied or preceded the request for consent.",
+        "cites": [
+          "S5",
+          "S6",
+          "S13",
+          "R3"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the notice requirement",
+          "explanation": "Section 5(1) says every request for consent under Section 6 shall be accompanied or preceded by a notice informing the Data Principal of the personal data and the purpose for which it is proposed to be processed, the manner in which she may exercise her rights under Section 6(4) and Section 13, and the manner in which she may make a complaint to the Board. Section 6(1) also requires consent to be informed. Section 6(10) puts the burden on the Data Fiduciary to prove, in any proceeding, that notice was given and consent obtained in accordance with the Act. Rule 3, which applies from 13 May 2027, sets out what the notice must contain: it must be understandable on its own, give an itemised description of the personal data and the specified purposes, and give the link and other means for withdrawing consent, exercising rights and complaining to the Board.",
+          "cites": [
+            "S5",
+            "S6",
+            "S13",
+            "R3"
+          ]
+        }
+      },
+      "q_free": {
+        "type": "question",
+        "text": "Was the consent given freely?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_specific"
+          },
+          {
+            "label": "No",
+            "next": "f_free"
+          }
+        ]
+      },
+      "f_free": {
+        "type": "result",
+        "text": "Not valid: the consent was not free.",
+        "cites": [
+          "S6",
+          "S4"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the test of free consent",
+          "explanation": "Section 6(1) requires that the consent given by the Data Principal be free. Consent that was not freely given does not meet the first word of the test and cannot found processing under Section 4(1)(a). The Act does not define the word; read it in its ordinary sense alongside the other requirements of Section 6(1), in particular that consent be unconditional.",
+          "cites": [
+            "S6",
+            "S4"
+          ]
+        }
+      },
+      "q_specific": {
+        "type": "question",
+        "text": "Was the consent specific — did it signify agreement to processing for the specified purpose, that is, the purpose stated in the notice?",
+        "cites": [
+          "S6",
+          "S2"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_informed"
+          },
+          {
+            "label": "No",
+            "next": "f_specific"
+          }
+        ]
+      },
+      "f_specific": {
+        "type": "result",
+        "text": "Not valid: the consent was not specific to the specified purpose.",
+        "cites": [
+          "S6",
+          "S2",
+          "S5"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the test of specific consent",
+          "explanation": "Section 6(1) requires consent to be specific and to signify an agreement to the processing of her personal data for the specified purpose. Section 2(za) defines the specified purpose as the purpose mentioned in the notice given by the Data Fiduciary to the Data Principal under Section 5. A general or open-ended consent, or one that does not match the purpose in the notice, does not meet this test.",
+          "cites": [
+            "S6",
+            "S2",
+            "S5"
+          ]
+        }
+      },
+      "q_informed": {
+        "type": "question",
+        "text": "Was the consent informed?",
+        "cites": [
+          "S6",
+          "S5"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_unconditional"
+          },
+          {
+            "label": "No",
+            "next": "f_informed"
+          }
+        ]
+      },
+      "f_informed": {
+        "type": "result",
+        "text": "Not valid: the consent was not informed.",
+        "cites": [
+          "S6",
+          "S5"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the test of informed consent",
+          "explanation": "Section 6(1) requires consent to be informed. The Act ties this to the notice: Section 5(1) requires the request for consent to be accompanied or preceded by a notice informing the Data Principal of the personal data, the purpose, her rights and how to complain, and Section 6(3) requires the request itself to be in clear and plain language. A consent given without that information is not informed.",
+          "cites": [
+            "S6",
+            "S5"
+          ]
+        }
+      },
+      "q_unconditional": {
+        "type": "question",
+        "text": "Was the consent unconditional?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_affirmative"
+          },
+          {
+            "label": "No",
+            "next": "f_unconditional"
+          }
+        ]
+      },
+      "f_unconditional": {
+        "type": "result",
+        "text": "Not valid: the consent was conditional.",
+        "cites": [
+          "S6"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the test of unconditional consent",
+          "explanation": "Section 6(1) requires consent to be unconditional. The Act does not elaborate the word; read it with the requirement in the same sub-section that consent be limited to the personal data necessary for the specified purpose, and with Section 6(2), under which any part of a consent that infringes the Act, the rules or any other law is invalid to the extent of the infringement.",
+          "cites": [
+            "S6"
+          ]
+        }
+      },
+      "q_affirmative": {
+        "type": "question",
+        "text": "Was the consent unambiguous and signified by a clear affirmative action of the Data Principal?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_necessary"
+          },
+          {
+            "label": "No",
+            "next": "f_affirmative"
+          }
+        ]
+      },
+      "f_affirmative": {
+        "type": "result",
+        "text": "Not valid: no clear affirmative action, or an ambiguous one.",
+        "cites": [
+          "S6"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the test of a clear affirmative action",
+          "explanation": "Section 6(1) requires consent to be unambiguous, with a clear affirmative action, signifying an agreement to the processing. Where the Data Principal has taken no clear affirmative action, or the action taken is ambiguous as to what it agrees to, the test is not met.",
+          "cites": [
+            "S6"
+          ]
+        }
+      },
+      "q_necessary": {
+        "type": "question",
+        "text": "Is the consent limited to the personal data that is necessary for the specified purpose?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_plain"
+          },
+          {
+            "label": "No — it also covers personal data the purpose does not need",
+            "next": "f_necessary"
+          }
+        ]
+      },
+      "f_necessary": {
+        "type": "result",
+        "text": "Not valid for the excess: the consent covers personal data the purpose does not need.",
+        "cites": [
+          "S6"
+        ],
+        "result": {
+          "verdict": "Not valid for the excess: fails the necessity limit",
+          "explanation": "Section 6(1) requires consent to be limited to such personal data as is necessary for the specified purpose. The Illustration to Section 6(1) shows the effect: a telemedicine app that obtains consent both to provide its service and to access the user's phone contact list has valid consent only for the service, because the contact list is not necessary for it. Consent for personal data beyond what the purpose needs does not carry, even if the Data Principal agreed to it. The consent for the necessary data is judged on the remaining tests.",
+          "cites": [
+            "S6"
+          ]
+        }
+      },
+      "q_plain": {
+        "type": "question",
+        "text": "Was the request for consent presented in clear and plain language, with the option to read it in English or any language in the Eighth Schedule to the Constitution, and with the contact details of a Data Protection Officer or another person authorised to answer the Data Principal?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_infringe"
+          },
+          {
+            "label": "No",
+            "next": "f_plain"
+          }
+        ]
+      },
+      "f_plain": {
+        "type": "result",
+        "text": "Not valid: the request did not meet Section 6(3).",
+        "cites": [
+          "S6",
+          "S5"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the requirements for the request in Section 6(3)",
+          "explanation": "Section 6(3) requires every request for consent under the Act or the rules to be presented to the Data Principal in clear and plain language, giving her the option to access it in English or any language specified in the Eighth Schedule to the Constitution, and providing the contact details of a Data Protection Officer, where applicable, or of any other person authorised by the Data Fiduciary to respond to communications about her rights. Section 5(3) applies the same language option to the notice.",
+          "cites": [
+            "S6",
+            "S5"
+          ]
+        }
+      },
+      "q_infringe": {
+        "type": "question",
+        "text": "Does any part of the consent ask the Data Principal to agree to something that infringes the Act, the rules or any other law in force — for example, to waive a right the Act gives her?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "No",
+            "next": "q_withdraw"
+          },
+          {
+            "label": "Yes",
+            "next": "f_infringe"
+          }
+        ]
+      },
+      "f_infringe": {
+        "type": "result",
+        "text": "Not valid to that extent: part of the consent infringes the Act or another law.",
+        "cites": [
+          "S6"
+        ],
+        "result": {
+          "verdict": "Not valid to that extent: fails Section 6(2)",
+          "explanation": "Section 6(2) says any part of a consent that constitutes an infringement of the provisions of the Act, the rules or any other law in force is invalid to the extent of that infringement. The Illustration to Section 6(2) gives the example of an insurance customer who consents both to processing for issuing her policy and to waiving her right to complain to the Data Protection Board of India: the waiver part of the consent is invalid. The remainder of the consent is judged on the other tests in Section 6.",
+          "cites": [
+            "S6"
+          ]
+        }
+      },
+      "q_withdraw": {
+        "type": "question",
+        "text": "Can the Data Principal withdraw her consent at any time, with the ease of doing so comparable to the ease with which she gave it?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_cm"
+          },
+          {
+            "label": "No",
+            "next": "f_withdraw"
+          }
+        ]
+      },
+      "f_withdraw": {
+        "type": "result",
+        "text": "Not valid: the Data Principal cannot withdraw as easily as she consented.",
+        "cites": [
+          "S6",
+          "S4",
+          "R3"
+        ],
+        "result": {
+          "verdict": "Not valid: fails the right to withdraw",
+          "explanation": "Section 6(4) gives the Data Principal the right to withdraw consent at any time, with the ease of doing so being comparable to the ease with which it was given. A consent mechanism that offers no route to withdraw, or one markedly harder than the route to consent, does not respect that right. Section 6(4) is framed as a right rather than as one of the words in Section 6(1), and the Act does not say in terms that such a consent is void; but Section 4(1) permits processing only in accordance with the Act, and Section 6(10) requires the Data Fiduciary to prove that consent was obtained in accordance with the Act and the rules. On withdrawal, Section 6(6) requires the Data Fiduciary, within a reasonable time, to cease processing and to cause its Data Processors to cease, unless processing without consent is required or authorised by law; Section 6(5) preserves the legality of processing done before withdrawal. Rule 3, which applies from 13 May 2027, requires the notice itself to give the link and other means by which consent can be withdrawn.",
+          "cites": [
+            "S6",
+            "S4",
+            "R3"
+          ]
+        }
+      },
+      "q_cm": {
+        "type": "question",
+        "text": "Was the consent given, or is it managed, through a Consent Manager?",
+        "cites": [
+          "S6"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "q_cm_registered"
+          },
+          {
+            "label": "No — the Data Principal dealt with the Data Fiduciary directly",
+            "next": "r_valid"
+          }
+        ]
+      },
+      "q_cm_registered": {
+        "type": "question",
+        "text": "Is that Consent Manager registered with the Data Protection Board of India?",
+        "cites": [
+          "S6",
+          "S2",
+          "R4"
+        ],
+        "options": [
+          {
+            "label": "Yes",
+            "next": "r_valid_cm"
+          },
+          {
+            "label": "No",
+            "next": "f_cm"
+          }
+        ]
+      },
+      "r_valid_cm": {
+        "type": "result",
+        "text": "Valid on these facts, given through a registered Consent Manager.",
+        "cites": [
+          "S6",
+          "S2",
+          "R4",
+          "SCH-FIRST"
+        ],
+        "result": {
+          "verdict": "Valid on these facts",
+          "explanation": "Section 6(7) lets the Data Principal give, manage, review or withdraw her consent to the Data Fiduciary through a Consent Manager. Section 2(g) defines a Consent Manager as a person registered with the Board who acts as a single point of contact for the Data Principal through an accessible, transparent and interoperable platform; Section 6(9) requires registration with the Board on prescribed conditions, and Section 6(8) makes the Consent Manager accountable to the Data Principal. Rule 4, which applies from 13 November 2026, sets the registration procedure and points to the First Schedule for the conditions of registration (Part A) and the Consent Manager's obligations (Part B). The consent itself stands on the Section 6(1) tests you have just applied; Section 6(10) leaves the Data Fiduciary to prove notice and consent in any proceeding.",
+          "cites": [
+            "S6",
+            "S2",
+            "R4",
+            "SCH-FIRST"
+          ]
+        }
+      },
+      "f_cm": {
+        "type": "result",
+        "text": "The Consent Manager route is not available: the intermediary is not registered with the Board.",
+        "cites": [
+          "S6",
+          "S2",
+          "S5",
+          "R4"
+        ],
+        "result": {
+          "verdict": "Cannot rely on the Consent Manager route: the intermediary is not registered",
+          "explanation": "Section 2(g) defines a Consent Manager as a person registered with the Board, and Section 6(9) requires every Consent Manager to be registered with the Board in the prescribed manner and on the prescribed conditions. An intermediary that is not registered is not a Consent Manager within the meaning of the Act, so Section 6(7) does not describe what happened. The Act does not say in terms that consent routed through an unregistered intermediary is void; whether the consent stands depends on whether the Data Principal's own act meets the tests in Section 6(1), with notice under Section 5, which you have applied above. The registration procedure is in Rule 4, which applies from 13 November 2026.",
+          "cites": [
+            "S6",
+            "S2",
+            "S5",
+            "R4"
+          ]
+        }
+      },
+      "r_valid": {
+        "type": "result",
+        "text": "Valid on these facts.",
+        "cites": [
+          "S6",
+          "S5",
+          "S4"
+        ],
+        "result": {
+          "verdict": "Valid on these facts",
+          "explanation": "On these facts the consent meets each requirement of Section 6(1) — free, specific, informed, unconditional and unambiguous, given by a clear affirmative action, signifying agreement to processing for the specified purpose and limited to the personal data necessary for it — the request met Section 6(3), a notice under Section 5(1) accompanied or preceded it, no part of it infringes the Act or another law (Section 6(2)), and the Data Principal can withdraw it as easily as she gave it (Section 6(4)). Two things remain with the Data Fiduciary: under Section 6(10) it must be able to prove, in any proceeding, that notice was given and consent obtained in accordance with the Act and the rules; and processing must stay within the specified purpose, since Section 4(1) permits processing only in accordance with the Act and for a lawful purpose.",
+          "cites": [
+            "S6",
+            "S5",
+            "S4"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "slug": "significant-data-fiduciary",
+    "title": "Are you a Significant Data Fiduciary?",
+    "summary": "Only the Central Government can notify a Data Fiduciary as a Significant Data Fiduciary under Section 10(1) of the DPDP Act. See what the notification turns on, and what Section 10(2) and Rule 13 then require.",
+    "intro": "Significant Data Fiduciary is a status conferred by notification, not a threshold you cross on your own. One question settles it; the rest is what follows from the answer.",
+    "start": "q_notified",
+    "nodes": {
+      "q_notified": {
+        "type": "question",
+        "text": "Has the Central Government notified you — or a class of Data Fiduciaries you belong to — as a Significant Data Fiduciary under Section 10(1)?",
+        "cites": [
+          "S10",
+          "S2"
+        ],
+        "options": [
+          {
+            "label": "Yes — a notification names me or my class",
+            "next": "r_sdf"
+          },
+          {
+            "label": "No",
+            "next": "r_not_sdf"
+          }
+        ]
+      },
+      "r_sdf": {
+        "type": "result",
+        "text": "You are a Significant Data Fiduciary: Section 10(2) and Rule 13 apply to you.",
+        "cites": [
+          "S10",
+          "S2",
+          "R13",
+          "ACT-SCHEDULE"
+        ],
+        "result": {
+          "verdict": "You are a Significant Data Fiduciary",
+          "explanation": "Section 2(z) defines a Significant Data Fiduciary as any Data Fiduciary or class of Data Fiduciaries notified by the Central Government under Section 10. Section 10(2) then requires you to (a) appoint a Data Protection Officer who represents you under the Act, is based in India, is an individual responsible to your Board of Directors or similar governing body, and is the point of contact for grievance redressal; (b) appoint an independent data auditor to evaluate your compliance with the Act; and (c) undertake periodic Data Protection Impact Assessments, periodic audits and such other measures as may be prescribed. Rule 13, which applies from 13 May 2027, adds the detail: a Data Protection Impact Assessment and an audit once in every period of twelve months from the date of notification, with a report of significant observations furnished to the Board; due diligence that technical measures, including algorithmic software, are not likely to pose a risk to the rights of Data Principals; and no transfer outside India of personal data, or the traffic data pertaining to its flow, that the Central Government specifies on the recommendation of a committee. The Schedule sets the penalty for breach of the Section 10 obligations at up to one hundred and fifty crore rupees.",
+          "cites": [
+            "S10",
+            "S2",
+            "R13",
+            "ACT-SCHEDULE"
+          ]
+        }
+      },
+      "r_not_sdf": {
+        "type": "result",
+        "text": "You are not a Significant Data Fiduciary, and you cannot designate yourself one.",
+        "cites": [
+          "S10",
+          "S2"
+        ],
+        "result": {
+          "verdict": "You are not a Significant Data Fiduciary — and you cannot self-designate",
+          "explanation": "Under Section 10(1) only the Central Government may notify a Data Fiduciary or class of Data Fiduciaries as a Significant Data Fiduciary, on the basis of an assessment of such relevant factors as it may determine. The factors the section names are the volume and sensitivity of personal data processed; risk to the rights of Data Principals; potential impact on the sovereignty and integrity of India; risk to electoral democracy; security of the State; and public order. Section 2(z) confirms that the status exists only by notification. Until a notification names you or your class, the additional obligations in Section 10(2) and Rule 13 do not attach; the general obligations of every Data Fiduciary in Chapter II still do. If your processing is large in volume or sensitive, or bears on the listed interests, watch for notifications under Section 10(1).",
+          "cites": [
+            "S10",
+            "S2",
+            "R13"
+          ]
+        }
+      }
+    }
+  }
+]

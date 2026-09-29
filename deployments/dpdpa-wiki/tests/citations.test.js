@@ -19,6 +19,10 @@ describe("extractCitations", () => {
     expect(extractCitations("Penalties are in the Schedule to the Act.")).toEqual(["ACT-SCHEDULE"]);
     expect(extractCitations("The Third Schedule sets retention periods, not the Schedule.")).toEqual(["SCH-THIRD", "ACT-SCHEDULE"]);
   });
+  it("does not read lowercase 'the schedule' in prose as the Act's Schedule", () => {
+    expect(extractCitations("Build the schedule from the inventory; keep the retention schedule current.")).toEqual([]);
+    expect(extractCitations("any language in the Eighth Schedule to the Constitution")).toEqual([]);
+  });
   it("ignores prose with no citations", () => {
     expect(extractCitations("Consent must be free, specific and informed.")).toEqual([]);
     expect(extractCitations("")).toEqual([]);
