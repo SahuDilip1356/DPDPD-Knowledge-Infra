@@ -9,18 +9,44 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
-  const navItems = [
-    { path: "/workspace/today", label: "Today", icon: "today", description: "Command Center" },
-    { path: "/workspace/course", label: "DPDPA Certification", icon: "certification", description: "Masterclass & Exam" },
-    { path: "/workspace/infographic", label: "Architecture Visual", icon: "architecture", description: "Interactive Blueprint" },
-    { path: "/workspace/changes", label: "Changes", icon: "changes", description: "Regulatory Changes" },
-    { path: "/workspace/knowledge", label: "Knowledge", icon: "knowledge", description: "Explorer & Graph" },
-    { path: "/workspace/actions", label: "Decisions & Actions", icon: "actions", description: "Operational Response" },
-    { path: "/workspace/factory", label: "Research Factory", icon: "factory", description: "Ingestion Pipeline" },
-    { path: "/workspace/ask", label: "Ask Intelligence", icon: "ask", description: "Grounded Q&A" },
-    { path: "/workspace/bible", label: "DPDPA Bible", icon: "bible", description: "Legal Reference" },
-    ...(user ? [{ path: "/workspace/admin", label: "Admin Audit", icon: "admin", description: "Audit & Analytics" }] : [])
+  const navSections = [
+    {
+      label: "Operations",
+      items: [
+        { path: "/workspace/today", label: "Today", icon: "today", description: "Command Center" },
+        { path: "/workspace/changes", label: "Changes", icon: "changes", description: "Regulatory tracker" },
+        { path: "/workspace/actions", label: "Decisions", icon: "actions", description: "Operational response" },
+      ],
+    },
+    {
+      label: "Knowledge",
+      items: [
+        { path: "/workspace/acts", label: "Acts", icon: "knowledge", description: "Statutory law" },
+        { path: "/workspace/rules", label: "Rules", icon: "knowledge", description: "Regulatory rules" },
+        { path: "/workspace/interpretations", label: "Interpretations", icon: "ask", description: "Opinion and commentary" },
+        { path: "/workspace/discussions", label: "Discussions", icon: "bible", description: "Circulars and notes" },
+        { path: "/workspace/bible", label: "DPDPA Bible", icon: "bible", description: "Legal reference" },
+      ],
+    },
+    {
+      label: "Intelligence",
+      items: [
+        { path: "/workspace/knowledge", label: "Knowledge Graph", icon: "knowledge", description: "Object explorer" },
+        { path: "/workspace/ask", label: "Ask Intelligence", icon: "ask", description: "Grounded Q&A" },
+        { path: "/workspace/infographic", label: "Architecture", icon: "architecture", description: "Visual blueprint" },
+        { path: "/workspace/factory", label: "Research Factory", icon: "factory", description: "Ingestion pipeline" },
+      ],
+    },
+    {
+      label: "Programs",
+      items: [
+        { path: "/workspace/course", label: "DPDPA Certification", icon: "certification", description: "Masterclass & Exam", external: true },
+        ...(user ? [{ path: "/workspace/admin", label: "Admin Audit", icon: "admin", description: "Audit & analytics" }] : []),
+      ],
+    },
   ];
+
+  const isActivePath = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
     <div className={`app-shell ${collapsed ? "nav-collapsed" : ""}`}>
@@ -47,47 +73,54 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
         </div>
 
         <nav className="nav-menu">
-          {navItems.map((item) => {
-            const isCourse = item.path === "/workspace/course";
-            const isActive = !isCourse && location.pathname.startsWith(item.path);
-            const externalUrl = isCourse ? (import.meta.env.VITE_SHIKSHA_URL || "https://dpdpa.shiksha") : null;
+          {navSections.map((section) => (
+            <div className="nav-section" key={section.label}>
+              {!collapsed && <p className="nav-section-title">{section.label}</p>}
+              {section.items.map((item) => {
+                const externalUrl = item.external
+                  ? import.meta.env.VITE_SHIKSHA_URL || "https://dpdpa.shiksha"
+                  : null;
 
-            if (isCourse) {
-              return (
-                <a
-                  key={item.path}
-                  href={externalUrl}
-                  className="nav-link-item"
-                  title={collapsed ? item.label : ""}
-                >
-                  <span className="nav-icon"><NavIcon name={item.icon} /></span>
-                  {!collapsed && (
-                    <div className="nav-label-group">
-                      <span className="nav-label">{item.label}</span>
-                      <span className="nav-desc">{item.description}</span>
-                    </div>
-                  )}
-                </a>
-              );
-            }
+                if (externalUrl) {
+                  return (
+                    <a
+                      key={item.path}
+                      href={externalUrl}
+                      className="nav-link-item"
+                      title={collapsed ? item.label : ""}
+                    >
+                      <span className="nav-icon"><NavIcon name={item.icon} /></span>
+                      {!collapsed && (
+                        <div className="nav-label-group">
+                          <span className="nav-label">{item.label}</span>
+                          <span className="nav-desc">{item.description}</span>
+                        </div>
+                      )}
+                    </a>
+                  );
+                }
 
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`nav-link-item ${isActive ? "active" : ""}`}
-                title={collapsed ? item.label : ""}
-              >
-                <span className="nav-icon"><NavIcon name={item.icon} /></span>
-                {!collapsed && (
-                  <div className="nav-label-group">
-                    <span className="nav-label">{item.label}</span>
-                    <span className="nav-desc">{item.description}</span>
-                  </div>
-                )}
-              </Link>
-            );
-          })}
+                const isActive = isActivePath(item.path);
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`nav-link-item ${isActive ? "active" : ""}`}
+                    title={collapsed ? item.label : ""}
+                  >
+                    <span className="nav-icon"><NavIcon name={item.icon} /></span>
+                    {!collapsed && (
+                      <div className="nav-label-group">
+                        <span className="nav-label">{item.label}</span>
+                        <span className="nav-desc">{item.description}</span>
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="nav-footer">
@@ -133,7 +166,7 @@ export default function AppShell({ children, apiOnline, loadingHealth, onSearchC
           <div className="topbar-right" style={{ display: "flex", gap: "var(--space-md)", alignItems: "center" }}>
             <div className={`api-indicator-badge ${apiOnline ? "online" : ""}`}>
               <span className="api-dot"></span>
-              <span>{loadingHealth ? "Checking status..." : apiOnline ? "Live API Online" : "Sandbox Mode"}</span>
+              <span>{loadingHealth ? "Checking status..." : apiOnline ? "Live API Online" : "API Unavailable"}</span>
             </div>
 
             {user ? (

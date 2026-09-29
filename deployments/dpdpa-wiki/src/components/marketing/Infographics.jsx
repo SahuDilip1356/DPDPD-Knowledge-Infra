@@ -300,15 +300,3 @@ export function Register() {
     </figure>
   );
 }
-
-/* ── Registry consumed by the guide renderer ────────────────────── */
-export const INFOGRAPHICS = {
-  timeline: Timeline,
-  glossary: Glossary,
-  grounds: Grounds,
-  "consent-tests": ConsentTests,
-  "legitimate-uses": LegitimateUses,
-  "breach-clock": BreachClock,
-  penalties: Penalties,
-  register: Register
-};

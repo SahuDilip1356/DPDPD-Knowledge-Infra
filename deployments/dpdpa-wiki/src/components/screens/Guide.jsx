@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
-import { INFOGRAPHICS } from "../marketing/Infographics";
+import { INFOGRAPHICS } from "../marketing/infographicRegistry";
 import { getGuide, listGuides } from "../../lib/guides";
 import "../../styles/guide.css";
 

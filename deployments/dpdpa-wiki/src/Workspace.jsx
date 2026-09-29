@@ -16,8 +16,12 @@ import FactoryBoard from "./components/screens/FactoryBoard";
 import AskIntelligence from "./components/screens/AskIntelligence";
 import AdminAudit from "./components/screens/AdminAudit";
 import Bible from "./components/screens/Bible";
+import Acts from "./components/screens/Acts";
+import Rules from "./components/screens/Rules";
+import Interpretations from "./components/screens/Interpretations";
+import Discussions from "./components/screens/Discussions";
+import { API_BASE_URL, API_CONFIGURED, apiFetch } from "./lib/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const SHIKSHA_URL = import.meta.env.VITE_SHIKSHA_URL || "https://dpdpa.shiksha";
 
 function CourseRedirect() {
@@ -45,8 +49,14 @@ export default function Workspace() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [user, setUser] = useState(null);
 
+  // No backend configured (as on the public preview): report offline without a request.
   useEffect(() => {
-    fetch(`${API_BASE_URL}/health`, { method: "GET" })
+    if (!API_CONFIGURED) {
+      setApiOnline(false);
+      setLoadingHealth(false);
+      return;
+    }
+    apiFetch("/health/ready", { method: "GET" })
       .then((r) => setApiOnline(r.ok))
       .catch(() => setApiOnline(false))
       .finally(() => setLoadingHealth(false));
@@ -106,6 +116,10 @@ export default function Workspace() {
         <Route path="factory" element={shell(<FactoryBoard user={user} onSignInClick={() => setAuthModalOpen(true)} />)} />
         <Route path="ask" element={shell(<AskIntelligence apiOnline={apiOnline} apiBaseUrl={API_BASE_URL} />)} />
         <Route path="bible" element={shell(<Bible />)} />
+        <Route path="acts" element={shell(<Acts />)} />
+        <Route path="rules" element={shell(<Rules />)} />
+        <Route path="interpretations" element={shell(<Interpretations />)} />
+        <Route path="discussions" element={shell(<Discussions />)} />
         <Route path="admin" element={shell(<AdminAudit />)} />
         <Route path="*" element={<Navigate to="today" replace />} />
       </Routes>

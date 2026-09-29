@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getEventById, getKOByUrn, getActionsForEvent, CONFLICTS } from "../../data/mockData";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import { 
   StatusBadge, 
   PriorityBadge, 
@@ -8,13 +9,14 @@ import {
   TrustIndicator, 
   CitationCard, 
   TimeDisplay, 
-  ObjectTypeBadge 
+  ObjectTypeBadge,
+  EmptyState
 } from "../ui/SharedComponents";
 
 export default function ChangeWorkspace() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const event = getEventById(id);
+  const event = MOCKS_ENABLED ? getEventById(id) : null;
 
   const [activeTab, setActiveTab] = useState("overview");
   const [applicability, setApplicability] = useState("unknown");

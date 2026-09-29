@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { EmptyState } from "../ui/SharedComponents";
+import { apiFetch } from "../../lib/api";
+import CometCascadeHeroBackground from "../marketing/CometCascadeHeroBackground";
+import "../../styles/bible.css";
 
-// Detailed local data representing the DPDPA Chapters and Sections
 const BIBLE_SECTIONS = [
   {
     chapter: "Chapter 1: Preliminary",
@@ -237,8 +240,6 @@ const BIBLE_SECTIONS = [
   }
 ];
 
-// The Schedule to the Digital Personal Data Protection Act, 2023 [see section 33(1)].
-// "breach" and "penalty" are verbatim from the gazette; every amount is a maximum.
 const PENALTY_SCHEDULE = [
   { serial: 1, provision: "s.8(5)", breach: "Breach in observing the obligation of Data Fiduciary to take reasonable security safeguards to prevent personal data breach under sub-section (5) of section 8", penalty: "May extend to two hundred and fifty crore rupees" },
   { serial: 2, provision: "s.8(6)", breach: "Breach in observing the obligation to give the Board or affected Data Principal notice of a personal data breach under sub-section (6) of section 8", penalty: "May extend to two hundred crore rupees" },
@@ -249,18 +250,37 @@ const PENALTY_SCHEDULE = [
   { serial: 7, provision: "Any other provision", breach: "Breach of any other provision of this Act or the rules made thereunder", penalty: "May extend to fifty crore rupees" }
 ];
 
+const CHAPTER_LABELS = ["All Chapters", ...new Set(BIBLE_SECTIONS.map((section) => section.chapter))];
+
+function getChapterGroup(sections) {
+  const byChapter = {};
+  sections.forEach((item) => {
+    if (!byChapter[item.chapter]) byChapter[item.chapter] = [];
+    byChapter[item.chapter].push(item);
+  });
+  return Object.entries(byChapter).map(([chapter, items]) => ({
+    chapter,
+    sections: items
+  }));
+}
+
 export default function Bible() {
   const [activeTab, setActiveTab] = useState("explorer"); // explorer | penalties | raw
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedSection, setExpandedSection] = useState("Section 5"); // Expand section 5 by default
+  const [chapterFilter, setChapterFilter] = useState("All Chapters");
+  const [expandedSection, setExpandedSection] = useState("");
   const [rawMarkdown, setRawMarkdown] = useState("");
   const [loadingRaw, setLoadingRaw] = useState(false);
+  const [rawError, setRawError] = useState("");
   const [copiedUrn, setCopiedUrn] = useState("");
 
   useEffect(() => {
-    if (activeTab === "raw") {
-      setLoadingRaw(true);
-      fetch("http://localhost:8000/knowledge/bible")
+    if (activeTab !== "raw") return;
+
+    setLoadingRaw(true);
+    setRawError("");
+    try {
+      apiFetch("/knowledge/bible")
         .then((res) => {
           if (!res.ok) throw new Error("Bible API not available");
           return res.json();
@@ -270,28 +290,60 @@ export default function Bible() {
         })
         .catch((err) => {
           console.error("Failed to load raw DPDPA Bible:", err);
-          setRawMarkdown(
-            "# 📖 DPDPA Bible (Official Gazette Ledger)\n\n" +
-            "Digital Personal Data Protection Act, 2023 [NO. 22 OF 2023]\n" +
-            "An Act to provide for the processing of digital personal data in a manner that recognises both the right of individuals to protect their personal data and the need to process such personal data for lawful purposes and for matters connected therewith or incidental thereto.\n\n" +
-            "BE it enacted by Parliament in the Seventy-fourth Year of the Republic of India as follows:-\n\n" +
-            "CHAPTER I: PRELIMINARY\n" +
-            "1. (1) This Act may be called the Digital Personal Data Protection Act, 2023.\n" +
-            "   (2) It shall come into force on such date as the Central Government may, by notification in the Official Gazette, appoint.\n\n" +
-            "2. In this Act, unless the context otherwise requires,—\n" +
-            "   (a) 'Board' means the Data Protection Board of India established under section 18;\n" +
-            "   (b) 'certain legitimate uses' means the uses referred to in section 7;\n" +
-            "   (c) 'child' means an individual who has not completed eighteen years of age;\n" +
-            "   (d) 'Consent Manager' means a person registered with the Board who acts as a single point of contact to enable a Data Principal to give, manage, review and withdraw her consent;\n" +
-            "   (e) 'Data Fiduciary' means any person who alone or in conjunction with other persons determines the purpose and means of processing of personal data;\n" +
-            "   (f) 'Data Principal' means the individual to whom the personal data relates..."
-          );
+          setRawMarkdown("");
+          setRawError("The canonical Bible text is unavailable. No fallback text is being shown.");
         })
         .finally(() => {
           setLoadingRaw(false);
         });
+    } catch (err) {
+      console.error("Bible API call failed before request:", err);
+      setRawMarkdown("");
+      setRawError("The canonical Bible text is unavailable. No fallback text is being shown.");
+      setLoadingRaw(false);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "explorer") return;
+    const filtered = BIBLE_SECTIONS.filter((s) => {
+      const q = searchQuery.toLowerCase();
+      const chapterMatch = chapterFilter === "All Chapters" || s.chapter === chapterFilter;
+      return (
+        chapterMatch &&
+        (s.section.toLowerCase().includes(q) ||
+          s.title.toLowerCase().includes(q) ||
+          s.chapter.toLowerCase().includes(q) ||
+          s.summary.toLowerCase().includes(q))
+      );
+    });
+
+    if (filtered.length > 0) {
+      setExpandedSection((current) => {
+        return filtered.some((item) => item.section === current) ? current : filtered[0].section;
+      });
+    } else {
+      setExpandedSection("");
+    }
+  }, [searchQuery, chapterFilter, activeTab]);
+
+  const filteredSections = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return BIBLE_SECTIONS.filter((s) => {
+      const chapterMatch = chapterFilter === "All Chapters" || s.chapter === chapterFilter;
+      const queryMatch =
+        s.section.toLowerCase().includes(q) ||
+        s.title.toLowerCase().includes(q) ||
+        s.chapter.toLowerCase().includes(q) ||
+        s.summary.toLowerCase().includes(q);
+      return chapterMatch && queryMatch;
+    });
+  }, [searchQuery, chapterFilter]);
+
+  const groupedSections = useMemo(
+    () => getChapterGroup(filteredSections),
+    [filteredSections]
+  );
 
   const handleCopyUrn = (urn) => {
     navigator.clipboard.writeText(urn);
@@ -299,407 +351,264 @@ export default function Bible() {
     setTimeout(() => setCopiedUrn(""), 2000);
   };
 
-  const filteredSections = BIBLE_SECTIONS.filter((s) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      s.section.toLowerCase().includes(q) ||
-      s.title.toLowerCase().includes(q) ||
-      s.chapter.toLowerCase().includes(q) ||
-      s.summary.toLowerCase().includes(q)
-    );
-  });
-
   return (
-    <div className="bible-screen flex flex-col gap-6" style={{ paddingBottom: "var(--space-8)" }}>
-      {/* ── Hero Telemetry Header ───────────────────────────────────── */}
-      <div 
-        className="card flex flex-col gap-4" 
-        style={{ 
-          background: "linear-gradient(135deg, #14213D 0%, #0F172A 100%)", 
-          borderRadius: "16px", 
-          padding: "24px 28px", 
-          color: "#FFFFFF" 
-        }}
-      >
-        <div className="flex justify-between items-center" style={{ flexWrap: "wrap", gap: "16px" }}>
-          <div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px" }}>
-              <span style={{ background: "rgba(19, 136, 8, 0.25)", border: "1px solid #138808", color: "#34D399", padding: "2px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>
-                🇮🇳 Official Gazette Reference
-              </span>
-              <span style={{ background: "rgba(255, 255, 255, 0.1)", color: "rgba(255, 255, 255, 0.8)", padding: "2px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
-                Act No. 22 of 2023
-              </span>
-            </div>
-            <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
-              DPDPA Compliance Bible
-            </h1>
-            <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.75)", margin: "4px 0 0 0" }}>
-              Comprehensive, interactive legal reference for the Digital Personal Data Protection Act, 2023 with canonical URN coordinates.
-            </p>
-          </div>
+    <div className="bible-screen">
+      <section className="bible-hero">
+        <div className="bible-hero-sky" aria-hidden="true">
+          <CometCascadeHeroBackground />
+        </div>
+        <div className="bible-hero-inner">
+          <p className="bible-chip">DPDPA 2023 • Canonical Ledger</p>
+          <h1 className="bible-title">DPDPA Knowledge Bible</h1>
+          <p className="bible-subtitle">
+            A complete, chronologically organized statutory operating system for
+            compliance with the Digital Personal Data Protection Act, 2023.
+          </p>
 
-          {/* Stat Telemetry */}
-          <div style={{ display: "flex", gap: "16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", padding: "12px 20px", borderRadius: "12px" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#34D399" }}>44</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Statutory Sections</div>
-            </div>
-            <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#60A5FA" }}>8</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Chapters</div>
-            </div>
-            <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#EF4444" }}>{PENALTY_SCHEDULE.length}</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Schedule Entries</div>
-            </div>
+          <div className="bible-hero-metrics">
+            <article className="bible-metric-card">
+              <p className="bible-metric-k">44</p>
+              <p className="bible-metric-l">Statutory Sections</p>
+            </article>
+            <article className="bible-metric-card">
+              <p className="bible-metric-k">8</p>
+              <p className="bible-metric-l">Chapters indexed</p>
+            </article>
+            <article className="bible-metric-card">
+              <p className="bible-metric-k">7</p>
+              <p className="bible-metric-l">Schedule entries, as gazetted</p>
+            </article>
+            <article className="bible-metric-card">
+              <p className="bible-metric-k">Layered</p>
+              <p className="bible-metric-l">URN, mappings, evidence</p>
+            </article>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ── Enterprise Tabs Navigation ──────────────────────────────── */}
-      <div style={{ display: "flex", gap: "12px", borderBottom: "2px solid var(--border)", paddingBottom: "2px" }}>
-        <button
-          onClick={() => setActiveTab("explorer")}
-          style={{
-            padding: "10px 20px",
-            fontSize: "13px",
-            fontWeight: 800,
-            color: activeTab === "explorer" ? "var(--brand-navy)" : "var(--brand-slate)",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "explorer" ? "3px solid var(--brand-green)" : "3px solid transparent",
-            cursor: "pointer",
-            transition: "all 150ms ease"
-          }}
-        >
-          📚 Act Explorer ({BIBLE_SECTIONS.length} Sections)
-        </button>
-        <button
-          onClick={() => setActiveTab("penalties")}
-          style={{
-            padding: "10px 20px",
-            fontSize: "13px",
-            fontWeight: 800,
-            color: activeTab === "penalties" ? "var(--brand-navy)" : "var(--brand-slate)",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "penalties" ? "3px solid var(--brand-green)" : "3px solid transparent",
-            cursor: "pointer",
-            transition: "all 150ms ease"
-          }}
-        >
-          ⚖️ Statutory Penalty Schedule
-        </button>
-        <button
-          onClick={() => setActiveTab("raw")}
-          style={{
-            padding: "10px 20px",
-            fontSize: "13px",
-            fontWeight: 800,
-            color: activeTab === "raw" ? "var(--brand-navy)" : "var(--brand-slate)",
-            background: "none",
-            border: "none",
-            borderBottom: activeTab === "raw" ? "3px solid var(--brand-green)" : "3px solid transparent",
-            cursor: "pointer",
-            transition: "all 150ms ease"
-          }}
-        >
-          📝 Raw Gazette Ledger
-        </button>
-      </div>
+      <div className="bible-surface">
+        <div className="bible-tabbar">
+          <button
+            type="button"
+            className={`bible-tab ${activeTab === "explorer" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("explorer")}
+          >
+            🗂 Act Explorer
+          </button>
+          <button
+            type="button"
+            className={`bible-tab ${activeTab === "penalties" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("penalties")}
+          >
+            ⚖️ Penalty Map
+          </button>
+          <button
+            type="button"
+            className={`bible-tab ${activeTab === "raw" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("raw")}
+          >
+            📘 Raw Act Ledger
+          </button>
+        </div>
 
-      {/* ── Tab 1: Act Explorer ─────────────────────────────────────── */}
-      {activeTab === "explorer" && (
-        <div className="flex flex-col gap-4">
-          {/* Search bar */}
-          <div style={{ display: "flex", gap: "12px" }}>
-            <div style={{ position: "relative", flex: 1 }}>
-              <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "14px", color: "var(--brand-slate)" }}>🔍</span>
-              <input
-                type="text"
-                placeholder="Search by section number, statutory term, or compliance directive..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "12px 14px 12px 42px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--border)",
-                  fontSize: "13px",
-                  background: "#FFFFFF",
-                  color: "var(--brand-navy)",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
-                }}
-              />
-            </div>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="btn btn-secondary"
-                style={{ padding: "0 16px" }}
-              >
-                Clear Search
-              </button>
-            )}
-          </div>
+        {activeTab === "explorer" && (
+          <section className="bible-layout">
+            <article className="bible-panel bible-panel-main">
+              <div className="bible-toolbar">
+                <label className="bible-search-wrap" htmlFor="bible-search">
+                  <span className="bible-search-icon" aria-hidden="true">🔍</span>
+                  <input
+                    id="bible-search"
+                    type="search"
+                    className="bible-search"
+                    placeholder="Search section title, text, or obligations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </label>
 
-          {/* List of Sections */}
-          {filteredSections.length === 0 ? (
-            <EmptyState
-              title="No sections found"
-              description={`We couldn't find any DPDPA sections matching "${searchQuery}".`}
-            />
-          ) : (
-            <div className="flex flex-col gap-3">
-              {filteredSections.map((item, idx) => {
-                const isExpanded = expandedSection === item.section;
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      background: "#FFFFFF",
-                      border: isExpanded ? "2px solid var(--brand-navy)" : "1px solid var(--border)",
-                      borderRadius: "12px",
-                      overflow: "hidden",
-                      boxShadow: isExpanded ? "0 4px 16px rgba(20, 33, 61, 0.08)" : "0 2px 6px rgba(0,0,0,0.02)",
-                      transition: "all 150ms ease"
-                    }}
-                  >
-                    {/* Collapsible Header */}
-                    <div
-                      onClick={() => setExpandedSection(isExpanded ? "" : item.section)}
-                      style={{
-                        padding: "16px 20px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        background: isExpanded ? "#F8FAFC" : "#FFFFFF",
-                        userSelect: "none"
-                      }}
+                <div className="bible-chips" role="group" aria-label="Chapter filter">
+                  {CHAPTER_LABELS.map((chapter) => (
+                    <button
+                      key={chapter}
+                      type="button"
+                      className={`bible-mini-chip ${chapterFilter === chapter ? "is-active" : ""}`}
+                      onClick={() => setChapterFilter(chapter)}
                     >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--brand-slate)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                            {item.chapter}
-                          </span>
-                          <span style={{ fontSize: "11px", fontWeight: 800, background: "#EFF6FF", color: "#1A4FA3", border: "1px solid #BFDBFE", padding: "2px 8px", borderRadius: "9999px" }}>
-                            {item.section}
-                          </span>
-                        </div>
-                        <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--brand-navy)", margin: 0 }}>
-                          {item.title}
-                        </h3>
-                      </div>
-                      <span style={{ fontSize: "13px", color: "var(--brand-slate)", fontWeight: 700 }}>
-                        {isExpanded ? "▲" : "▼"}
-                      </span>
-                    </div>
+                      {chapter}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                    {/* Content Section — Side-by-Side Split View */}
-                    {isExpanded && (
-                      <div style={{ padding: "20px", borderTop: "1px solid var(--border)", background: "#FFFFFF" }}>
-                        <div className="grid grid-2 gap-4" style={{ gridTemplateColumns: "1.3fr 0.9fr" }}>
-                          
-                          {/* ── LEFT SIDE: Statutory Text & Directives (60%) ── */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                            {/* URN Reference Pill */}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC", border: "1px solid #E2E8F0", padding: "8px 12px", borderRadius: "8px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--brand-slate)", textTransform: "uppercase" }}>Canonical URN:</span>
-                                <span className="text-mono" style={{ fontSize: "11px", fontWeight: 700, color: "var(--brand-navy)", background: "#FFFFFF", padding: "2px 8px", borderRadius: "4px", border: "1px solid #CBD5E1" }}>
-                                  {item.urn}
-                                </span>
-                              </div>
+              {filteredSections.length === 0 ? (
+                <EmptyState
+                  title="No sections found"
+                  description={`No section matches ${searchQuery ? `"${searchQuery}"` : "your current filter"}.`}
+                />
+              ) : (
+                <div className="bible-chapters">
+                  {groupedSections.map((group) => (
+                    <section key={group.chapter} className="bible-chapter">
+                      <header className="bible-chapter-head">
+                        <p className="bible-eyebrow">{group.chapter}</p>
+                        <p className="bible-quiet">{group.sections.length} sections</p>
+                      </header>
+
+                      <div className="bible-sections">
+                        {group.sections.map((item) => {
+                          const isExpanded = expandedSection === item.section;
+                          return (
+                            <article key={item.section} className={`bible-section ${isExpanded ? "is-open" : ""}`}>
                               <button
-                                onClick={() => handleCopyUrn(item.urn)}
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: 700,
-                                  color: "#1A4FA3",
-                                  background: "#EFF6FF",
-                                  border: "1px solid #BFDBFE",
-                                  padding: "3px 10px",
-                                  borderRadius: "6px",
-                                  cursor: "pointer"
-                                }}
+                                className="bible-section-head"
+                                type="button"
+                                onClick={() => setExpandedSection(isExpanded ? "" : item.section)}
                               >
-                                {copiedUrn === item.urn ? "Copied! ✓" : "Copy URN"}
+                                <div>
+                                  <span className="bible-badge">{item.section}</span>
+                                  <h3 className="bible-section-title">{item.title}</h3>
+                                  <p className="bible-quiet">{item.layer}</p>
+                                </div>
+                                <span className="bible-chevron" aria-hidden="true">{isExpanded ? "▴" : "▾"}</span>
                               </button>
-                            </div>
 
-                            {/* Summary */}
-                            <div>
-                              <h4 style={{ fontSize: "12px", fontWeight: 800, color: "var(--brand-navy)", margin: "0 0 4px 0", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                                Statutory Summary
-                              </h4>
-                              <p style={{ fontSize: "13px", color: "var(--brand-slate)", lineHeight: 1.5, margin: 0 }}>
-                                {item.summary}
-                              </p>
-                            </div>
+                              {isExpanded && (
+                                <div className="bible-section-body">
+                                  <div className="bible-section-grid">
+                                    <div className="bible-section-col">
+                                      <h4 className="bible-mini-title">Legal Summary</h4>
+                                      <p className="bible-section-copy">{item.summary}</p>
 
-                            {/* Compliance Directives */}
-                            <div>
-                              <h4 style={{ fontSize: "12px", fontWeight: 800, color: "var(--brand-navy)", margin: "0 0 6px 0", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                                Business Compliance Directives
-                              </h4>
-                              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                {item.obligations.map((obl, oIdx) => (
-                                  <div key={oIdx} style={{ display: "flex", alignItems: "flex-start", gap: "8px", background: "#F0FDF4", border: "1px solid #86EFAC", padding: "8px 12px", borderRadius: "8px" }}>
-                                    <span style={{ fontSize: "12px", color: "#138808", marginTop: "1px" }}>⚡</span>
-                                    <span style={{ fontSize: "12px", fontWeight: 600, color: "#14532D", lineHeight: 1.4 }}>{obl}</span>
+                                      <h4 className="bible-mini-title">Statutory Directives</h4>
+                                      <ul className="bible-obligations">
+                                        {item.obligations.map((obl, idx) => (
+                                          <li key={`${item.section}-${idx}`}>{obl}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+
+                                    <div className="bible-section-col">
+                                      <div className="bible-kv">
+                                        <span className="bible-kv-l">URN</span>
+                                        <code className="bible-urn">{item.urn}</code>
+                                        <button type="button" className="bible-copy-btn" onClick={() => handleCopyUrn(item.urn)}>
+                                          {copiedUrn === item.urn ? "Copied ✓" : "Copy URN"}
+                                        </button>
+                                      </div>
+
+                                      <div className="bible-kv-stack">
+                                        <div>
+                                          <p className="bible-kv-l">Cross-layer references</p>
+                                          <p className="bible-kv-m">GDPR: {item.gdpr}</p>
+                                          <p className="bible-kv-m">IT Act: {item.it_act}</p>
+                                          <p className="bible-kv-m">CERT-In/RBI: {item.certin_rbi}</p>
+                                        </div>
+
+                                        <div className="bible-micro">
+                                          <p className="bible-kv-l">Penalties</p>
+                                          <p className="bible-kv-value">See the Schedule to the Act</p>
+                                        </div>
+
+                                        <div className="bible-micro">
+                                          <p className="bible-kv-l">SLA</p>
+                                          <p className="bible-kv-value">{item.sla || "—"}</p>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
 
-                          {/* ── RIGHT SIDE: Side-by-Side Infographic Micro-Card (40%) ── */}
-                          <div 
-                            style={{ 
-                              background: "linear-gradient(180deg, #F8FAFC 0%, #EFF6FF 100%)", 
-                              border: "1px solid #BFDBFE", 
-                              borderRadius: "14px", 
-                              padding: "16px",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "12px"
-                            }}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span style={{ fontSize: "11px", fontWeight: 800, color: "#1A4FA3", background: "#FFFFFF", padding: "2px 8px", borderRadius: "9999px", border: "1px solid #BFDBFE", textTransform: "uppercase" }}>
-                                📊 Visual Infographic Card
-                              </span>
-                              <span style={{ fontSize: "11px", fontWeight: 700, color: "#D97706" }}>
-                                SLA: {item.sla || "Immediate"}
-                              </span>
-                            </div>
-
-                            {/* Comparative Law Matrix */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                              <div style={{ fontSize: "11px", fontWeight: 800, color: "var(--brand-navy)", textTransform: "uppercase" }}>
-                                ⚖️ Comparative Laws Matrix
-                              </div>
-                              <div style={{ fontSize: "11px", background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "6px 10px", borderRadius: "6px", display: "flex", justifyContent: "space-between" }}>
-                                <span style={{ color: "#64748B", fontWeight: 700 }}>EU GDPR:</span>
-                                <span style={{ color: "#1E3A8A", fontWeight: 700 }}>{item.gdpr}</span>
-                              </div>
-                              <div style={{ fontSize: "11px", background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "6px 10px", borderRadius: "6px", display: "flex", justifyContent: "space-between" }}>
-                                <span style={{ color: "#64748B", fontWeight: 700 }}>IT Act 2000:</span>
-                                <span style={{ color: "#166534", fontWeight: 700 }}>{item.it_act}</span>
-                              </div>
-                              <div style={{ fontSize: "11px", background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "6px 10px", borderRadius: "6px", display: "flex", justifyContent: "space-between" }}>
-                                <span style={{ color: "#64748B", fontWeight: 700 }}>CERT-In / RBI:</span>
-                                <span style={{ color: "#D97706", fontWeight: 700 }}>{item.certin_rbi}</span>
-                              </div>
-                            </div>
-
-                            {/* Process Micro-Flowchart */}
-                            <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", padding: "10px", borderRadius: "10px" }}>
-                              <div style={{ fontSize: "10px", fontWeight: 800, color: "#64748B", textTransform: "uppercase", marginBottom: "6px" }}>Visual Compliance Flow</div>
-                              <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", gap: "4px", fontSize: "10px", fontWeight: 700 }}>
-                                <span style={{ background: "#EFF6FF", color: "#1A4FA3", padding: "3px 6px", borderRadius: "4px" }}>1. Notice</span>
-                                <span style={{ color: "#94A3B8" }}>►</span>
-                                <span style={{ background: "#F0FDF4", color: "#138808", padding: "3px 6px", borderRadius: "4px" }}>2. Consent</span>
-                                <span style={{ color: "#94A3B8" }}>►</span>
-                                <span style={{ background: "#FFFBEB", color: "#D97706", padding: "3px 6px", borderRadius: "4px" }}>3. Action</span>
-                                <span style={{ color: "#94A3B8" }}>►</span>
-                                <span style={{ background: "#F5F3FF", color: "#7C3AED", padding: "3px 6px", borderRadius: "4px" }}>4. Audit</span>
-                              </div>
-                            </div>
-
-                          </div>
-
-                        </div>
+                                  <div className="bible-journey">
+                                    <p>Compliance flow: Notice → Consent → Rights/Controls → Audit Trail</p>
+                                  </div>
+                                </div>
+                              )}
+                            </article>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </section>
+                  ))}
+                </div>
+              )}
+            </article>
+
+            <aside className="bible-panel bible-panel-side">
+              <div className="bible-panel-top">
+                <h2>Knowledge Infrastructure</h2>
+                <p className="bible-quiet">Everything is indexed by URN, section, and legal lineage.</p>
+              </div>
+
+              <div className="bible-glass-card">
+                <h3>Fast Paths</h3>
+                <Link to="/workspace/acts" className="bible-side-link">Acts</Link>
+                <Link to="/rules" className="bible-side-link">Rules</Link>
+                <Link to="/workspace/interpretations" className="bible-side-link">Interpretations</Link>
+                <Link to="/workspace/discussions" className="bible-side-link">Discussions</Link>
+              </div>
+
+              <div className="bible-glass-card">
+                <h3>Severity legend</h3>
+                <div className="bible-legend-row">
+                  <span><span className="bible-dot low" /> Low impact</span>
+                  <span><span className="bible-dot medium" /> Medium impact</span>
+                  <span><span className="bible-dot high" /> High impact</span>
+                  <span><span className="bible-dot critical" /> Critical impact</span>
+                </div>
+              </div>
+
+              <div className="bible-glass-card">
+                <h3>Search context</h3>
+                <p className="bible-side-note">
+                  Use the explorer controls to isolate chapter-wise obligations and open a section to inspect
+                  penalties, URNs, and cross-references.
+                </p>
+              </div>
+            </aside>
+          </section>
+        )}
+
+        {activeTab === "penalties" && (
+          <section className="bible-penalties card">
+            <header className="bible-panel-head">
+              <div>
+                <h2>Statutory Penalty Schedule</h2>
+                <p className="bible-quiet">The Schedule to the Act (see Section 33(1)). Penalties are imposed by the Data Protection Board of India under Section 33, after an inquiry, and every amount is a maximum.</p>
+              </div>
+              <span className="bible-chip">7 entries, as gazetted</span>
+            </header>
+
+            <div className="bible-penalty-grid">
+              {PENALTY_SCHEDULE.map((p) => (
+                <article key={p.serial} className="bible-penalty-card">
+                  <h3>{p.breach}</h3>
+                  <p className="bible-urn-line"><strong>Item {p.serial}:</strong> {p.provision}</p>
+                  <p className="bible-fine">{p.penalty}</p>
+                </article>
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          </section>
+        )}
 
-      {/* ── Tab 2: Penalties Schedule ───────────────────────────────── */}
-      {activeTab === "penalties" && (
-        <div style={{ background: "#FFFFFF", border: "1px solid var(--border)", borderRadius: "14px", boxShadow: "var(--shadow-card)", overflow: "hidden" }}>
-          <div style={{ padding: "16px 20px", background: "#F8FAFC", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--brand-navy)", margin: 0 }}>
-                The Schedule — Penalties (see Section 33(1), DPDP Act 2023)
-              </h3>
-              <p style={{ fontSize: "12px", color: "var(--brand-slate)", margin: "2px 0 0 0" }}>
-                Penalties are imposed by the Data Protection Board of India under Section 33, after an inquiry. Every amount is a maximum: the penalty "may extend to" the figure shown, and the Board must weigh the factors in Section 33(2).
-              </p>
-            </div>
-            <span style={{ fontSize: "11px", fontWeight: 800, background: "#F1F5F9", color: "#475569", border: "1px solid #CBD5E1", padding: "4px 10px", borderRadius: "9999px" }}>
-              {PENALTY_SCHEDULE.length} entries · as gazetted
-            </span>
-          </div>
+        {activeTab === "raw" && (
+          <section className="bible-raw">
+            <header className="bible-panel-head">
+              <h2>Official Gazette Ledger</h2>
+              <span className="bible-chip">Markdown</span>
+            </header>
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ background: "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)", borderBottom: "2px solid #E2E8F0" }}>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "6%" }}>Sl.</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "14%" }}>Provision</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "50%" }}>Breach of provisions of this Act or the rules made thereunder</th>
-                  <th style={{ padding: "12px 18px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", width: "30%" }}>Penalty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PENALTY_SCHEDULE.map((p, idx) => (
-                  <tr key={p.serial} style={{ borderBottom: "1px solid #F1F5F9", background: idx % 2 === 0 ? "#FFFFFF" : "#FAFAF8" }}>
-                    <td className="text-mono" style={{ padding: "14px 18px", fontSize: "12px", fontWeight: 700, color: "var(--brand-slate)" }}>
-                      {p.serial}.
-                    </td>
-                    <td style={{ padding: "14px 18px" }}>
-                      <span className="text-mono" style={{ fontSize: "11px", fontWeight: 700, background: "#EFF6FF", color: "#1A4FA3", padding: "3px 8px", borderRadius: "4px", border: "1px solid #BFDBFE" }}>
-                        {p.provision}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 18px", fontSize: "13px", fontWeight: 600, color: "var(--brand-navy)", lineHeight: 1.45 }}>
-                      {p.breach}
-                    </td>
-                    <td style={{ padding: "14px 18px", fontSize: "13px", fontWeight: 700, color: "#7C2D12", lineHeight: 1.45 }}>
-                      {p.penalty}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── Tab 3: Raw Gazette Ledger ─────────────────────────────── */}
-      {activeTab === "raw" && (
-        <div style={{ background: "#FFFFFF", border: "1px solid var(--border)", borderRadius: "14px", padding: "24px", boxShadow: "var(--shadow-card)", minHeight: "450px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid var(--border)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--brand-navy)", margin: 0 }}>
-              Official Gazette Text Ledger
-            </h3>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--brand-slate)", background: "#F1F5F9", padding: "2px 8px", borderRadius: "4px" }}>
-              Markdown View
-            </span>
-          </div>
-
-          {loadingRaw ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", color: "var(--brand-slate)", fontStyle: "italic" }}>
-              Loading Raw Markdown from API Gateway...
-            </div>
-          ) : (
-            <pre className="text-mono" style={{ fontSize: "12px", lineHeight: 1.65, background: "#F8FAFC", border: "1px solid #E2E8F0", padding: "20px", borderRadius: "10px", color: "var(--brand-navy)", whiteSpace: "pre-wrap", overflowX: "auto" }}>
-              {rawMarkdown}
-            </pre>
-          )}
-        </div>
-      )}
+            {loadingRaw ? (
+              <div className="bible-loading">Loading canonical act text from API gateway…</div>
+            ) : rawError ? (
+              <div role="alert" className="bible-alert">
+                {rawError}
+              </div>
+            ) : (
+              <pre className="bible-pre">{rawMarkdown || "No content available."}</pre>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
-

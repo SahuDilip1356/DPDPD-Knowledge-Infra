@@ -4,7 +4,7 @@ This repository contains the FastAPI API gateway and administrative ingestion pi
 
 ## 🛠️ Main Components
 - **FastAPI API Gateway (`src/api/api_service.py`):** Serves grounded Q&A intelligence searches, health endpoints, and action logging.
-- **Administrative Ingestion Pipeline (`ingest_document.py`):** Automatically polls/scrapes MeitY circulars, parses layout-aware structures, and populates Pinecone vector databases and Supabase PostgreSQL tables.
+- **Administrative Ingestion Pipeline (currently in the repository root):** Parses reviewed source documents and populates the knowledge stores. It is scheduled to move into this deployable during final repository consolidation.
 - **Supabase BaaS Model (`supabase_schema.sql`):** Bitemporal database schema structure for legal nodes, regulatory audit logs, and search metrics.
 
 ---
@@ -42,7 +42,13 @@ gcloud run deploy dpdpa-backend \
 - `OPENAI_API_KEY` (Optional): API key for fallback OpenAI models.
 - `PINECONE_API_KEY`: Pinecone Vector Database credentials.
 - `PINECONE_INDEX_NAME`: Name of your vector index.
+- `ADMIN_API_KEY`: Transitional, server-only key protecting every `/admin/*` route. Generate 32+ random characters and never use a `VITE_` prefix.
+- `APP_ENV`: Set to `production` in Railway so readiness fails closed when no model provider is configured.
+- `ALLOWED_ORIGINS`: Comma-separated browser origin allowlist.
+- `QUERY_RATE_LIMIT_PER_MINUTE` / `QUERY_RATE_LIMIT_PER_DAY`: Public reasoning limits.
 - `SUBSCRIBER_WEBHOOK_URL` (Optional): Target URL to push real-time regulatory change webhooks.
+
+Copy `.env.example` for the complete configuration manifest. API credentials are ordinary provider API keys; a developer's ChatGPT/Codex OAuth session is not available to this service.
 
 ---
 
@@ -53,6 +59,6 @@ To initialize the Supabase database instance:
 3. Paste the contents of `supabase_schema.sql` and click **Run**.
 4. Set up storage buckets by running:
    ```bash
-   python3 setup_document_storage.py
+   python3 scripts/setup_document_storage.py
    ```
    *(Copy the output RLS policies into Supabase SQL Editor).*

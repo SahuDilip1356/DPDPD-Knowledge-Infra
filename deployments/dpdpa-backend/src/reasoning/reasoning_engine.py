@@ -13,6 +13,10 @@ import os
 import requests
 from typing import Dict, List, Optional, Tuple
 
+from src.reasoning.guardrails import InputGuardrail, OutputGuardrail
+from src.reasoning.model_client import MockModelClient
+from src.reasoning.tracer import TraceContext
+
 class GroundedReasoningEngine:
     def __init__(self, db_client=None, git_ledger=None, model_client=None):
         """
@@ -35,7 +39,12 @@ class GroundedReasoningEngine:
         pinecone_key = os.getenv("PINECONE_API_KEY")
         index_name = os.getenv("PINECONE_INDEX_NAME", "dpdpa-knowledge")
         
-        if not pinecone_key or not self.model_client:
+        if (
+            not pinecone_key
+            or not self.model_client
+            or isinstance(self.model_client, MockModelClient)
+            or os.getenv("OFFLINE_MODE") == "1"
+        ):
             return []
             
         try:
@@ -251,66 +260,98 @@ class GroundedReasoningEngine:
 Your task is to answer the user's query using ONLY the provided Knowledge Object contexts.
 
 CRITICAL INSTRUCTIONS:
-1. Every fact or claim you make must be accompanied by a citation referencing the matching URN, page coordinates, and evidence text hash.
-2. Format citations as: [URN (Page X, Section Y, Hash: Z)]
-3. If the provided context does not contain sufficient information to answer the question, state: "INSUFFICIENT_EVIDENCE: The query cannot be answered using the canonical knowledge core." Do not hallucinate or extrapolate.
+1. Every fact or claim must have an inline citation formatted as: [URN (Page X, Section Y, Hash: Z)].
+2. Use only URNs and evidence present in the supplied Knowledge Object context.
+3. If the context is insufficient, set "sufficient_evidence" to false and explain the limitation in "answer". Do not extrapolate.
+4. Return only a JSON object matching this schema:
+{{
+  "answer": "<grounded answer with inline citations, or insufficiency explanation>",
+  "cited_urns": ["urn:ki:..."],
+  "sufficient_evidence": true
+}}
 
 User Query: {query}
 
 Context:
 {context_str}
 
-Answer:"""
+JSON Response:"""
         return prompt
 
-    def query(self, query_text: str) -> Dict:
+    def query(self, query_text: str, trace_context: Optional[TraceContext] = None) -> Dict:
         """
-        Executes the full grounded query workflow:
-        1. Retrieve relevant KOs.
-        2. Construct grounded prompt.
-        3. Invoke model client or fallback solver.
-        4. Return grounded response.
+        Executes the grounded query workflow with deterministic input/output checks.
         """
-        context_kos = self.retrieve_context(query_text)
-        
+        trace = trace_context or TraceContext(query_text)
+
+        with trace.span("guardrail_input"):
+            is_allowed, refusal_reason = InputGuardrail.inspect(query_text)
+        if not is_allowed:
+            return {
+                "query": query_text,
+                "answer": f"REFUSAL: {refusal_reason}",
+                "citations": [],
+                "cited_urns": [],
+                "grounded": False,
+                "trace": trace.finish(),
+            }
+
+        with trace.span("retrieval"):
+            context_kos = self.retrieve_context(query_text)
+
         if not context_kos:
             return {
                 "query": query_text,
                 "answer": "INSUFFICIENT_EVIDENCE: The query cannot be answered using the canonical knowledge core.",
                 "citations": [],
-                "grounded": False
+                "cited_urns": [],
+                "grounded": False,
+                "trace": trace.finish(),
             }
-            
+
+        retrieved_urns = {ko["urn"] for ko in context_kos}
         prompt = self.construct_grounded_prompt(query_text, context_kos)
-        
-        # Call model client if provided, otherwise perform deterministic mock resolution
-        if self.model_client:
-            answer_text = self.model_client.generate(prompt)
-        else:
-            answer_text = self._mock_reasoning_resolve(query_text, context_kos)
-            
-        # Extract citations from generated answer (e.g., matching URNs)
+
+        with trace.span("model_generation"):
+            if self.model_client:
+                parsed_response = self.model_client.generate_json(prompt)
+            else:
+                parsed_response = self._mock_reasoning_resolve(query_text, context_kos)
+
+        with trace.span("guardrail_output"):
+            _is_valid, sanitized, violations = OutputGuardrail.inspect(
+                parsed_response, retrieved_urns
+            )
+        if violations:
+            trace.metadata["guardrail_violations"] = violations
+
+        cited_urns = set(sanitized.get("cited_urns", [])) & retrieved_urns
         citations = []
         for ko in context_kos:
-            if ko["urn"] in answer_text:
+            if ko["urn"] in cited_urns:
                 citations.append({
                     "urn": ko["urn"],
                     "title": ko["title"],
                     "version": ko["version"],
                     "evidence": ko.get("evidence", [])
                 })
-                
-        return {
-            "query": query_text,
-            "answer": answer_text,
-            "citations": citations,
-            "grounded": "INSUFFICIENT_EVIDENCE" not in answer_text
-        }
 
-    def _mock_reasoning_resolve(self, query: str, context: List[Dict]) -> str:
+        grounded = bool(sanitized.get("sufficient_evidence")) and bool(citations)
+        result = {
+            "query": query_text,
+            "answer": sanitized.get("answer", ""),
+            "citations": citations,
+            "cited_urns": sorted(cited_urns),
+            "grounded": grounded,
+            "trace": trace.finish(),
+        }
+        if "raw_output" in parsed_response:
+            result["raw_output"] = parsed_response["raw_output"]
+        return result
+
+    def _mock_reasoning_resolve(self, query: str, context: List[Dict]) -> Dict:
         """
-        A deterministic mock resolver that parses query keywords and builds a properly
-        grounded citation-enriched answer based on retrieved KOs.
+        A deterministic resolver used only when tests explicitly remove the model client.
         """
         # Formulate response citing the first matching KO
         primary_ko = context[0]
@@ -328,4 +369,8 @@ Answer:"""
             f"This requires the following business action: \"{primary_ko['business_impact']['action_required']}\". "
             f"Source Evidence: {citation}."
         )
-        return response
+        return {
+            "answer": response,
+            "cited_urns": [primary_ko["urn"]],
+            "sufficient_evidence": True,
+        }

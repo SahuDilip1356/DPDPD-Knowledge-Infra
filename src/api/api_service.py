@@ -40,20 +40,48 @@ db_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
 db_client = DatabaseClient(db_url)
  
 AUDIT_LOG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "staging", "search_audit.log")
- 
-def log_search_query(query: str, grounded: bool = True):
+
+def log_search_query(
+    query: str,
+    grounded: bool = True,
+    cited_urns: Optional[List[str]] = None,
+    duration_ms: float = 0.0,
+    spans: Optional[List[Dict]] = None
+):
+    """
+    Durable production audit logger (Phase 8 feedback loop).
+    Syncs with Supabase search_audit table if configured, with durable local fallback.
+    """
     try:
-        os.makedirs(os.path.dirname(AUDIT_LOG_PATH), exist_ok=True)
-        import json
         log_entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "query": query,
-            "grounded": grounded
+            "grounded": grounded,
+            "cited_urns": cited_urns or [],
+            "duration_ms": duration_ms,
+            "spans": spans or []
         }
+
+        # 1. Try Supabase durable insert if connected
+        if getattr(db_client, "supabase", None):
+            try:
+                db_client.supabase.table("search_audit").insert({
+                    "query": query,
+                    "grounded": grounded,
+                    "cited_urns": cited_urns or [],
+                    "duration_ms": duration_ms
+                }).execute()
+            except Exception as se:
+                print(f"[Supabase] search_audit table insert note: {se}")
+
+        # 2. Local durable append
+        os.makedirs(os.path.dirname(AUDIT_LOG_PATH), exist_ok=True)
+        import json
         with open(AUDIT_LOG_PATH, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
     except Exception as le:
         print(f"[!] Warning: Failed to write search audit log: {le}")
+
 model_client = ModelClient()
 reasoning_engine = GroundedReasoningEngine(db_client=db_client, model_client=model_client)
 
@@ -88,7 +116,15 @@ def post_query(request: QueryRequest) -> Dict:
     """
     try:
         response = reasoning_engine.query(request.query)
-        log_search_query(request.query, response.get("grounded", False))
+        duration_ms = response.get("trace", {}).get("total_duration_ms", 0.0)
+        spans = response.get("trace", {}).get("spans", [])
+        log_search_query(
+            request.query,
+            grounded=response.get("grounded", False),
+            cited_urns=response.get("cited_urns", []),
+            duration_ms=duration_ms,
+            spans=spans
+        )
         return response
     except Exception as e:
         try:
@@ -214,6 +250,34 @@ def get_search_audit() -> Dict:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to read audit log: {str(e)}")
     return {"logs": logs}
+
+
+class PromoteToEvalRequest(BaseModel):
+    query: str
+    expect_sufficient: bool = True
+    expect_urns: List[str] = []
+    expect_section: str = ""
+    severity: int = 3
+    note: str = "Promoted from live production traffic feedback loop"
+
+
+@app.post("/admin/promote-to-eval")
+def promote_to_eval(request: PromoteToEvalRequest) -> Dict:
+    """
+    Promotes a live production query into a permanent eval dataset row (Phase 8 feedback loop).
+    """
+    from evals.error_analysis import ErrorAnalyzer
+    case_id = f"prod_{int(datetime.utcnow().timestamp())}"
+    ErrorAnalyzer.promote_bug_to_permanent_row(
+        case_id=case_id,
+        query=request.query,
+        expect_sufficient=request.expect_sufficient,
+        expect_urns=request.expect_urns,
+        expect_section=request.expect_section,
+        severity=request.severity,
+        note=request.note
+    )
+    return {"status": "SUCCESS", "case_id": case_id, "message": "Query promoted to eval dataset."}
  
  
 @app.get("/admin/stats")

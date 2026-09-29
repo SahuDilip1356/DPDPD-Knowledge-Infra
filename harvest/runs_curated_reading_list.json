@@ -1,0 +1,54 @@
+{
+  "started_at": "2026-09-20",
+  "actor": "apify/website-content-crawler",
+  "publish": false,
+  "seed": "harvest/curated_dpdpa_reading_list.json",
+  "caps": {
+    "maxCrawlDepth": 0,
+    "ki_timeout_seconds": 900,
+    "ci_timeout_seconds": 600,
+    "memory_mb": 4096
+  },
+  "runs": [
+    {
+      "name": "Knowledge Infra independent articles",
+      "run_id": "URgBs2QTCVYesfByq",
+      "dataset_id": "3t79vq9gH7FRKVSVe",
+      "status": "SUCCEEDED",
+      "pages": 27,
+      "console": "https://console.apify.com/view/runs/URgBs2QTCVYesfByq",
+      "note": "Aborted slower first run 11WkxbaRnvoaVzAGu. Lawctopus recovered via apify/web-fetch XYpCoLzv80wxM9Jy5."
+    },
+    {
+      "name": "Competitive intelligence vendor posts",
+      "run_id": "f66i67tldUuN27H67",
+      "dataset_id": "NqEDos0nawp9Ka2jE",
+      "status": "SUCCEEDED",
+      "pages": 10,
+      "console": "https://console.apify.com/view/runs/f66i67tldUuN27H67"
+    }
+  ],
+  "classified_out": {
+    "knowledge_infra": "staging/harvest/classified_curated_ki.jsonl",
+    "competitive_intelligence": "staging/harvest/classified_curated_ci.jsonl"
+  },
+  "stacked": {
+    "knowledge_infra": 28,
+    "competitive_intelligence": 10,
+    "skipped_hubs_indexes_bareact": 5,
+    "duplicate_listings_collapsed": 8
+  },
+  "exceptions": [
+    {
+      "list_id": 20,
+      "url": "https://www.taxmann.com/post/blog/analysis-indias-digital-personal-data-protection-act-and-rules",
+      "action": "dropped 404 page; kept alt URL analysis-indias-dpdp-act-and-rules"
+    },
+    {
+      "list_id": 49,
+      "url": "https://www.lw.com/admin/upload/SiteAttachments/Indias-Digital-Personal-Data-Protection-Act-2023-vs-the-GDPR-A-Comparison.pdf",
+      "action": "PDF binary captured; text extraction empty; pointer record pending_ocr"
+    }
+  ],
+  "note": "Training/certification not present. Opinion records stay unpublished. Nothing imported into Setu. DPDPA.com remains competitive intelligence, not law."
+}

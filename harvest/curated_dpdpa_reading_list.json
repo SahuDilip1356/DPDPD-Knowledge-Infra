@@ -1,0 +1,438 @@
+{
+  "purpose": "Curated DPDPA reading list classified for Knowledge Infra vs Competitive Intelligence. Never Layer 1-2 law. Publish=false until claims are verified against Gazette, Act, Rules, MeitY, DPB, or courts.",
+  "created_at": "2026-09-20",
+  "publish": false,
+  "rules": {
+    "setu": "Trust Layers 1-2 only (official Act, Rules, Gazette, court orders). None of these blogs enter Setu.",
+    "knowledge_infra_opinions": "Independent practitioner, academic, journalism, and court-tracking articles become unpublished Layer 4 Opinion / Case records.",
+    "competitive_intelligence": "DPDPA.com, DPDPA.net, DPDPIndia, Seqrite, Shield, and Compliance Analyser stay in the CI corpus as Layer 4-5 opinions.",
+    "drop": "Index/hub pages, duplicate URLs, competitor bare-act copies, and templates that would be copied into Setu."
+  },
+  "knowledge_infra": [
+    {
+      "list_id": 11,
+      "title": "A Closer Look at the DPDP Rules 2025",
+      "source": "Ikigai Law",
+      "url": "https://www.ikigailaw.com/article/647/a-closer-look-at-the-dpdp-rules-2025",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["commencement", "notice", "retention", "children", "SDF"]
+    },
+    {
+      "list_id": 12,
+      "title": "From Principles to Practice: A Deep Dive into India's Draft DPDP Rules",
+      "source": "Ikigai Law",
+      "url": "https://www.ikigailaw.com/article/614/from-principles-to-practice-a-deep-dive-into-indias-draft-dpdp-rules",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["draft-rules", "operational-gap"]
+    },
+    {
+      "list_id": 13,
+      "title": "Summary of India's Digital Personal Data Protection Act 2023",
+      "source": "Ikigai Law",
+      "url": "https://www.ikigailaw.com/article/9/summary-of-indias-digital-personal-data-protection-act-2023",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["act-structure", "consent-manager", "children", "SDF"]
+    },
+    {
+      "list_id": 14,
+      "title": "TechTicker: The DPDP Rules Have Landed",
+      "source": "Ikigai Law",
+      "url": "https://www.ikigailaw.com/article/654/techticker-issue-72-november-2025",
+      "tray": "BLOG",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["commencement", "consent-manager"]
+    },
+    {
+      "list_id": 15,
+      "title": "DPDP Rules 2025: Complete Guide",
+      "source": "EY India",
+      "url": "https://www.ey.com/en_in/insights/cybersecurity/transforming-data-privacy-digital-personal-data-protection-rules-2025",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["notice", "consent", "breach", "children", "deletion"]
+    },
+    {
+      "list_id": 18,
+      "title": "Impact of the DPDP Rules on Websites",
+      "source": "Bar & Bench",
+      "url": "https://www.barandbench.com/columns/impact-of-the-new-digital-personal-data-protection-rules-on-websites",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["notice", "consent", "security", "rights"]
+    },
+    {
+      "list_id": 19,
+      "title": "MeitY Notifies Final Digital Personal Data Protection Rules 2025",
+      "source": "Bar & Bench",
+      "url": "https://www.barandbench.com/law-firms/view-point/meity-notifies-final-digital-personal-data-protection-rules-2025",
+      "tray": "BLOG",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["notification", "rights", "investigation"]
+    },
+    {
+      "list_id": 20,
+      "title": "DPDP Rules 2025: Taxmann Analysis",
+      "source": "Taxmann",
+      "url": "https://www.taxmann.com/post/blog/analysis-indias-digital-personal-data-protection-act-and-rules",
+      "alt_urls": [
+        "https://www.taxmann.com/post/blog/analysis-indias-dpdp-act-and-rules"
+      ],
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["obligations", "enforcement", "penalties"]
+    },
+    {
+      "list_id": 21,
+      "title": "Yes Means Yes: Managing Consent under India's New Data Protection Law",
+      "source": "S&R Law",
+      "url": "https://www.snrlaw.in/yes-means-yes-managing-consent-under-indias-new-data-protection-law/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["consent", "notice", "withdrawal"]
+    },
+    {
+      "list_id": 23,
+      "title": "Should DPDP Rules Include Deprecating Consent?",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2023/11/223-dpdp-act-deprecating-consent/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["consent", "consent-lifecycle"]
+    },
+    {
+      "list_id": 28,
+      "title": "Privacy and Data Protection: Tools for India's Growth",
+      "source": "Bar & Bench",
+      "url": "https://www.barandbench.com/view-point/data-privacy-and-data-protection-tools-for-indias-growth",
+      "tray": "BLOG",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["governance", "data-mapping", "privacy-by-design"]
+    },
+    {
+      "list_id": 29,
+      "title": "DPDP Rules: Platforms Need Parental Consent to Use Children's Data",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2025/01/223-data-protection-rules-2025-children-data-india/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["children", "parental-consent", "age-verification"]
+    },
+    {
+      "list_id": 30,
+      "title": "What's Missing with Parental Consent for Children in India's Data Protection Rules?",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2025/11/223-parental-consent-children-indias-data-protection-rules/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["children", "parental-consent", "age-verification"]
+    },
+    {
+      "list_id": 31,
+      "title": "DPDP Rules: Tracking Children without Parental Consent",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2025/11/223-dpdp-rules-tracking-children-parental-consent/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["children", "location-tracking"]
+    },
+    {
+      "list_id": 32,
+      "title": "DPDP Rules Exempt Child Location Tracking from Age-18 Requirements",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2025/11/223-dpdp-rules-real-time-child-tracking-without-consent/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["children", "location-tracking", "safety-exemption"]
+    },
+    {
+      "list_id": 35,
+      "title": "COAI Calls for Exemption from Parental Consent for SIM Cards",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2025/11/223-coai-exemption-parental-consent-sim-cards/",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "knowledge_infra",
+      "themes": ["children", "telecom", "sectoral"]
+    },
+    {
+      "list_id": 36,
+      "title": "Constitutionality of the Digital Personal Data Protection Act 2023",
+      "source": "Supreme Court Observer",
+      "url": "https://www.scobserver.in/cases/constitutionality-of-the-digital-personal-data-protection-act-2023/",
+      "tray": "CASE LAW",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["constitutional-challenge", "rti", "government-exemptions", "board-independence", "significant-breach"],
+      "note": "Pending Venkatesh Nayak v Union of India. Track as Case, not Judgement, until a final order exists."
+    },
+    {
+      "list_id": 37,
+      "title": "Challenge to DPDP Act: Investigative Journalism and Public Interest Disclosure",
+      "source": "Supreme Court Observer",
+      "url": "https://www.scobserver.in/reports/challenge-to-dpdp-act-day-2-law-may-impede-investigative-journalism-petitioners-argue/",
+      "tray": "CASE LAW",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["constitutional-challenge", "journalism", "public-interest"]
+    },
+    {
+      "list_id": 38,
+      "title": "Challenge to DPDP Amendment of the RTI Act",
+      "source": "Supreme Court Observer",
+      "url": "https://www.scobserver.in/reports/challenge-to-dpdp-amendment-of-rti-bench-refuses-to-stay-amendment-issues-notice/",
+      "tray": "CASE LAW",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["rti", "section-8-1-j"]
+    },
+    {
+      "list_id": 39,
+      "title": "A Missed Opportunity for Horizontal Equality",
+      "source": "Supreme Court Observer",
+      "url": "https://www.scobserver.in/journal/digital-personal-data-protection-act-2023-a-missed-opportunity-for-horizontal-equality/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["equality", "vulnerable-persons"]
+    },
+    {
+      "list_id": 40,
+      "title": "Fifteen Major Concerns with India's Digital Personal Data Bill",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2023/08/223-major-concerns-india-data-protection-bill-2023-2/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["government-exemptions", "surveillance", "children", "bill-stage"],
+      "note": "Bill-stage critique. Keep as historical interpretation; do not treat as current Rules text."
+    },
+    {
+      "list_id": 41,
+      "title": "Government Exemptions under the DPDP Rules",
+      "source": "Medianama",
+      "url": "https://www.medianama.com/2025/01/223-dpdp-rules-2025-exemptions-govermment-overreach/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["government-exemptions", "section-17", "section-36"]
+    },
+    {
+      "list_id": 42,
+      "title": "Safeguarding Personal Privacy in the Era of Artificial Intelligence",
+      "source": "Lawctopus Academike",
+      "url": "https://www.lawctopus.com/academike/safeguarding-personal-privacy-in-the-era-of-artificially-intelligent-systems/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["AI", "automated-processing", "consent-limits"]
+    },
+    {
+      "list_id": 43,
+      "title": "India's DPDP Act and Draft Rules: High Hopes, Higher Hurdles",
+      "source": "NLS International Journal of Law and Technology",
+      "url": "https://forum.nls.ac.in/ijlt-blog-post/high-hopes-higher-hurdles-analysis-of-the-dpdp-act-and-its-draft-rules-part-i/",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["draft-rules", "principles-vs-practice"]
+    },
+    {
+      "list_id": 44,
+      "title": "Compensating the Data Principal: Navigating DPDP's Blind Spot",
+      "source": "Bar & Bench",
+      "url": "https://www.barandbench.com/law-firms/view-point/compensating-the-data-principal-navigating-dpdps-blind-spot",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["compensation", "remedies", "section-39"]
+    },
+    {
+      "list_id": 45,
+      "title": "The Wrong Forum for Your Data: Why TDSAT Falls Short",
+      "source": "Bar & Bench",
+      "url": "https://www.barandbench.com/columns/the-wrong-forum-for-your-data-why-tdsat-falls-short-under-the-dpdp-act",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["TDSAT", "appeals", "institutional-design"]
+    },
+    {
+      "list_id": 49,
+      "title": "India DPDPA and GDPR Comparison",
+      "source": "Latham & Watkins",
+      "url": "https://www.lw.com/admin/upload/SiteAttachments/Indias-Digital-Personal-Data-Protection-Act-2023-vs-the-GDPR-A-Comparison.pdf",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["comparative", "GDPR", "transfers"],
+      "note": "Listed as Lewis Silkin in the source memo; the URL is a Latham & Watkins PDF. Do not copy the PDF into chat."
+    },
+    {
+      "list_id": 50,
+      "title": "India DPDPA Cross-Border Data Protection Reference",
+      "source": "DLA Piper",
+      "url": "https://www.dlapiperdataprotection.com/?t=law&c=IN",
+      "tray": "INTERPRETATION",
+      "layer": 4,
+      "corpus": "knowledge_infra",
+      "themes": ["cross-border", "comparative"]
+    }
+  ],
+  "competitive_intelligence": [
+    {
+      "list_id": 1,
+      "title": "DPDP Rules 2025: Analysis of Industry Implications",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/DPDP%20Rules%202025-%20Analysis%20of%20Industry%20implications.html",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["rules", "SDF", "consent-manager", "breach", "children"],
+      "also_listed_as": [17, 34, 46]
+    },
+    {
+      "list_id": 2,
+      "title": "Ten Steps to Comply with India's Digital Personal Data Protection Act",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/ten_steps_comply_with_dpdpa_guide.html",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["implementation"]
+    },
+    {
+      "list_id": 3,
+      "title": "DPDPA Compliance Checklist 2026",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/dpdpa_compliance_checklist_2026_business_assessment.html",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["checklist", "MSME"]
+    },
+    {
+      "list_id": 4,
+      "title": "How to Draft a DPDPA-Compliant Privacy Policy",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/dpdpa_compliant_privacy_policy_template_guide.html",
+      "tray": "TEMPLATE",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["notice", "privacy-policy"],
+      "also_listed_as": [24],
+      "note": "Harvest for taxonomy only. Do not copy the template into Setu."
+    },
+    {
+      "list_id": 5,
+      "title": "GDPR vs DPDPA vs CCPA: Comprehensive Comparison Guide",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/gdpr_vs_dpdpa_vs_ccpa_comprehensive_comparison.html",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["comparative"]
+    },
+    {
+      "list_id": 6,
+      "title": "The DPDPA Conundrum for Indian SMEs",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/The_DPDPA_Conundrum_for_Indian_SMEs.html",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["MSME", "proportionality"]
+    },
+    {
+      "list_id": 7,
+      "title": "Understanding the Modern Role of a Consent Manager",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/blogs/Understanding_Role_of_a_Consent_Manager_Under_DPDPA_and_DPDP_Rules.html",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["consent-manager"],
+      "also_listed_as": [22]
+    },
+    {
+      "list_id": 8,
+      "title": "125+ DPDPA FAQs",
+      "source": "DPDPA.com",
+      "url": "https://www.dpdpa.com/dpdpa-faq.html",
+      "tray": "FAQ",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["faq", "issue-spotting"],
+      "also_listed_as": [26]
+    },
+    {
+      "list_id": 16,
+      "title": "DPDP Rules 2025: What Changed from the Draft?",
+      "source": "Seqrite",
+      "url": "https://www.seqrite.com/blog/dpdp-rules-are-here-what-changed-from-the-draft/",
+      "tray": "BLOG",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["draft-vs-final", "commencement"]
+    },
+    {
+      "list_id": 47,
+      "title": "DPDPA for PSUs and Government Departments",
+      "source": "DPDPIndia",
+      "url": "https://www.dpdpindia.in/psu-privacy-kb.html",
+      "tray": "INTERPRETATION",
+      "layer": 5,
+      "corpus": "competitive_intelligence",
+      "themes": ["PSU", "puttaswamy"]
+    }
+  ],
+  "skip": [
+    {
+      "list_id": 9,
+      "title": "DPDP Act and Rules resource library",
+      "url": "https://www.dpdpa.com/",
+      "reason": "Navigation hub, not an extractable post."
+    },
+    {
+      "list_id": 10,
+      "title": "DPDP Act bare-act reference",
+      "url": "https://www.dpdpa.net/",
+      "reason": "Competitor copy of statute. Never import as Layer 1-2 law; cite official Gazette/Act instead."
+    },
+    {
+      "list_id": 25,
+      "title": "Data Principal Rights and Grievance Redressal",
+      "url": "https://www.dpdpa.com/blogs/",
+      "reason": "Blog index, not a specific article."
+    },
+    {
+      "list_id": 33,
+      "title": "Children's Data under the DPDP Act",
+      "url": "https://www.dpdpa.com/blogs/",
+      "reason": "Blog index, not a specific article."
+    },
+    {
+      "list_id": 48,
+      "title": "Data Protection, Privacy and Compensation under Indian Law",
+      "url": "https://www.barandbench.com/law-firms/view-point/compensating-the-data-principal-navigating-dps-blind-spot",
+      "reason": "Duplicate of list_id 44 with a typo in the path."
+    }
+  ]
+}

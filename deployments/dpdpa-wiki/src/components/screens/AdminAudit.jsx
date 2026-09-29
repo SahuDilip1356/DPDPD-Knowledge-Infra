@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 export default function AdminAudit() {
+  const [adminKey, setAdminKey] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.sessionStorage.getItem("dpdpa_admin_key") || "";
+  });
+  const [keyDraft, setKeyDraft] = useState("");
   const [logs, setLogs] = useState([]);
   const [ingestionLogs, setIngestionLogs] = useState([]);
   const [stats, setStats] = useState({
@@ -12,59 +18,61 @@ export default function AdminAudit() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = useCallback(async () => {
+    if (!adminKey) return;
     try {
       setLoading(true);
-      
-      // Fetch stats
-      const statsRes = await fetch("http://localhost:8000/admin/stats");
-      const statsData = await statsRes.json();
+      const options = { headers: { "X-Admin-Key": adminKey } };
+      const [statsRes, logsRes, ingestionRes] = await Promise.all([
+        apiFetch("/admin/stats", options),
+        apiFetch("/admin/search-audit", options),
+        apiFetch("/admin/ingestion-audit", options),
+      ]);
+
+      if ([statsRes, logsRes, ingestionRes].some((response) => response.status === 401)) {
+        window.sessionStorage.removeItem("dpdpa_admin_key");
+        setAdminKey("");
+        throw new Error("The admin key was rejected. Enter it again.");
+      }
+      if (!statsRes.ok || !logsRes.ok || !ingestionRes.ok) {
+        throw new Error("One or more admin services are unavailable.");
+      }
+
+      const [statsData, logsData, ingestionData] = await Promise.all([
+        statsRes.json(),
+        logsRes.json(),
+        ingestionRes.json(),
+      ]);
       setStats(statsData);
-
-      // Fetch search logs
-      const logsRes = await fetch("http://localhost:8000/admin/search-audit");
-      const logsData = await logsRes.json();
       setLogs(logsData.logs || []);
-
-      // Fetch Ingestion logs
-      const ingestionRes = await fetch("http://localhost:8000/admin/ingestion-audit");
-      const ingestionData = await ingestionRes.json();
       setIngestionLogs(ingestionData.logs || []);
-
       setError(null);
     } catch (err) {
       console.error("Failed to load admin metrics:", err);
-      // Fallback mock statistics for local offline sandbox testing
-      setStats({
-        total_knowledge_objects: 45,
-        core_layer_count: 24,
-        opinion_layer_count: 8,
-        other_layers_count: 13
-      });
-      
-      setLogs([
-        { timestamp: new Date().toISOString(), query: "What is the penalty for a data breach?", grounded: true },
-        { timestamp: new Date(Date.now() - 1800000).toISOString(), query: "Bilingual consent notice court splits", grounded: false },
-        { timestamp: new Date(Date.now() - 3600000).toISOString(), query: "Section 10 Significant Data Fiduciary obligations", grounded: true },
-        { timestamp: new Date(Date.now() - 7200000).toISOString(), query: "Quantum computing data encryption laws in India", grounded: false },
-        { timestamp: new Date(Date.now() - 10800000).toISOString(), query: "Puttaswamy privacy judgment 2017 details", grounded: true }
-      ]);
-
-      setIngestionLogs([
-        { timestamp: new Date().toISOString(), pipeline_id: "pipeline-20260728-024941", ko_count: 3, published_count: 2, rejected_count: 1, duration_ms: 1489.19, status: "SUCCESS" },
-        { timestamp: new Date(Date.now() - 86400000).toISOString(), pipeline_id: "pipeline-20260727-142201", ko_count: 5, published_count: 5, rejected_count: 0, duration_ms: 2450.4, status: "SUCCESS" }
-      ]);
+      setError(err.message || "Failed to load admin data.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [adminKey]);
 
   useEffect(() => {
+    if (!adminKey) {
+      setLoading(false);
+      return undefined;
+    }
     fetchAdminData();
-    // Poll logs every 10 seconds for real-time tracking
     const interval = setInterval(fetchAdminData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [adminKey, fetchAdminData]);
+
+  const handleAdminKey = (event) => {
+    event.preventDefault();
+    const nextKey = keyDraft.trim();
+    if (!nextKey) return;
+    window.sessionStorage.setItem("dpdpa_admin_key", nextKey);
+    setAdminKey(nextKey);
+    setKeyDraft("");
+  };
 
   const total = stats.core_layer_count + stats.opinion_layer_count + stats.other_layers_count || 1;
   const corePercent = Math.round((stats.core_layer_count / total) * 100);
@@ -74,9 +82,34 @@ export default function AdminAudit() {
   // Filter alerts: either ungrounded search queries, or containing high-risk terms
   const searchAlerts = logs.filter(log => {
     if (log.grounded === false) return true;
-    const q = log.query.toLowerCase();
+    const q = String(log.query || "").toLowerCase();
     return q.includes("penalty") || q.includes("breach") || q.includes("fine") || q.includes("conflict") || q.includes("violation");
   });
+
+  if (!adminKey) {
+    return (
+      <div className="space-y-6" style={{ maxWidth: "520px" }}>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Admin authorization</h1>
+          <p className="text-slate-500 mt-1">Enter the server-issued admin key for this browser tab.</p>
+        </div>
+        <form onSubmit={handleAdminKey} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+          <label htmlFor="admin-key" className="block text-sm font-semibold text-slate-700">Admin key</label>
+          <input
+            id="admin-key"
+            type="password"
+            autoComplete="off"
+            value={keyDraft}
+            onChange={(event) => setKeyDraft(event.target.value)}
+            className="input w-full"
+            required
+          />
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          <button type="submit" className="btn-primary">Open admin dashboard</button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -84,6 +117,14 @@ export default function AdminAudit() {
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Admin Audit & Analytics</h1>
         <p className="text-slate-500 mt-1">Monitor real-time compliance search queries, ontology core contents, and expert opinions.</p>
       </div>
+
+      {loading && <div role="status" className="text-sm text-slate-500">Loading live admin data…</div>}
+      {error && (
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 flex justify-between items-center gap-4">
+          <span>{error}</span>
+          <button type="button" className="btn-secondary" onClick={fetchAdminData}>Retry</button>
+        </div>
+      )}
 
       {/* Layer Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
