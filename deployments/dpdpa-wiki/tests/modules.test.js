@@ -81,6 +81,8 @@ describe("course pages (T14, T15)", () => {
       const cites = [...html.matchAll(/<a class="cite" href="([^"]+)"/g)].map((x) => x[1]);
       expect(cites.length, "lessons cite provisions").toBeGreaterThan(0);
       for (const href of cites) expect(ROUTES.has(href), href).toBe(true);
+      const text = html.replace(/<[^>]+>/g, "");
+      expect(text, "doubled citation word").not.toMatch(/\b(Sections?|Rules?) \1 \d/);
       if (m.order === 6) {
         expect(html).toContain('href="https://saralprivacy.com/assessment"');
         expect(html).not.toContain("learn-next");
@@ -102,4 +104,36 @@ describe("course pages (T14, T15)", () => {
       expect(JSON.stringify(quizLd)).not.toMatch(/acceptedAnswer|"answer"/);
     });
   }
+});
+
+describe("lesson figures", () => {
+  const REQUIRED = {
+    gate: ["steps"], steps: ["steps"], checklist: ["items"], roles: ["nodes"], stack: ["layers"],
+    timeline: ["events"], compare: ["columns"], scale: ["items"], changes: ["items"], actmap: []
+  };
+  for (const f of files) {
+    it(`${f}: every figure is valid JSON of a known type with its required fields`, () => {
+      const src = fs.readFileSync(path.join(dir, f), "utf8");
+      const figs = [...src.matchAll(/^::: figure\s*\n([\s\S]*?)\n:::\s*$/gm)].map((m) => JSON.parse(m[1]));
+      for (const spec of figs) {
+        expect(Object.keys(REQUIRED), `${f} type ${spec.type}`).toContain(spec.type);
+        expect(spec.title, `${f} ${spec.type} title`).toBeTruthy();
+        for (const k of REQUIRED[spec.type]) expect(Array.isArray(spec[k]) && spec[k].length > 0, `${f} ${spec.type}.${k}`).toBe(true);
+        if (spec.type === "compare") expect(spec.columns.length).toBe(2);
+        if (spec.type === "timeline") for (const e of spec.events) expect(e.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    });
+  }
+
+  it("module 1 is fully layered: every lesson has a short version and a figure", () => {
+    const src = fs.readFileSync(path.join(dir, "01-what-is-dpdpa.md"), "utf8");
+    const lessons = src.split(/^## /m).slice(1);
+    for (const l of lessons) {
+      expect(l, l.split("\n")[0]).toMatch(/^::: short$/m);
+      expect(l, l.split("\n")[0]).toMatch(/^::: figure$/m);
+    }
+    const html = readPage("/learn/what-is-dpdpa");
+    expect((html.match(/<figure class="fig /g) || []).length).toBe(lessons.length);
+    expect((html.match(/class="lesson-more"/g) || []).length).toBe(lessons.length);
+  });
 });

@@ -89,10 +89,11 @@ const CITE = new RegExp(
   [
     String.raw`\b(?<secword>[Ss]ections?)\s+(?<seclist>${LIST})`,
     String.raw`\b(?<ruleword>[Rr]ules?)\s+(?<rulelist>${LIST})`,
-    String.raw`\b(?<ord>${ORDINALS.join("|")})\s+[Ss]chedule\b`,
-    String.raw`\b(?<act>[Tt]he\s+[Ss]chedule(?:\s+to\s+the\s+Act)?)\b`
+    String.raw`\b(?<ord>${ORDINALS.map((o) => `[${o[0].toUpperCase()}${o[0]}]${o.slice(1)}`).join("|")})\s+[Ss]chedule\b`,
+    // Capital S only: "build the schedule" in prose is not the Act's penalty Schedule.
+    String.raw`\b(?<act>[Tt]he\s+Schedule(?:\s+to\s+the\s+Act)?)\b`
   ].join("|"),
-  "gi"
+  "g"
 );
 const NUM_TOKEN = new RegExp(`(${NUM})`, "g");
 
@@ -126,7 +127,7 @@ export function linkCitations(html, { badged = new Set(), onDate = new Date() } 
       first = false;
       return anchor(label, text) + badge(label);
     });
-    return linked.startsWith(word) ? linked : `${word} ${linked}`;
+    return linked; // the first link already carries the word ("Section 3(a)")
   };
   const replaceText = (text) =>
     text.replace(CITE, (m, ...rest) => {
@@ -134,7 +135,7 @@ export function linkCitations(html, { badged = new Set(), onDate = new Date() } 
       if (g.secword) return linkList(g.secword, g.seclist, "S");
       if (g.ruleword) return linkList(g.ruleword, g.rulelist, "R");
       if (g.ord) {
-        const label = `SCH-${g.ord.toUpperCase()}`;
+        const label = `SCH-${g.ord.toUpperCase()}`; // ord may be "First" or "first"
         return anchor(label, m) + badge(label);
       }
       if (g.act) return anchor("ACT-SCHEDULE", m);
@@ -175,6 +176,56 @@ function splitLessons(body) {
   return { intro: intro.trim(), lessons };
 }
 
+/**
+ * A lesson body as ordered blocks. Container directives mark the visual
+ * pieces; everything else is prose.
+ *
+ *   ::: short            the lesson in two sentences, shown first
+ *   ::: figure           a JSON figure spec (components/learn/Figure.jsx)
+ *   ::: example <title>  a worked example from a business
+ *
+ * Malformed figure JSON throws, naming the lesson, so a broken figure fails
+ * the build instead of disappearing from the page.
+ */
+export function lessonBlocks(markdown, where = "") {
+  const blocks = [];
+  let prose = [];
+  let open = null;
+  const flush = () => {
+    const text = prose.join("\n").trim();
+    if (text) blocks.push({ type: "prose", markdown: text });
+    prose = [];
+  };
+  for (const line of String(markdown).split(/\r?\n/)) {
+    const start = /^:::\s*(short|figure|example)\b\s*(.*)$/.exec(line.trim());
+    if (!open && start) {
+      flush();
+      open = { name: start[1], arg: start[2].trim(), lines: [] };
+      continue;
+    }
+    if (open && line.trim() === ":::") {
+      const body = open.lines.join("\n").trim();
+      if (open.name === "figure") {
+        let spec;
+        try {
+          spec = JSON.parse(body);
+        } catch (err) {
+          throw new Error(`Figure in ${where} is not valid JSON: ${err.message}`);
+        }
+        blocks.push({ type: "figure", spec });
+      } else {
+        blocks.push({ type: open.name, title: open.arg, markdown: body });
+      }
+      open = null;
+      continue;
+    }
+    (open ? open.lines : prose).push(line);
+  }
+  if (open) throw new Error(`Unclosed ::: ${open.name} in ${where}`);
+  flush();
+  return blocks;
+}
+
 /** One Module record from a Markdown source. Exported for the tests' fixtures. */
 export function buildModule(source, path = "") {
   const { data, body } = parseFrontmatter(source);
@@ -197,12 +248,20 @@ export function buildModule(source, path = "") {
     quiz: Array.isArray(data.quiz) ? data.quiz.filter((q) => q && typeof q === "object").map(quizItem) : [],
     intro_html: intro ? linkCitations(md.parse(intro), { badged: introBadged }) : "",
     intro_cites: extractCitations(intro),
-    lessons: lessons.map(({ heading, id, markdown, cites }) => ({
-      heading,
-      id,
-      cites,
-      html: linkCitations(md.parse(markdown), { badged: new Set() })
-    }))
+    lessons: lessons.map(({ heading, id, markdown, cites }) => {
+      const badged = new Set();
+      const blocks = lessonBlocks(markdown, `${file} › ${heading}`).map((b) =>
+        b.type === "figure" ? b : { ...b, html: linkCitations(md.parse(b.markdown), { badged }) }
+      );
+      return {
+        heading,
+        id,
+        cites,
+        blocks,
+        short: blocks.find((b) => b.type === "short")?.html || "",
+        html: blocks.filter((b) => b.type === "prose").map((b) => b.html).join("\n")
+      };
+    })
   };
 }
 
@@ -220,6 +279,22 @@ export function getModule(slug) {
 }
 
 /** The module after / before this one in the course, by declared `next` or by order. */
+/** Questions readers ask about this module's provisions, most-asked first, deduplicated. */
+export function moduleQuestions(m, limit = 5) {
+  const seen = new Set();
+  const out = [];
+  for (const label of m.provisions) {
+    for (const q of getProvision(label)?.questions || []) {
+      if (seen.has(q.id)) continue;
+      seen.add(q.id);
+      out.push({ ...q, label });
+      break; // the top question per provision keeps the list spread across the module
+    }
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 export function nextModule(m) {
   return (m.next && getModule(m.next)) || MODULES.find((x) => x.order === m.order + 1) || null;
 }

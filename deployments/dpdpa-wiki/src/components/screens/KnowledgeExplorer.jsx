@@ -3,8 +3,7 @@ import { supabase } from "../../data/supabaseClient";
 import { 
   KNOWLEDGE_OBJECTS, 
   OPINIONS, 
-  CONSTITUTIONAL_NOUNS, 
-  getKOByUrn 
+  CONSTITUTIONAL_NOUNS 
 } from "../../data/mockData";
 import { 
   StatusBadge, 

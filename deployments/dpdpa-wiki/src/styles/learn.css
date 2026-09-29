@@ -63,3 +63,72 @@ a.cite:hover { color: var(--saffron); }
 @media (prefers-reduced-motion: reduce) {
   .learn-card-link, .quiz-opt { transition: none; }
 }
+
+/* ── Module page: track, answers, lessons ────────────────────────── */
+.track { margin: 4px 0 26px; }
+.track ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; position: relative; }
+.track ol::before { content: ""; position: absolute; top: 15px; left: 22px; right: 22px; height: 2px; background: rgba(255,255,255,0.22); }
+.track ol::-webkit-scrollbar { display: none; }
+.track-stop { position: relative; flex: 1 0 auto; min-width: 44px; }
+.track-stop a { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; text-decoration: none; color: rgba(255,255,255,0.6); position: relative; z-index: 1; padding: 0 4px; }
+.track-dot {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 13px; font-weight: 600; font-family: var(--font-sans);
+  border: 2px solid rgba(255,255,255,0.35); background: var(--ink-deep); color: rgba(255,255,255,0.75);
+}
+.track-stop.is-done .track-dot { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.55); color: #fff; }
+.track-stop.is-here .track-dot { background: var(--saffron); border-color: var(--saffron); color: #fff; box-shadow: 0 0 0 5px rgba(200,127,46,0.25); }
+.track-name { font-size: 12px; line-height: 1.3; text-align: center; max-width: 12ch; display: none; }
+.track-stop.is-here .track-name { color: #fff; }
+.track-stop a:hover .track-dot { border-color: #fff; }
+@media (min-width: 760px) { .track-name { display: block; } }
+
+.module-title { margin-top: 0; }
+.module-meta { margin: 12px 0 0; font-size: 14px; color: rgba(255,255,255,0.7); font-family: var(--font-sans); }
+
+.module-intro { display: grid; gap: 18px; margin-bottom: 26px; }
+@media (min-width: 760px) { .module-intro { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; } }
+.module-answers, .module-toc { background: #fff; border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; }
+.module-answers-h { margin: 0 0 10px; font-family: var(--font-sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+.module-answers ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 8px; font-family: var(--font-serif); font-size: 16px; line-height: 1.45; color: var(--ink); }
+.module-toc ol { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; font-size: 15px; line-height: 1.45; }
+.module-toc a { display: inline-block; padding-block: 4px; }
+
+.module-legend { display: grid; gap: 8px; margin-bottom: 30px; padding: 12px 16px; border-radius: 10px; background: var(--ivory-warm); }
+.module-legend p { margin: 0; font-size: 14px; color: var(--body); }
+.module-lede { margin-bottom: 36px; font-size: 18px; }
+
+.lesson { max-width: 780px; margin: 0 0 56px; padding-top: 8px; border-top: 1px solid var(--rule); }
+.lesson-head { display: flex; align-items: baseline; gap: 14px; margin: 22px 0 14px; }
+.lesson-n { flex-shrink: 0; font-family: var(--font-serif); font-size: 34px; line-height: 1; color: var(--saffron); min-width: 26px; }
+.lesson-h { margin: 0; font-family: var(--font-serif); font-size: clamp(1.45rem, 3.2vw, 1.85rem); line-height: 1.25; color: var(--ink); scroll-margin-top: 84px; }
+.lesson-short {
+  margin: 0 0 6px; padding: 4px 0 4px 18px; border-left: 4px solid var(--saffron);
+  font-family: var(--font-serif); font-size: clamp(1.1rem, 2.5vw, 1.3rem); line-height: 1.55; color: var(--ink);
+}
+.lesson-short p { margin: 0 0 0.5em; }
+.lesson-short p:last-child { margin: 0; }
+.lesson .learn-prose { max-width: 68ch; }
+.lesson-example {
+  margin: 26px 0 0; padding: 16px 18px; border-radius: 10px;
+  background: #fff; border: 1px solid var(--rule); border-left: 5px solid #1E7A4C;
+  font-size: 16px; line-height: 1.6; color: #222;
+}
+.lesson-example-h { margin: 0 0 8px; font-family: var(--font-sans); font-size: 14px; font-weight: 600; color: #1E7A4C; }
+.lesson-example p { margin: 0 0 0.7em; }
+.lesson-example p:last-child { margin: 0; }
+.learn-provisions { margin-top: 12px; }
+.lesson-more { margin-top: 22px; border-top: 1px dashed #CBD3DF; padding-top: 6px; }
+.lesson-more > summary {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; list-style: none;
+  font-family: var(--font-sans); font-size: 15px; font-weight: 500; color: var(--ink);
+}
+.lesson-more > summary::-webkit-details-marker { display: none; }
+.lesson-more > summary::before {
+  content: ""; width: 9px; height: 9px; border-right: 2px solid var(--saffron); border-bottom: 2px solid var(--saffron);
+  transform: rotate(-45deg); transition: transform 160ms ease; flex-shrink: 0; margin-inline: 3px 2px;
+}
+.lesson-more[open] > summary::before { transform: rotate(45deg); }
+.lesson-more > summary:hover { color: var(--saffron); }
+.lesson-more > summary:focus-visible { outline: 2px solid var(--role-state, #1B2F5B); outline-offset: 2px; border-radius: 4px; }
+.lesson-more[open] > summary { margin-bottom: 10px; }

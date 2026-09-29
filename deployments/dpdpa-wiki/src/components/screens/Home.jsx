@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
-import { supabase } from "../../data/supabaseClient";
 import { HERO, JOURNEYS, RESOURCES, COURSE, READINESS, FAQ, TRUST, CAPTURE } from "../../data/homeContent";
 import { listModules } from "../../lib/modules";
 import "../../styles/home.css";
@@ -28,6 +27,13 @@ function SubscribeForm({ intent = "checklist", score = null, compact = false }) 
     setState("sending");
     setMessage("");
 
+    // Loaded on submit so the Supabase SDK never weighs down the public pages.
+    let supabase = null;
+    try {
+      ({ supabase } = await import("../../data/supabaseClient"));
+    } catch {
+      supabase = null;
+    }
     if (!supabase) {
       setState("error");
       setMessage("Subscriptions are unavailable right now. Try again shortly.");

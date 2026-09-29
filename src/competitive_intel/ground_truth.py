@@ -76,6 +76,62 @@ def download() -> str:
     return pdf_path
 
 
+RUNNING_HEAD = re.compile(
+    r"^\s*(\d+\s+THE GAZETTE OF INDIA EXTRAORDINARY\s*\[P\s?ART II\S*|SEC\.\s*1\]\s*THE GAZETTE OF INDIA EXTRAORDINARY\s+\d+)\s*$"
+)
+ACT_REF = re.compile(r"\d{1,3} of (?:18|19|20)\d\d\.")
+
+
+def _is_margin(block: str) -> bool:
+    """True when `block` is nothing but marginal notes: section headings and Act references."""
+    rest = ACT_REF.sub(" ", block)
+    rest = re.sub(r"\s+", " ", rest).strip()
+    titles = sorted(SECTION_TITLES, key=len, reverse=True)
+    while rest:
+        for t in titles:
+            if rest.startswith(t + "."):
+                rest = rest[len(t) + 1:].lstrip()
+                break
+        else:
+            return False
+    return True
+
+
+def strip_page_furniture(page_text: str, report: list, page_no: int) -> str:
+    """Remove what the gazette prints around the Act rather than in it.
+
+    pypdf returns each page with its running head first ("6 THE GAZETTE OF INDIA
+    EXTRAORDINARY [PART II—" / "SEC. 1] THE GAZETTE ... 7") and the margin notes
+    last: the section headings printed beside the text, split over short lines,
+    and references such as "53 of 2005.". Left in, they land mid-sentence in the
+    section text. A trailing block is removed only when it is made entirely of
+    known headings and Act references, so body text can never be dropped by this.
+    """
+    lines = page_text.split("\n")
+    if lines and RUNNING_HEAD.match(lines[0]):
+        lines = lines[1:]
+    # Page 1 ends with the gazette masthead (Hindi and English banner, registration
+    # number, the Ministry's publication line). It starts at the "EXTRAORDINARY"
+    # banner, preceded by its Hindi word; nothing after it is part of the Act.
+    for i, line in enumerate(lines):
+        if line.strip() == "EXTRAORDINARY":
+            cut = i - 1 if i > 0 and len(lines[i - 1].strip()) < 15 and " " not in lines[i - 1].strip() else i
+            report.append((page_no, "gazette masthead: " + " ".join(l.strip() for l in lines[cut:])[:80] + "…"))
+            lines = lines[:cut]
+            break
+    best = 0
+    for k in range(1, min(40, len(lines)) + 1):
+        tail = lines[-k:]
+        if any(len(l.strip()) > 40 for l in tail):
+            break
+        if _is_margin(" ".join(tail)):
+            best = k
+    if best:
+        report.append((page_no, " ".join(l.strip() for l in lines[-best:])))
+        lines = lines[:-best]
+    return "\n".join(lines)
+
+
 def clean_hyphens(text: str) -> str:
     """The gazette's PDF text layer splits hyphenated words: "seventy -two", "sub -section".
 
@@ -143,9 +199,15 @@ def extract_schedule(sections: dict) -> dict:
 def main():
     pdf_path = download()
     reader = PdfReader(pdf_path)
-    text = clean_hyphens("\n".join(page.extract_text() or "" for page in reader.pages))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    # Headings are proven against the raw text (they are printed as margin notes),
+    # then the running heads and margin notes are removed from the body.
+    verify_titles(clean_hyphens("\n".join(pages)))
+    removed = []
+    text = clean_hyphens("\n".join(strip_page_furniture(t, removed, i + 1) for i, t in enumerate(pages)))
+    for page_no, block in removed:
+        print(f"  page {page_no}: removed margin notes {block!r}")
 
-    verify_titles(text)
     sections = split_sections(text)
     schedule = extract_schedule(sections)
     missing = [n for n in range(1, MAX_SECTION + 1) if n not in sections]
