@@ -10,6 +10,14 @@ Builds canonical Knowledge Objects and loads them into Supabase and Pinecone.
   push     — upsert KOs + graph edges into Supabase, embed + upsert into Pinecone (vector id =
              URN, same text recipe and metadata as src/reasoning/index_vectors.py).
   rollback — delete everything this script wrote (by URN prefix) from Supabase and Pinecone.
+  revise   — publish version n+1 of every provision KO whose gazette text changed.
+  audit    — read-only: check every live KO against the corpus contract
+             (deployments/dpdpa-backend/src/schemas/corpus_contract.py).
+  repair   — local: re-slice and re-hash the evidence of the staged answers against the
+             current gazette text, as version n+1.
+  conform  — the same repair on the live answers, and verified records for the Act and the
+             Rules as documents; published as version n+1, never overwritten.
+  quarantine — close every live KO that still fails the contract, and drop its vector.
 
 Namespaces (new, so nothing links into the draft-numbered rule KOs already in the graph):
   urn:ki:in:dpdp:act:2023:sec:N            (matches the existing Act section KOs)
@@ -21,12 +29,17 @@ Usage:  python3 src/competitive_intel/build_knowledge_objects.py primary
         python3 src/competitive_intel/build_knowledge_objects.py answers [--limit N]
         python3 src/competitive_intel/build_knowledge_objects.py push [--dry-run]
         python3 src/competitive_intel/build_knowledge_objects.py rollback
+        python3 src/competitive_intel/build_knowledge_objects.py audit
+        python3 src/competitive_intel/build_knowledge_objects.py repair
+        python3 src/competitive_intel/build_knowledge_objects.py conform [--dry-run]
+        python3 src/competitive_intel/build_knowledge_objects.py quarantine [--dry-run]
 """
 import argparse
 import hashlib
 import json
 import os
 import re
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
@@ -37,6 +50,9 @@ from fetch import REPO_ROOT
 from llm import Usage, ask_json
 from question_graph import GRAPH, embed
 from verify_claims import load_law
+
+sys.path.insert(0, os.path.join(REPO_ROOT, "deployments", "dpdpa-backend"))
+from src.schemas import corpus_contract as contract  # noqa: E402 — the canonical backend's contract
 
 OUT_DIR = os.path.join(REPO_ROOT, "staging/competitive_intel/knowledge_objects")
 PRIMARY_FILE = os.path.join(OUT_DIR, "primary_kos.jsonl")
@@ -474,6 +490,10 @@ def push(dry_run: bool):
         if os.path.exists(path):
             kos += [json.loads(l) for l in open(path)]
     print(f"push: {len(kos)} KOs ({sum(k['type'] == 'Answer' for k in kos)} answers)")
+    failures = contract.check_corpus(kos, published_law())
+    if failures:
+        raise SystemExit("push: refused, the staged objects break the corpus contract\n"
+                         + contract.report(failures, len(kos)))
     if dry_run:
         return
 
@@ -523,6 +543,236 @@ def rollback():
     print(f"rollback: removed {len(urns)} KOs, their edges, and their vectors")
 
 
+# ---------------------------------------------------------------- contract
+DB_MANAGED = ("system_time_start", "system_time_end", "legal_time_end")
+
+
+def store():
+    from supabase import create_client
+    return create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
+
+
+def published_law() -> dict:
+    """The law the public site is built from. Refuses to run if the store's ground truth
+    and the site disagree on a single provision's text: both must say the same words."""
+    site = contract.load_law()
+    law, _ = load_law()
+    drift = sorted(label for label in set(site) | set(law)
+                   if (site.get(label) or {}).get("text") != (law.get(label) or {}).get("text"))
+    if drift:
+        raise SystemExit(f"The site's law file and the ground truth differ on {', '.join(drift)}. "
+                         "Run deployments/dpdpa-wiki/scripts/sync-law.mjs first.")
+    return site
+
+
+def live_objects(client) -> list:
+    rows, start = [], 0
+    while True:
+        page = client.table("knowledge_objects").select("*").is_("system_time_end", "null") \
+            .order("urn").order("version").range(start, start + 499).execute().data
+        rows += page
+        if len(page) < 500:
+            return rows
+        start += 500
+
+
+def next_version(row: dict) -> dict:
+    new = {k: v for k, v in row.items() if k not in DB_MANAGED}
+    new["version"] = row["version"] + 1
+    return new
+
+
+def repaired(row: dict, law: dict) -> dict:
+    """Version n+1 of an answer, with each gazette quote re-sliced from the provision's
+    current text and hashed against it. A quote that no longer verifies is dropped."""
+    evidence = []
+    for item in row["evidence"]:
+        label = contract.evidence_label(item)
+        if item.get("source_urn") not in contract.GAZETTE_SOURCES or label not in law:
+            evidence.append(item)
+            continue
+        quote = verified_citation(item["citation_text"], law[label]["text"])
+        if quote:
+            evidence.append({**item, "citation_text": quote, "chunk_sha256": sha256(law[label]["text"])})
+    return {**next_version(row), "evidence": evidence}
+
+
+def document_row(act: bool, law: dict, commencement: dict, version: int) -> dict:
+    """The record for the Act, or the Rules, as a whole: what each provision object links to.
+    Every statement in it is counted from the ground truth or quoted from it."""
+    sections = sum(1 for label in law if re.fullmatch(r"S\d+", label))
+    rules = sum(1 for label in law if re.fullmatch(r"R\d+", label))
+    schedules = sum(1 for label in law if label.startswith("SCH-"))
+    if act:
+        label, quote = "S1", "This Act may be called the Digital Personal Data Protection Act, 2023."
+        title = "Digital Personal Data Protection Act, 2023"
+        summary = ("The Digital Personal Data Protection Act, 2023 (No. 22 of 2023), published in the "
+                   f"Gazette of India, Extraordinary, on 11 August 2023. It has {sections} sections and "
+                   "one Schedule. Each is held as its own object, in the gazette's words.")
+    else:
+        label, quote = "R1", "These rules may be called the Digital Personal Data Protection Rules, 2025."
+        title = "Digital Personal Data Protection Rules, 2025"
+        dates = sorted(set(commencement.values()))
+        phases = "; ".join(f"{sum(1 for d in commencement.values() if d == day)} from {pretty(day)}"
+                           for day in dates)
+        summary = ("The Digital Personal Data Protection Rules, 2025, notified as G.S.R. 846(E) in the "
+                   "Gazette of India, Extraordinary, on 13 November 2025 and corrected by G.S.R. 892(E) "
+                   f"of 10 December 2025. They have {rules} rules and {schedules} schedules. The rules "
+                   f"come into force in phases: {phases}. Each is held as its own object, in the "
+                   "gazette's words.")
+    return {
+        "urn": ACT_DOC if act else RULES_DOC, "version": version,
+        "type": "Act" if act else "Rule",
+        "title": title, "summary": summary,
+        "confidence_score": 1.0,
+        "source_credibility": "primary",
+        "interpretation_stance": "document record",
+        "legal_time_start": "2023-08-11" if act else "2025-11-13",
+        "body": {"provisions": sorted(l for l in law if is_act(l) == act), "entities": []},
+        "business_impact": {},
+        "evidence": [evidence_item(label, verified_citation(quote, law[label]["text"]), law, 1)],
+        "linked_objects": [] if act else [ACT_DOC],
+        "entities": [],
+        "relations": [] if act else [{"edge_type": "Implements", "target_urn": ACT_DOC}],
+    }
+
+
+def publish_versions(client, pairs: list, carry_edges: bool):
+    """Insert each new version beside the one it replaces and close the old one.
+    Nothing is overwritten. The vector index keeps one vector per URN, so it is re-embedded."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    for old, new in pairs:
+        new = {**new, "system_time_start": now}
+        client.table("knowledge_objects").insert(new).execute()
+        client.table("knowledge_objects").update({"system_time_end": now}) \
+            .eq("urn", old["urn"]).eq("version", old["version"]).execute()
+        keep = {(r["target_urn"], r["edge_type"]) for r in new["relations"]}
+        if carry_edges:
+            edges = client.table("graph_edges").select("*").eq("source_urn", old["urn"]) \
+                .eq("source_version", old["version"]).execute().data
+            keep |= {(e["target_urn"], e["edge_type"]) for e in edges}
+        if keep:
+            client.table("graph_edges").insert([
+                {"source_urn": new["urn"], "source_version": new["version"], "target_urn": t, "edge_type": et}
+                for t, et in sorted(keep)]).execute()
+    print(f"  supabase ok — {len(pairs)} new versions, previous versions closed at {now}")
+
+    kos = [new for _, new in pairs]
+    texts = [f"Title: {k['title']}. Type: {k['type']}. Summary: {k['summary']}. "
+             f"Entities: {', '.join(k['body'].get('entities', []))}" for k in kos]
+    vectors = embed(texts)
+    host = pinecone_host()
+    headers = {"Api-Key": os.getenv("PINECONE_API_KEY"), "Content-Type": "application/json"}
+    for start in range(0, len(kos), 100):
+        batch = [{"id": k["urn"], "values": vectors[i].tolist(),
+                  "metadata": {"title": k["title"], "type": k["type"], "version": k["version"],
+                               "summary": k["summary"][:2000]}}
+                 for i, k in enumerate(kos[start:start + 100], start)]
+        requests.post(f"https://{host}/vectors/upsert", headers=headers,
+                      json={"vectors": batch}, timeout=60).raise_for_status()
+    print(f"  pinecone ok — {len(kos)} vectors re-embedded")
+
+
+def audit() -> int:
+    """Read-only: every live object against the contract."""
+    rows = live_objects(store())
+    failures = contract.check_corpus(rows, published_law())
+    print(f"audit: {len(rows)} live objects")
+    print(contract.report(failures, len(rows)))
+    for key in sorted(k for k in failures if not k.startswith(QA_PREFIX)):
+        print(f"  {key}")
+    return 1 if failures else 0
+
+
+def repair():
+    """Local: bring the staged answers up to the current gazette text."""
+    law = published_law()
+    rows = [json.loads(l) for l in open(ANSWERS_FILE)]
+    out, fixed, left = [], 0, []
+    for row in rows:
+        if not contract.check_object(row, law):
+            out.append(row)
+            continue
+        new = repaired(row, law)
+        problems = contract.check_object(new, law)
+        if problems:
+            left.append((row["urn"], problems))
+            out.append(row)
+        else:
+            fixed += 1
+            out.append(new)
+    with open(ANSWERS_FILE, "w") as f:
+        for row in out:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    print(f"repair: {len(rows)} staged answers, {fixed} re-verified as a new version, {len(left)} left failing")
+    for urn, problems in left:
+        print(f"  {urn}: {'; '.join(problems)}")
+
+
+def plan(rows: list, site: dict) -> tuple:
+    """Sorts the live objects that fail the contract: (repairs, beyond repair).
+    A repair is (live row, its conforming next version)."""
+    law, commencement = load_law()
+    repairs, beyond = [], []
+    for row in rows:
+        if not contract.check_object(row, site):
+            continue
+        if row["urn"] in (ACT_DOC, RULES_DOC):
+            new = document_row(row["urn"] == ACT_DOC, law, commencement, row["version"] + 1)
+        elif row["type"] == "Answer":
+            new = repaired(row, site)
+        else:
+            new = None
+        if new and not contract.check_object(new, site):
+            repairs.append((row, new))
+        else:
+            beyond.append(row)
+    return repairs, beyond
+
+
+def conform(dry_run: bool):
+    """Live: answers re-verified against the current gazette text, and verified records
+    for the Act and the Rules as documents. Version n+1 beside each, the old one closed."""
+    client = store()
+    rows = live_objects(client)
+    repairs, beyond = plan(rows, published_law())
+    documents = [(old, new) for old, new in repairs if old["urn"] in (ACT_DOC, RULES_DOC)]
+    answers = [(old, new) for old, new in repairs if old["urn"] not in (ACT_DOC, RULES_DOC)]
+    print(f"conform: {len(rows)} live objects; {len(answers)} answers and {len(documents)} document "
+          f"records get a verified new version; {len(beyond)} are beyond repair (see quarantine)")
+    for old, new in documents:
+        print(f"  {old['urn']}  v{old['version']} -> v{new['version']}\n    {new['summary']}")
+    if dry_run or not repairs:
+        return
+    publish_versions(client, answers, carry_edges=True)
+    publish_versions(client, documents, carry_edges=False)
+
+
+def quarantine(dry_run: bool):
+    """Live: close every object that fails the contract and that `conform` cannot repair.
+    Closed, not deleted: the row stays, with system_time_end set, and its vector leaves
+    the index so retrieval stops citing it."""
+    from datetime import datetime, timezone
+    client = store()
+    _, beyond = plan(live_objects(client), published_law())
+    print(f"quarantine: {len(beyond)} live objects fail the contract and cannot be repaired")
+    for row in beyond:
+        print(f"  {row['urn']} v{row['version']}  [{row['type']}] {row['title'][:70]}")
+    if dry_run or not beyond:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    for row in beyond:
+        client.table("knowledge_objects").update({"system_time_end": now}) \
+            .eq("urn", row["urn"]).eq("version", row["version"]).execute()
+    host = pinecone_host()
+    headers = {"Api-Key": os.getenv("PINECONE_API_KEY"), "Content-Type": "application/json"}
+    urns = sorted({r["urn"] for r in beyond})
+    requests.post(f"https://{host}/vectors/delete", headers=headers,
+                  json={"ids": urns}, timeout=60).raise_for_status()
+    print(f"quarantine: closed {len(beyond)} rows at {now}; removed {len(urns)} vectors")
+
+
 # ---------------------------------------------------------------- revise
 def revise(dry_run: bool):
     """Publish a new version of every primary provision KO whose gazette text changed.
@@ -532,10 +782,8 @@ def revise(dry_run: bool):
     edges copied to the new version. The vector index keeps one vector per URN,
     so it is re-embedded from the new text.
     """
-    from datetime import datetime, timezone
-    from supabase import create_client
     law, commencement = load_law()
-    client = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
+    client = store()
     urns = {provision_urn(label): label for label in law}
     live = []
     for chunk in [list(urns)[i:i + 50] for i in range(0, len(urns), 50)]:
@@ -557,35 +805,14 @@ def revise(dry_run: bool):
     if dry_run or not changed:
         return
 
-    now = datetime.now(timezone.utc).isoformat()
-    for old, new in changed:
-        new["system_time_start"] = now
-        client.table("knowledge_objects").insert(new).execute()
-        client.table("knowledge_objects").update({"system_time_end": now}) \
-            .eq("urn", old["urn"]).eq("version", old["version"]).execute()
-        edges = client.table("graph_edges").select("*").eq("source_urn", old["urn"]).eq("source_version", old["version"]).execute().data
-        keep = {(e["target_urn"], e["edge_type"]) for e in edges} | {(r["target_urn"], r["edge_type"]) for r in new["relations"]}
-        client.table("graph_edges").insert([
-            {"source_urn": new["urn"], "source_version": new["version"], "target_urn": t, "edge_type": et}
-            for t, et in sorted(keep)]).execute()
-    print(f"revise: supabase ok — {len(changed)} new versions, previous versions closed at {now}")
-
-    kos = [new for _, new in changed]
-    texts = [f"Title: {k['title']}. Type: {k['type']}. Summary: {k['summary']}. "
-             f"Entities: {', '.join(k['body'].get('entities', []))}" for k in kos]
-    vectors = embed(texts)
-    host = pinecone_host()
-    headers = {"Api-Key": os.getenv("PINECONE_API_KEY"), "Content-Type": "application/json"}
-    batch = [{"id": k["urn"], "values": vectors[i].tolist(),
-              "metadata": {"title": k["title"], "type": k["type"], "version": k["version"],
-                           "summary": k["summary"][:2000]}} for i, k in enumerate(kos)]
-    requests.post(f"https://{host}/vectors/upsert", headers=headers, json={"vectors": batch}, timeout=60).raise_for_status()
-    print(f"revise: pinecone ok — {len(kos)} vectors re-embedded")
+    publish_versions(client, changed, carry_edges=True)
+    print(f"revise: {len(changed)} new versions published, previous versions closed")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("step", choices=["primary", "answers", "dedup", "push", "rollback", "revise"])
+    parser.add_argument("step", choices=["primary", "answers", "dedup", "push", "rollback", "revise",
+                                         "audit", "repair", "conform", "quarantine"])
     parser.add_argument("--limit", type=int, default=DEFAULT_ANSWERS)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -594,7 +821,11 @@ def main():
      "dedup": dedup_answers,
      "push": lambda: push(args.dry_run),
      "rollback": rollback,
-     "revise": lambda: revise(args.dry_run)}[args.step]()
+     "revise": lambda: revise(args.dry_run),
+     "audit": lambda: sys.exit(audit()),
+     "repair": repair,
+     "conform": lambda: conform(args.dry_run),
+     "quarantine": lambda: quarantine(args.dry_run)}[args.step]()
 
 
 if __name__ == "__main__":

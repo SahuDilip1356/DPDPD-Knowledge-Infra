@@ -415,5 +415,15 @@ def main():
     print(f"{'='*60}\n")
 
 
+RETIRED = """This seeder is retired and does nothing.
+
+Its objects are hand-written summaries with no verified source text. It upserts them
+under the same URNs as the verbatim Act sections, so running it would overwrite law
+that has been checked against the gazette. None of its objects pass the corpus contract
+(deployments/dpdpa-backend/src/schemas/corpus_contract.py).
+
+Publish through src/competitive_intel/build_knowledge_objects.py, which refuses any
+object that breaks the contract."""
+
 if __name__ == "__main__":
-    main()
+    sys.exit(RETIRED)

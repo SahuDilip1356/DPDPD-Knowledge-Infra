@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StoredKnowledgeObject",
+  "description": "The shape of a live row in knowledge_objects: what the API serves and retrieval reads. knowledge_object_schema.json describes the factory's ledger document before publication; this describes what is published. Version history is the table's own rows (system_time_start / system_time_end), so a row carries no embedded history.",
+  "type": "object",
+  "required": [
+    "urn", "version", "type", "title", "summary", "confidence_score", "source_credibility",
+    "interpretation_stance", "legal_time_start", "body", "business_impact", "evidence",
+    "linked_objects", "entities", "relations"
+  ],
+  "properties": {
+    "urn": { "type": "string", "pattern": "^urn:ki:in:dpdp:[a-z0-9_-]+(:[a-z0-9_-]+)*$" },
+    "version": { "type": "integer", "minimum": 1 },
+    "type": {
+      "type": "string",
+      "enum": ["Act", "Rule", "Answer", "Notification", "Circular", "Case", "Judgement", "Opinion"]
+    },
+    "title": { "type": "string", "minLength": 5 },
+    "summary": { "type": "string", "minLength": 20 },
+    "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "source_credibility": {
+      "type": "string",
+      "enum": ["primary", "primary-derived", "secondary", "tertiary"]
+    },
+    "interpretation_stance": { "type": "string", "minLength": 3 },
+    "legal_time_start": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}",
+      "description": "The date the statement takes legal effect; a date, or a timestamp that starts with one"
+    },
+    "body": { "type": "object" },
+    "business_impact": { "type": "object" },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "source_urn", "source_name", "source_tier", "citation_text", "coordinates",
+          "chunk_sha256", "verification_status"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "source_urn": { "type": "string", "pattern": "^urn:ki:in:dpdp:source:[a-z0-9_-]+$" },
+          "source_name": { "type": "string", "minLength": 2 },
+          "source_tier": { "type": "string", "enum": ["primary", "secondary", "tertiary"] },
+          "citation_text": { "type": "string", "minLength": 20 },
+          "coordinates": { "type": "object", "minProperties": 1 },
+          "chunk_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 of the text the quote was taken from"
+          },
+          "verification_status": { "const": "verified" }
+        }
+      }
+    },
+    "linked_objects": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^urn:ki:in:dpdp:" }
+    },
+    "entities": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target_urn", "edge_type"],
+        "properties": {
+          "target_urn": { "type": "string", "pattern": "^urn:ki:in:dpdp:" },
+          "edge_type": {
+            "type": "string",
+            "enum": [
+              "Amends", "Supersedes", "Interprets", "Depends On", "Overrides", "Conflicts With",
+              "Supports", "Implements", "References", "Requires", "Applies To", "Violates",
+              "Explains", "Replaces", "Harmonizes With"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "interpretation_stance": { "const": "verbatim" } },
+        "required": ["interpretation_stance"]
+      },
+      "then": {
+        "properties": {
+          "type": { "enum": ["Act", "Rule"] },
+          "source_credibility": { "const": "primary" },
+          "confidence_score": { "const": 1 },
+          "body": { "required": ["full_text", "provision"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "Answer" } }, "required": ["type"] },
+      "then": {
+        "properties": {
+          "body": {
+            "required": ["cited", "provisions", "review_status"],
+            "properties": {
+              "cited": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "provisions": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+            }
+          },
+          "business_impact": { "required": ["impact_summary", "action_required"] }
+        }
+      }
+    }
+  ]
+}
