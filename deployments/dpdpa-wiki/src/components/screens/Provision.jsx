@@ -6,6 +6,8 @@ import {
   neighbours, routeFor, heading, pageTitle, moduleTitle, shortHash
 } from "../../lib/law";
 import { usePageTitle } from "../../lib/usePageTitle";
+import { useProvision } from "../../lib/useContent";
+import { useToday } from "../../lib/useToday";
 import "../../styles/law.css";
 
 /* One provision of the Act or the Rules: the gazette text as printed, its
@@ -13,14 +15,15 @@ import "../../styles/law.css";
    from the provision record and nothing else. */
 export default function Provision() {
   const { pathname } = useLocation();
-  const p = getByRoute(pathname);
+  const p = useProvision(getByRoute(pathname));
+  const today = useToday();
   usePageTitle(p ? pageTitle(p) : null);
 
   if (!p) return <Navigate to={pathname.startsWith("/rules") ? "/rules" : "/act"} replace />;
 
   const doc = documentOf(p);
   const chapter = chapterOf(p);
-  const badge = commencement(p);
+  const badge = commencement(p, today);
   const lines = clauseLines(p.text);
   const { prev, next } = neighbours(p);
 

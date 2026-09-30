@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
 import NotFound from "./NotFound";
-import { getModule, modulePath, quizTitleTag } from "../../lib/modules";
+import { modulePath, quizTitleTag } from "../../lib/modules";
 import { getProvision, routeFor, displayLabel } from "../../lib/law";
 import { usePageTitle } from "../../lib/usePageTitle";
+import { useModule } from "../../lib/useContent";
 import "../../styles/law.css";
 import "../../styles/learn.css";
 
@@ -21,7 +22,7 @@ function writeLast(slug, value) {
    key is never in the page markup (spec AC7). Scores stay in this browser. */
 export default function Quiz() {
   const { slug } = useParams();
-  const m = getModule(slug);
+  const m = useModule(slug);
   usePageTitle(m ? quizTitleTag(m) : null);
   const [picked, setPicked] = useState({});
   const [marked, setMarked] = useState(false);

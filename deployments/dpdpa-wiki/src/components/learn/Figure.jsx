@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { extractCitations, routeForLabel } from "../../lib/citations";
 import { CHAPTERS, formatDate } from "../../lib/law";
+import { useToday } from "../../lib/useToday";
 
 /* ═══════════════════════════════════════════════════════════════════
    Lesson figures.
@@ -186,9 +187,8 @@ function Stack({ spec }) {
 /* ── timeline: dated events, with where today falls ─────────────── */
 function Timeline({ spec }) {
   const events = [...(spec.events || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  const [today, setToday] = useState(() => new Date().toISOString().slice(0, 10));
-  // The prerender fixes "today" at build time; the browser corrects it.
-  useEffect(() => setToday(new Date().toISOString().slice(0, 10)), []);
+  // The build day on first render, so hydration matches the prerender; the reader's day after.
+  const today = useToday().toISOString().slice(0, 10);
   const nowIndex = events.findIndex((e) => e.date > today); // first future event
   const markerAt = nowIndex === -1 ? events.length : nowIndex;
 

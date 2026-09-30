@@ -4,10 +4,11 @@ import PublicShell from "../marketing/PublicShell";
 import NotFound from "./NotFound";
 import Figure, { RoleLegend } from "../learn/Figure";
 import {
-  getModule, listModules, nextModule, prevModule, modulePath, quizPath, moduleTitleTag, moduleQuestions, TOTAL_MODULES
+  listModules, nextModule, prevModule, modulePath, quizPath, moduleTitleTag, moduleQuestions, TOTAL_MODULES
 } from "../../lib/modules";
 import { getProvision, routeFor, displayLabel } from "../../lib/law";
 import { usePageTitle } from "../../lib/usePageTitle";
+import { useModule } from "../../lib/useContent";
 import "../../styles/law.css";
 import "../../styles/learn.css";
 import "../../styles/figures.css";
@@ -84,7 +85,7 @@ function Lesson({ lesson, n }) {
    with the self-test and the next module, or the handoff on the last. */
 export default function Module() {
   const { slug } = useParams();
-  const m = getModule(slug);
+  const m = useModule(slug);
   usePageTitle(m ? moduleTitleTag(m) : null);
   if (!m) return <NotFound />;
 

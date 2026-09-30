@@ -2,7 +2,7 @@ import React from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import PublicShell from "../marketing/PublicShell";
 import {
-  listGlossary, glossaryGroups, getTerm, getProvision, routeFor, displayLabel, glossaryTitle, GLOSSARY_TITLE
+  listGlossary, glossaryGroups, getTerm, getProvision, documentOf, routeFor, displayLabel, glossaryTitle, GLOSSARY_TITLE
 } from "../../lib/law";
 import { usePageTitle } from "../../lib/usePageTitle";
 import "../../styles/law.css";
@@ -88,7 +88,7 @@ export default function GlossaryEntry() {
             <p className="law-line law-line-lead law-depth-0">{t.definition}</p>
           </section>
           <p className="law-source">
-            {t.clause} of {p ? p.source.document : t.provision}.{" "}
+            {t.clause} of {p ? documentOf(p).name : t.provision}.{" "}
             {p && <Link to={routeFor(p)}>Read {displayLabel(p)} in full →</Link>}
           </p>
           <nav className="law-pager" aria-label="Neighbouring terms">
