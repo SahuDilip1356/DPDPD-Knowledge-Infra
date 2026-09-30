@@ -27,6 +27,14 @@ class KnowledgeObject(Base):
     evidence = Column(JSON, nullable=False)
     linked_objects = Column(JSON, nullable=False)
 
+    # Trust metadata, matching the Supabase knowledge_objects table. Without
+    # these the API cannot say whether an object is verbatim law or opinion.
+    entities = Column(JSON, nullable=True)
+    relations = Column(JSON, nullable=True)
+    interpretation_stance = Column(String(50), nullable=True)   # e.g. "verbatim"
+    source_credibility = Column(String(50), nullable=True)      # e.g. "primary"
+    forum_published = Column(String(255), nullable=True)
+
     __table_args__ = (
         PrimaryKeyConstraint("urn", "version"),
     )

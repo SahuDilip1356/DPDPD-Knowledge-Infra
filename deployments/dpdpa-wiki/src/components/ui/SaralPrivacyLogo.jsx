@@ -213,4 +213,30 @@ export function SaralPrivacyLogo({
   );
 }
 
+/**
+ * DPDPA Wiki — the public site's own lockup.
+ * The SaralPrivacy mark stays; the wordmark is the product, the line under it
+ * names the owner: "SaralPrivacy Knowledge Infra".
+ */
+export function DpdpaWikiLogo({ theme = "light", size = 32, className = "" }) {
+  const isDark = theme === "dark";
+  const wordColor = isDark ? "#FFFFFF" : "#14213D";
+  const wikiColor = isDark ? "#F0B35A" : "#C87F2E";
+  const ownerColor = isDark ? "rgba(255,255,255,0.72)" : "#4B5563";
+  return (
+    <span className={`dpdpa-wiki-logo ${className}`} style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+      <SaralPrivacyMark size={size} theme={theme} />
+      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+        <span style={{ fontSize: `${size * 0.5}px`, fontWeight: 700, fontFamily: "var(--font-sans)", letterSpacing: "-0.01em" }}>
+          <span style={{ color: wordColor }}>DPDPA</span>{" "}
+          <span style={{ color: wikiColor }}>Wiki</span>
+        </span>
+        <span style={{ fontSize: `${Math.max(10, size * 0.3)}px`, fontWeight: 600, color: ownerColor, letterSpacing: "0.02em" }}>
+          SaralPrivacy Knowledge Infra
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export default SaralPrivacyLogo;

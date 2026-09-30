@@ -1,0 +1,226 @@
+[
+ {
+  "term": "Appellate Tribunal",
+  "slug": "appellate-tribunal",
+  "clause": "Section 2(a)",
+  "definition": "(a) “Appellate Tribunal” means the Telecom Disputes Settlement and Appellate Tribunal established under section 14 of the Telecom Regulatory Authority of India Act, 1997;",
+  "provision": "S2"
+ },
+ {
+  "term": "automated",
+  "slug": "automated",
+  "clause": "Section 2(b)",
+  "definition": "(b) “automated” means any digital process capable of operating automatically in response to instructions given or otherwise for the purpose of processing data;",
+  "provision": "S2"
+ },
+ {
+  "term": "Board",
+  "slug": "board",
+  "clause": "Section 2(c)",
+  "definition": "(c) “Board” means the Data Protection Board of India established by the Central Government under section 18;",
+  "provision": "S2"
+ },
+ {
+  "term": "certain legitimate uses",
+  "slug": "certain-legitimate-uses",
+  "clause": "Section 2(d)",
+  "definition": "(d) “certain legitimate uses” means the uses referred to in section 7;",
+  "provision": "S2"
+ },
+ {
+  "term": "Chairperson",
+  "slug": "chairperson",
+  "clause": "Section 2(e)",
+  "definition": "(e) “Chairperson” means the Chairperson of the Board;",
+  "provision": "S2"
+ },
+ {
+  "term": "child",
+  "slug": "child",
+  "clause": "Section 2(f)",
+  "definition": "(f) “child” means an individual who has not completed the age of eighteen years;",
+  "provision": "S2"
+ },
+ {
+  "term": "Consent Manager",
+  "slug": "consent-manager",
+  "clause": "Section 2(g)",
+  "definition": "(g) “Consent Manager” means a person registered with the Board, who acts as a single point of contact to enable a Data Principal to give, manage, review and withdraw her consent through an accessible, transparent and interoperable platform;",
+  "provision": "S2"
+ },
+ {
+  "term": "data",
+  "slug": "data",
+  "clause": "Section 2(h)",
+  "definition": "(h) “data” means a representation of information, facts, concepts, opinions or instructions in a manner suitable for communication, interpretation or processing by human beings or by automated means;",
+  "provision": "S2"
+ },
+ {
+  "term": "Data Fiduciary",
+  "slug": "data-fiduciary",
+  "clause": "Section 2(i)",
+  "definition": "(i) “Data Fiduciary” means any person who alone or in conjunction with other persons determines the purpose and means of processing of personal data;",
+  "provision": "S2"
+ },
+ {
+  "term": "Data Principal",
+  "slug": "data-principal",
+  "clause": "Section 2(j)",
+  "definition": "(j) “Data Principal” means the individual to whom the personal data relates and where such individual is— (i) a child, includes the parents or lawful guardian of such a child; (ii) a person with disability, includes her lawful guardian, acting on her behalf;",
+  "provision": "S2"
+ },
+ {
+  "term": "Data Processor",
+  "slug": "data-processor",
+  "clause": "Section 2(k)",
+  "definition": "(k) “Data Processor” means any person who processes personal data on behalf of a Data Fiduciary;",
+  "provision": "S2"
+ },
+ {
+  "term": "Data Protection Officer",
+  "slug": "data-protection-officer",
+  "clause": "Section 2(l)",
+  "definition": "(l) “Data Protection Officer” means an individual appointed by the Significant Data Fiduciary under clause (a) of sub-section (2) of section 10;",
+  "provision": "S2"
+ },
+ {
+  "term": "digital office",
+  "slug": "digital-office",
+  "clause": "Section 2(m)",
+  "definition": "(m) “digital office” means an office that adopts an online mechanism wherein the proceedings, from receipt of intimation or complaint or reference or directions or appeal, as the case may be, to the disposal thereof, are conducted in online or digital mode;",
+  "provision": "S2"
+ },
+ {
+  "term": "digital personal data",
+  "slug": "digital-personal-data",
+  "clause": "Section 2(n)",
+  "definition": "(n) “digital personal data” means personal data in digital form;",
+  "provision": "S2"
+ },
+ {
+  "term": "gain",
+  "slug": "gain",
+  "clause": "Section 2(o)",
+  "definition": "(o) “gain” means— (i) a gain in property or supply of services, whether temporary or permanent; or (ii) an opportunity to earn remuneration or greater remuneration or to gain a financial advantage otherwise than by way of legitimate remuneration;",
+  "provision": "S2"
+ },
+ {
+  "term": "loss",
+  "slug": "loss",
+  "clause": "Section 2(p)",
+  "definition": "(p) “loss” means— (i) a loss in property or interruption in supply of services, whether temporary or permanent; or (ii) a loss of opportunity to earn remuneration or greater remuneration or to gain a financial advantage otherwise than by way of legitimate remuneration;",
+  "provision": "S2"
+ },
+ {
+  "term": "Member",
+  "slug": "member",
+  "clause": "Section 2(q)",
+  "definition": "(q) “Member” means a Member of the Board and includes the Chairperson;",
+  "provision": "S2"
+ },
+ {
+  "term": "notification",
+  "slug": "notification",
+  "clause": "Section 2(r)",
+  "definition": "(r) “notification” means a notification published in the Official Gazette and the expressions “notify” and “notified” shall be construed accordingly;",
+  "provision": "S2"
+ },
+ {
+  "term": "person",
+  "slug": "person",
+  "clause": "Section 2(s)",
+  "definition": "(s) “person” includes— (i) an individual; (ii) a Hindu undivided family; (iii) a company; (iv) a firm; (v) an association of persons or a body of individuals, whether incorporated or not; (vi) the State; and (vii) every artificial juristic person, not falling within any of the preceding sub-clauses;",
+  "provision": "S2"
+ },
+ {
+  "term": "personal data",
+  "slug": "personal-data",
+  "clause": "Section 2(t)",
+  "definition": "(t) “personal data” means any data about an individual who is identifiable by or in relation to such data;",
+  "provision": "S2"
+ },
+ {
+  "term": "personal data breach",
+  "slug": "personal-data-breach",
+  "clause": "Section 2(u)",
+  "definition": "(u) “personal data breach” means any unauthorised processing of personal data or accidental disclosure, acquisition, sharing, use, alteration, destruction or loss of access to personal data, that compromises the confidentiality, integrity or availability of personal data;",
+  "provision": "S2"
+ },
+ {
+  "term": "prescribed",
+  "slug": "prescribed",
+  "clause": "Section 2(v)",
+  "definition": "(v) “prescribed” means prescribed by rules made under this Act;",
+  "provision": "S2"
+ },
+ {
+  "term": "proceeding",
+  "slug": "proceeding",
+  "clause": "Section 2(w)",
+  "definition": "(w) “proceeding” means any action taken by the Board under the provisions of this Act;",
+  "provision": "S2"
+ },
+ {
+  "term": "processing",
+  "slug": "processing",
+  "clause": "Section 2(x)",
+  "definition": "(x) “processing” in relation to personal data, means a wholly or partly automated operation or set of operations performed on digital personal data, and includes operations such as collection, recording, organisation, structuring, storage, adaptation, retrieval, use, alignment or combination, indexing, sharing, disclosure by transmission, dissemination or otherwise making available, restriction, erasure or destruction;",
+  "provision": "S2"
+ },
+ {
+  "term": "she",
+  "slug": "she",
+  "clause": "Section 2(y)",
+  "definition": "(y) “she” in relation to an individual includes the reference to such individual irrespective of gender;",
+  "provision": "S2"
+ },
+ {
+  "term": "Significant Data Fiduciary",
+  "slug": "significant-data-fiduciary",
+  "clause": "Section 2(z)",
+  "definition": "(z) “Significant Data Fiduciary” means any Data Fiduciary or class of Data Fiduciaries as may be notified by the Central Government under section 10;",
+  "provision": "S2"
+ },
+ {
+  "term": "specified purpose",
+  "slug": "specified-purpose",
+  "clause": "Section 2(za)",
+  "definition": "(za) “specified purpose” means the purpose mentioned in the notice given by the Data Fiduciary to the Data Principal in accordance with the provisions of this Act and the rules made thereunder; and",
+  "provision": "S2"
+ },
+ {
+  "term": "State",
+  "slug": "state",
+  "clause": "Section 2(zb)",
+  "definition": "(zb) “State” means the State as defined under article 12 of the Constitution.",
+  "provision": "S2"
+ },
+ {
+  "term": "Act",
+  "slug": "act",
+  "clause": "Rule 2(a)",
+  "definition": "(a) “Act” means the Digital Personal Data Protection Act, 2023 (22 of 2023);",
+  "provision": "R2"
+ },
+ {
+  "term": "techno-legal measures",
+  "slug": "techno-legal-measures",
+  "clause": "Rule 2(b)",
+  "definition": "(b) “techno-legal measures” means as referred to under rules 20 and 22;",
+  "provision": "R2"
+ },
+ {
+  "term": "user account",
+  "slug": "user-account",
+  "clause": "Rule 2(c)",
+  "definition": "(c) “user account” means the online account registered by the Data Principal with the Data Fiduciary, and includes any profiles, pages, handles, email address, mobile number and other similar presences by means of which such Data Principal is able to access the services of such Data Fiduciary; and",
+  "provision": "R2"
+ },
+ {
+  "term": "verifiable consent",
+  "slug": "verifiable-consent",
+  "clause": "Rule 2(d)",
+  "definition": "(d) “verifiable consent” means a consent as specified in rule 10 or 11. (2) The words and expressions used in these rules and not defined, but defined in the Act, shall have the same meanings respectively assigned to them in the Act.",
+  "provision": "R2"
+ }
+]

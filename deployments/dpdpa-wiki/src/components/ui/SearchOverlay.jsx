@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { KNOWLEDGE_OBJECTS, OPINIONS, REGULATORY_EVENTS, ACTION_ITEMS } from "../../data/mockData";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import { ObjectTypeBadge, StatusBadge } from "../ui/SharedComponents";
 
 export default function SearchOverlay({ isOpen, onClose }) {
@@ -19,19 +20,21 @@ export default function SearchOverlay({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   // Search results
-  const matchingEvents = REGULATORY_EVENTS.filter(e => 
+  const events = MOCKS_ENABLED ? REGULATORY_EVENTS : [];
+  const knowledgeObjects = MOCKS_ENABLED ? [...KNOWLEDGE_OBJECTS, ...OPINIONS] : [];
+  const actions = MOCKS_ENABLED ? ACTION_ITEMS : [];
+
+  const matchingEvents = events.filter(e => 
     e.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     e.summary.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const allObjects = [...KNOWLEDGE_OBJECTS, ...OPINIONS];
-
-  const matchingKOs = allObjects.filter(ko => 
+  const matchingKOs = knowledgeObjects.filter(ko => 
     ko.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     ko.urn.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const matchingActions = ACTION_ITEMS.filter(a => 
+  const matchingActions = actions.filter(a => 
     a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -39,6 +42,15 @@ export default function SearchOverlay({ isOpen, onClose }) {
   const handleSelectResult = (path) => {
     navigate(path);
     onClose();
+  };
+
+  const targetForKO = (type) => {
+    const normalized = (type || "").toLowerCase();
+    if (normalized === "act") return "/acts";
+    if (normalized === "rule") return "/rules";
+    if (normalized === "opinion") return "/interpretations";
+    if (["circular", "case", "judgement", "notification"].includes(normalized)) return "/discussions";
+    return "/knowledge";
   };
 
   return (
@@ -89,7 +101,7 @@ export default function SearchOverlay({ isOpen, onClose }) {
                 <button
                   key={ko.urn}
                   className="search-result-row card card-compact card-interactive flex items-center justify-between"
-                  onClick={() => handleSelectResult("/knowledge")}
+                  onClick={() => handleSelectResult(targetForKO(ko.type))}
                 >
                   <div style={{ textAlign: "left" }}>
                     <div style={{ fontWeight: "var(--fw-semibold)" }}>{ko.title}</div>

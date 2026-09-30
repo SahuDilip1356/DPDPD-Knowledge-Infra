@@ -196,3 +196,19 @@ class TestApiGateway:
         data = res.json()
         assert "content" in data
         assert "The DPDPA Bible" in data["content"]
+
+    def test_promote_to_eval_endpoint(self):
+        """POST /admin/promote-to-eval should append new permanent eval row."""
+        res = client.post("/admin/promote-to-eval", json={
+            "query": "Can personal data be transferred to non-notified countries?",
+            "expect_sufficient": True,
+            "expect_urns": ["urn:ki:in:dpdp:act:dpdpa-2023"],
+            "expect_section": "Section 16",
+            "severity": 4,
+            "note": "Production feedback case on cross-border restriction"
+        })
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "SUCCESS"
+        assert "case_id" in data
+

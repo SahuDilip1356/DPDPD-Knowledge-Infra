@@ -10,9 +10,10 @@ import sys
 # Ensure project root is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-# Use a file-based SQLite database for tests to share data across FastAPI routing threads safely
-TEST_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_api.db"))
-os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+# The API's shared DatabaseClient is a process-wide in-memory SQLite database
+# (one connection, safe across FastAPI's threads). Tests reset its tables
+# before each test rather than swapping in a file that other modules share.
+os.environ["ADMIN_API_KEY"] = "test-admin-key"
 
 import pytest
 from datetime import datetime, timedelta
@@ -29,19 +30,10 @@ from src.tests.test_reasoning_pipeline import make_ko
 
 
 client = TestClient(app)
+ADMIN_HEADERS = {"X-Admin-Key": "test-admin-key"}
 
 
 # ─── Setup Test Data ─────────────────────────────────────────────────────────
-
-@pytest.fixture(scope="module", autouse=True)
-def cleanup_db_file():
-    yield
-    if os.path.exists(TEST_DB_PATH):
-        try:
-            os.remove(TEST_DB_PATH)
-        except Exception:
-            pass
-
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
@@ -166,6 +158,33 @@ class TestApiGateway:
         assert data["updates_count"] == 1
         assert data["updates"][0]["urn"] == "urn:ki:in:dpdp:rule:consent-notice"
 
+    def test_search_endpoint_filters_by_type_and_query(self):
+        """GET /knowledge/search should return filtered, sorted discovery results."""
+        res = client.get("/knowledge/search?type=Rule&q=consent")
+        assert res.status_code == 200
+        data = res.json()
+        assert "count" in data
+        assert data["count"] >= 1
+        assert all(item["type"].lower() == "rule" for item in data["items"])
+        assert any("notice" in item["summary"].lower() for item in data["items"])
+
+    def test_sections_history_endpoint(self):
+        """GET /knowledge/sections/{urn}/history should list versions for a URN."""
+        res = client.get("/knowledge/sections/urn:ki:in:dpdp:rule:consent-notice/history")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["urn"] == "urn:ki:in:dpdp:rule:consent-notice"
+        assert data["history_count"] >= 1
+        assert data["versions"][0]["version"] >= 1
+
+    def test_changes_endpoint_defaults_to_recent_window(self):
+        """GET /knowledge/changes should return active/superseded touchpoints."""
+        res = client.get("/knowledge/changes")
+        assert res.status_code == 200
+        data = res.json()
+        assert "updates_count" in data
+        assert "updates" in data
+
     def test_get_ingestion_audit(self):
         """GET /admin/ingestion-audit should return list of ingestion runs."""
         from src.api.api_service import INGESTION_LOG_PATH
@@ -182,7 +201,7 @@ class TestApiGateway:
                 "status": "SUCCESS"
             }) + "\n")
             
-        res = client.get("/admin/ingestion-audit")
+        res = client.get("/admin/ingestion-audit", headers=ADMIN_HEADERS)
         assert res.status_code == 200
         data = res.json()
         assert "logs" in data

@@ -1,0 +1,168 @@
+# Competitor source registry. Run discover.py first (writes the sitemap URL lists),
+# then fetch.py. Matching is substring-on-URL-path unless noted.
+#
+# Per-source keys (all optional):
+#   exclude         extra path substrings never fetched
+#   course          extra path substrings boxed as COURSE (metadata only)
+#   metadata_only   extra path substrings where only title + headings are kept
+#   relevance_only  multi-product vendor: keep only URLs matching defaults.relevance (+ home/pricing)
+#   section_caps    {first-path-segment: max pages} for programmatic/near-duplicate sections
+#   classify        [[substring, LABEL], ...] checked before the default rules
+#   seeds           paths to fetch even if absent from the sitemap
+#   max_pages       overrides defaults.max_pages
+
+defaults:
+  max_pages: 800
+  # Training & certification: crawled, but boxed separately as COURSE and kept to
+  # title + headings (curriculum structure), never the course material itself.
+  course:
+    - course
+    - certif
+    - training
+    - /exam
+    - quiz
+    - interview-question
+    - /dpdpa-module-
+  exclude:
+    - webinar
+    - /event
+    - /career
+    - /jobs
+    - /award
+    - /newsroom
+    - /press
+    - /author/
+    - /tag/
+    - /category/
+    - /page/
+    - /login
+    - /signup
+    - /cart
+    - /checkout
+    - /wp-content/
+    - /feed
+  metadata_only:
+    - template
+    - /tools/
+    - /tool/
+    - generator
+    - poster
+  relevance: "dpdp|privacy|consent|data-protect|data-principal|fiduciar|personal-data|gdpr|breach|dpo"
+  # Locale-prefixed duplicates of English pages.
+  locale_prefix: "^/(ar|zh|zh-[a-z]+|de|ru|pt|pt-br|ko|fr|es|es-[0-9a-z]+|ja|it|hi|nl|tr|id|pl|vi|th|sv|da|fi|no|cs|he|uk)(/|$)"
+  classify:
+    - [pricing, PRICING]
+    - [/plans, PRICING]
+    - [faq, FAQ]
+    - [glossary, GLOSSARY]
+    - [template, TEMPLATE]
+    - [/tools/, TOOL]
+    - [/tool/, TOOL]
+    - [generator, TOOL]
+    - [calculator, TOOL]
+    - [checker, TOOL]
+    - [case-stud, CASE_STUDY]
+    - [customer-stor, CASE_STUDY]
+    - [compare, COMPARISON]
+    - [-vs-, COMPARISON]
+    - [alternative, COMPARISON]
+    - [/best/, COMPARISON]
+    - [whitepaper, REPORT]
+    - [/report, REPORT]
+    - [/blog, BLOG]
+    - [/article, BLOG]
+    - [/insight, BLOG]
+    - [/newsletter, BLOG]
+    - [/news, BLOG]
+    - [/resource, BLOG]
+    - [guide, GUIDE]
+    - [/docs, DOCS]
+    - [knowledgebase, DOCS]
+    - [/dpdp-act, LAW]
+    - [/chapter, LAW]
+    - [/section, LAW]
+    - [/rules, RULES]
+    - [feature, PRODUCT]
+    - [product, PRODUCT]
+    - [solution, PRODUCT]
+    - [platform, PRODUCT]
+    - [integration, PRODUCT]
+    - [industr, PRODUCT]
+    - [service, SERVICE]
+    - [consult, SERVICE]
+    - [about, COMMERCIAL]
+    - [contact, COMMERCIAL]
+    - [team, COMMERCIAL]
+    - [partner, COMMERCIAL]
+    - [privacy-policy, COMMERCIAL]
+    - [privacypolicy, COMMERCIAL]
+    - [terms, COMMERCIAL]
+    - [disclaimer, COMMERCIAL]
+    - [cookie, COMMERCIAL]
+
+sources:
+  # --- SaralPrivacy's own properties: the "self" side of the gap matrix ---
+  - domain: saralprivacy.com
+    tier: self
+  - domain: dpdpa.wiki
+    tier: self
+    # No sitemap; these are the prerendered public routes (deployments/dpdpa-wiki/src/lib/seo.js).
+    seeds: [/, /guide, /guide/dpdp-act-explained-indian-msmes]
+
+  # --- Competitors ---
+  - domain: www.dpdpa.com
+    tier: knowledge
+    exclude: [/oldcourse/]  # robots.txt disallows it
+    metadata_only: [/dpdpatemplatesandpolicies, /postersofdpdpa]
+    classify:
+      - [/dpdpa2023/, LAW]
+      - [schedule, LAW]
+      - [/dpdpa_enforcement_timeline, LAW]
+      - [/dpdparules, RULES]
+      - [/mappingofdpdpatodpdprules, RULES]
+      - [/dpdpacases/, CASE_LAW]
+      - [/cases, CASE_LAW]
+
+  - {domain: dpdpa.co.in, tier: knowledge}
+  - {domain: tsaaro.com, tier: knowledge, relevance_only: true}
+  - {domain: www.dpo-india.com, tier: knowledge}
+  - {domain: www.dpdpconsultants.com, tier: knowledge}
+  - {domain: cadp.in, tier: knowledge}
+  - {domain: www.complydp.com, tier: knowledge}
+  - domain: complynz.com
+    tier: knowledge
+    section_caps: {dpdp-consultants: 8}
+  - {domain: www.leegality.com, tier: knowledge, relevance_only: true}
+  - {domain: www.seqrite.com, tier: knowledge, relevance_only: true}
+  - {domain: kavachone.com, tier: knowledge, relevance_only: true}
+
+  - {domain: www.privybyidfy.com, tier: product}
+  - {domain: www.redacto.ai, tier: product}
+  - domain: www.consentx.io
+    tier: product
+    section_caps: {country: 15}
+  - {domain: www.consently.in, tier: product}
+  - {domain: dpdpcomply.com, tier: product}
+  - domain: comply.askmeidentity.com
+    tier: product
+    # dpdp-index: their public outside-in DPDP scan of ~3,500 Indian sites — crawled in full.
+    # your-rights: per-company mirror of the same list; a sample shows the format.
+    max_pages: 4000
+    section_caps: {your-rights: 10}
+    seeds: [/, /pricing]
+  - {domain: gotrust.in, tier: product, seeds: [/]}
+  - {domain: www.gotrust.tech, tier: product}
+  - {domain: concur.live, tier: product, seeds: [/]}
+  - {domain: dpdpacomplianceanalyser.com, tier: product}
+  - {domain: dpdpashield.in, tier: product}
+  - {domain: www.dpdpindia.in, tier: product}
+  - {domain: consentos.in, tier: product}
+  - domain: dcomply.in
+    tier: product
+    section_caps: {grievance-officer: 8, delete-my-data: 8}
+  - {domain: perfios.ai, tier: product, relevance_only: true}
+  - {domain: consentiqo.com, tier: product}
+  - domain: www.miniorange.com
+    tier: product
+    relevance_only: true
+    seeds: [/data-privacy/dpdp/]

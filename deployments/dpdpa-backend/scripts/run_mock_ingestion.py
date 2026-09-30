@@ -14,8 +14,8 @@ import sys
 import shutil
 from datetime import datetime
 
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+# Add the deployable backend root to the import path.
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.factory.factory_orchestrator import FactoryOrchestrator
 from src.storage.db_client import DatabaseClient

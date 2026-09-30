@@ -1,0 +1,82 @@
+{
+  "started_at": "2026-09-19",
+  "actor": "apify/website-content-crawler",
+  "caps": {
+    "maxCrawlPages": 40,
+    "maxCrawlDepth": 3,
+    "maxResults": 40,
+    "timeout_seconds": 600,
+    "memory_mb": 2048
+  },
+  "gpt_oss": {
+    "role": "cook",
+    "mode": "retrieval_over_graph",
+    "weight_training": false,
+    "provider_chain": ["gpt-oss", "gemini", "openai", "openrouter"]
+  },
+  "runs": [
+    {
+      "name": "DPDPA.com",
+      "start_url": "https://www.dpdpa.com",
+      "run_id": "MVjALS06N3RiBMaKe",
+      "dataset_id": "kQUSsV90aOPSkW2VD",
+      "status": "SUCCEEDED",
+      "pages": 40,
+      "stacked": 24,
+      "console": "https://console.apify.com/view/runs/MVjALS06N3RiBMaKe"
+    },
+    {
+      "name": "CADP",
+      "start_url": "https://cadp.in",
+      "run_id": "GDhk1qr9iebFUU5jm",
+      "dataset_id": "JDg0YP6D4o2HNZeV8",
+      "status": "SUCCEEDED",
+      "pages": 34,
+      "stacked": 34,
+      "console": "https://console.apify.com/view/runs/GDhk1qr9iebFUU5jm"
+    },
+    {
+      "name": "DPDP India",
+      "start_url": "https://www.dpdpindia.in",
+      "run_id": "ay1p3XTkJpf6Kzy6a",
+      "dataset_id": "K9DYRevT1cnPPLhfO",
+      "status": "SUCCEEDED",
+      "pages": 40,
+      "stacked": 40,
+      "console": "https://console.apify.com/view/runs/ay1p3XTkJpf6Kzy6a"
+    },
+    {
+      "name": "DPDPA Compliance Analyser",
+      "start_url": "https://dpdpacomplianceanalyser.com",
+      "run_id": "cCXMCfopAm4yfiShb",
+      "dataset_id": "SHn2RZgSUnDr1NJ0R",
+      "status": "SUCCEEDED",
+      "pages": 2,
+      "stacked": 2,
+      "console": "https://console.apify.com/view/runs/cCXMCfopAm4yfiShb"
+    },
+    {
+      "name": "GoTrust education hub",
+      "start_url": "https://dpdpa.co.in",
+      "run_id": "6QaW1ypIzVoaNOaHF",
+      "dataset_id": "5khLK0P4oFjLmCU6t",
+      "status": "SUCCEEDED",
+      "pages": 40,
+      "stacked": 39,
+      "console": "https://console.apify.com/view/runs/6QaW1ypIzVoaNOaHF"
+    },
+    {
+      "name": "ConsentOS",
+      "start_url": "https://consentos.in",
+      "run_id": "jUF2ewxY7gkDLDVSe",
+      "dataset_id": "NNHQXelJUUIudwA1F",
+      "status": "SUCCEEDED",
+      "pages": 40,
+      "stacked": 40,
+      "console": "https://console.apify.com/view/runs/jUF2ewxY7gkDLDVSe"
+    }
+  ],
+  "classified_out": "staging/harvest/classified_batch1.jsonl",
+  "publish": false,
+  "note": "Training and certification pages dropped. Opinion records stay in staging until review."
+}

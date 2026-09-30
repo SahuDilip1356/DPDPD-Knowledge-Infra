@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { CitationCard, EmptyState, StatusBadge } from "../ui/SharedComponents";
+import { CitationCard, StatusBadge } from "../ui/SharedComponents";
 
 export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http://localhost:8000" }) {
   const [messages, setMessages] = useState([
@@ -119,9 +119,6 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
               <span style={{ background: "rgba(19, 136, 8, 0.25)", border: "1px solid #138808", color: "#34D399", padding: "2px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>
                 ⚡ Grounded AI Reasoning Engine
               </span>
-              <span style={{ background: "rgba(255, 255, 255, 0.1)", color: "rgba(255, 255, 255, 0.8)", padding: "2px 10px", borderRadius: "9999px", fontSize: "11px", fontWeight: 600 }}>
-                Zero-Hallucination Enforced
-              </span>
             </div>
             <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#FFFFFF", margin: 0 }}>
               DPDPA Grounded Intelligence Assistant
@@ -129,24 +126,6 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
             <p style={{ fontSize: "13px", color: "rgba(255, 255, 255, 0.75)", margin: "4px 0 0 0" }}>
               Query canonical Indian data protection law with strict evidence coordinates, gazette citations, and operational guidance.
             </p>
-          </div>
-
-          {/* Telemetry metrics */}
-          <div style={{ display: "flex", gap: "16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", padding: "12px 20px", borderRadius: "12px" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#34D399" }}>100%</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Grounded</div>
-            </div>
-            <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#60A5FA" }}>0.0%</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Hallucination</div>
-            </div>
-            <div style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}></div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "20px", fontWeight: 800, color: "#FF9933" }}>DPDPA</div>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>Graph Active</div>
-            </div>
           </div>
         </div>
       </div>
@@ -349,7 +328,7 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
 
           <div className="card flex flex-col gap-3" style={{ background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: "14px", padding: "20px" }}>
             <h4 style={{ color: "#14532D", fontSize: "15px", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
-              🛡️ Zero-Hallucination Guard
+              🛡️ Evidence Boundary
             </h4>
             <p className="text-small" style={{ color: "#166534", margin: 0, fontSize: "12px", lineHeight: "1.5" }}>
               Answers are synthesized exclusively from verified URN evidence coordinates. If insufficient evidence exists, the engine returns an explicit boundary status.
@@ -366,10 +345,13 @@ export default function AskIntelligence({ apiOnline = false, apiBaseUrl = "http:
 function resolveMockQuery(query) {
   const q = query.toLowerCase();
 
+  // Offline answers cite only the two gazetted documents. citation_text is
+  // verbatim from the Act (Gazette No. 22 of 2023) and the Rules (G.S.R. 846(E));
+  // the hash is the SHA-256 of the MeitY PDF the text was read from.
   if (q.includes("notice") || q.includes("consent")) {
     return {
       sender: "system",
-      text: "According to the Digital Personal Data Protection Act 2023, data fiduciaries must provide a clear and conspicuous notice before obtaining consent [urn:ki:in:dpdp:act:dpdpa-2023 (Page 4, Section 6)]. Furthermore, the Consent Notice Rules require that the notice list the categories of personal data collected and the specific purpose of processing [urn:ki:in:dpdp:rule:consent-notice (Page 1, Section 1.2)].",
+      text: "Under Section 5(1) of the Digital Personal Data Protection Act 2023, every request for consent under Section 6 must be accompanied or preceded by a notice telling the Data Principal what personal data is proposed to be processed and for what purpose, how she may exercise her rights, and how she may complain to the Board [urn:ki:in:dpdp:act:dpdpa-2023 (Section 5(1))]. Rule 3 of the DPDP Rules 2025 adds that the notice must be understandable on its own, use clear and plain language, itemise the personal data and the specified purposes, and give the link and means to withdraw consent, exercise rights and complain to the Board [urn:ki:in:dpdp:rule:dpdp-rules-2025 (Rule 3)].",
       grounded: true,
       citations: [
         {
@@ -378,40 +360,40 @@ function resolveMockQuery(query) {
           version: 1,
           evidence: [
             {
-              source_name: "The Gazette of India Extraordinary",
+              source_name: "The Gazette of India Extraordinary, Part II, Section 1, No. 22 of 2023",
               source_tier: "primary",
-              citation_text: "Notice must state the personal data sought to be processed and the purpose.",
-              coordinates: { page: 4, section: "6(1)" },
-              hash: "a2b3c4d5e6f7g8h9a2b3c4d5e6f7g8h9a2b3c4d5e6f7g8h9a2b3c4d5e6f7g8h9",
+              citation_text: "Every request made to a Data Principal under section 6 for consent shall be accompanied or preceded by a notice given by the Data Fiduciary to the Data Principal, informing her,— (i) the personal data and the purpose for which the same is proposed to be processed; (ii) the manner in which she may exercise her rights under sub-section (4) of section 6 and section 13; and (iii) the manner in which the Data Principal may make a complaint to the Board, in such manner and as may be prescribed.",
+              coordinates: { section: "5(1)" },
+              hash: "4deb23981d3010c8225a2ff6149e7243dc2268455b299e283afebdd7b72a7d15",
               verification_status: "verified"
             }
           ]
         },
         {
-          urn: "urn:ki:in:dpdp:rule:consent-notice",
-          title: "Consent Notice Rules 2024",
+          urn: "urn:ki:in:dpdp:rule:dpdp-rules-2025",
+          title: "Digital Personal Data Protection Rules 2025",
           version: 1,
           evidence: [
             {
-              source_name: "Official Gazette — MeitY Notification",
+              source_name: "Ministry of Electronics and Information Technology, G.S.R. 846(E), 13 November 2025",
               source_tier: "primary",
-              citation_text: "The notice of consent shall include categories of data collected.",
-              coordinates: { page: 1, section: "1.2" },
-              hash: "f1e2d3c4b5a69788f1e2d3c4b5a69788f1e2d3c4b5a69788f1e2d3c4b5a69788",
+              citation_text: "give, in clear and plain language, a fair account of the details necessary to enable the Data Principal to give specific and informed consent for the processing of her personal data, which shall include, at the minimum, — (i) an itemised description of such personal data; and (ii) the specified purpose or purposes of, and specific description of the goods or services to be provided or uses to be enabled by, such processing",
+              coordinates: { section: "Rule 3(b)" },
+              hash: "eabc7d05e013144615d78ddc0e8b9c9aac1920e814f4fad38ce6560951f5aa08",
               verification_status: "verified"
             }
           ]
         }
       ],
-      qualifications: "Grounded in authoritative evidence.",
-      suggestedNextSteps: ["multilingual requirements", "consent notice penalty"]
+      qualifications: "Grounded in the gazetted text of the Act and the Rules.",
+      suggestedNextSteps: ["notice languages under Section 5(3)", "penalty schedule"]
     };
   }
 
   if (q.includes("penalty") || q.includes("fine") || q.includes("breach")) {
     return {
       sender: "system",
-      text: "The DPDPA prescribes severe financial penalties for data security breaches. Under Section 33, failure to implement reasonable security safeguards to prevent data breaches can result in a penalty up to ₹250 Crore [urn:ki:in:dpdp:act:dpdpa-2023 (Page 14, Section 33)]. Additionally, the DPBI has formalized a 72-hour window for fiduciaries to report breaches to the Board [urn:ki:in:dpdp:circular:breach-notification (Page 2, Section 3)].",
+      text: "The Schedule to the Act (see Section 33(1)) sets a maximum penalty for each kind of breach. Failing to take reasonable security safeguards under Section 8(5) may extend to ₹250 crore; failing to give the Board or affected Data Principals notice of a breach under Section 8(6) may extend to ₹200 crore [urn:ki:in:dpdp:act:dpdpa-2023 (Schedule)]. Penalties are imposed by the Data Protection Board after an inquiry, and every figure is a ceiling, not a fixed fine. On becoming aware of a breach, Rule 7(2) of the DPDP Rules 2025 requires the Data Fiduciary to intimate the Board without delay and to provide detailed information within seventy-two hours, or such longer period as the Board allows [urn:ki:in:dpdp:rule:dpdp-rules-2025 (Rule 7(2))].",
       grounded: true,
       citations: [
         {
@@ -420,33 +402,33 @@ function resolveMockQuery(query) {
           version: 1,
           evidence: [
             {
-              source_name: "The Gazette of India Extraordinary",
+              source_name: "The Gazette of India Extraordinary, Part II, Section 1, No. 22 of 2023",
               source_tier: "primary",
-              citation_text: "Penalty for failure to take reasonable security safeguards to prevent data breach may extend to two hundred and fifty crore rupees.",
-              coordinates: { page: 14, section: "Schedule 1(1)" },
-              hash: "x9y8z7w6v5u4t3s2x9y8z7w6v5u4t3s2x9y8z7w6v5u4t3s2x9y8z7w6v5u4t3s2",
+              citation_text: "Breach in observing the obligation of Data Fiduciary to take reasonable security safeguards to prevent personal data breach under sub-section (5) of section 8 — May extend to two hundred and fifty crore rupees.",
+              coordinates: { section: "Schedule, entry 1" },
+              hash: "4deb23981d3010c8225a2ff6149e7243dc2268455b299e283afebdd7b72a7d15",
               verification_status: "verified"
             }
           ]
         },
         {
-          urn: "urn:ki:in:dpdp:circular:breach-notification",
-          title: "DPBI Circular on Breach Notification Procedures",
+          urn: "urn:ki:in:dpdp:rule:dpdp-rules-2025",
+          title: "Digital Personal Data Protection Rules 2025",
           version: 1,
           evidence: [
             {
-              source_name: "DPBI Official Circular 06/2024",
-              source_tier: "secondary",
-              citation_text: "Every data fiduciary shall notify the Board and affected data principal within 72 hours.",
-              coordinates: { page: 2, section: "Section 3(a)" },
-              hash: "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
+              source_name: "Ministry of Electronics and Information Technology, G.S.R. 846(E), 13 November 2025",
+              source_tier: "primary",
+              citation_text: "On becoming aware of any personal data breach, the Data Fiduciary shall intimate to the Board, — (a) without delay, a description of the breach, including its nature, extent, timing and location of occurrence and the likely impact; (b) within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow on a request made in writing in this behalf, — (i) updated and detailed information in respect of such description",
+              coordinates: { section: "Rule 7(2)" },
+              hash: "eabc7d05e013144615d78ddc0e8b9c9aac1920e814f4fad38ce6560951f5aa08",
               verification_status: "verified"
             }
           ]
         }
       ],
-      qualifications: "Grounded in authoritative and secondary evidence.",
-      suggestedNextSteps: ["breach notification SLA", "₹250 crore penalty limits"]
+      qualifications: "Grounded in the gazetted text of the Act and the Rules.",
+      suggestedNextSteps: ["breach intimation under Rule 7", "Schedule penalty limits"]
     };
   }
 

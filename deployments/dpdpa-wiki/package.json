@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:client && npm run build:ssr && npm run prerender",
+    "build": "npm run check:citations && npm run build:client && npm run build:ssr && npm run prerender",
     "lint": "oxlint",
     "preview": "vite preview",
     "build:client": "vite build",
     "build:ssr": "vite build --ssr src/entry-server.jsx --outDir dist-ssr --ssrManifest false",
-    "prerender": "node scripts/prerender.mjs"
+    "prerender": "node scripts/prerender.mjs",
+    "test": "vitest run",
+    "check:citations": "node scripts/check-citations.mjs",
+    "sync:law": "node scripts/sync-law.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
@@ -24,6 +27,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^5.0.2"
   }
 }

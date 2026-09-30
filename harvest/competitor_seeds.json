@@ -1,0 +1,186 @@
+{
+  "purpose": "Public competitor harvest for Layer 4–5 Opinion objects. Never Layer 1–2 law.",
+  "drop_url_substrings": [
+    "login",
+    "signin",
+    "signup",
+    "/app/",
+    "/admin",
+    "/dashboard",
+    "course",
+    "certif",
+    "training",
+    "academy",
+    "career",
+    "/cart",
+    "checkout",
+    "wp-login",
+    "wp-admin"
+  ],
+  "exclude_from_knowledge_stack": [
+    "training",
+    "certification",
+    "course",
+    "academy"
+  ],
+  "trust_layer_default": 5,
+  "trust_layer_overrides": {
+    "cadp.in": 4,
+    "dpdpacomplianceanalyser.com": 4
+  },
+  "batches": {
+    "1_knowledge": [
+      {
+        "name": "DPDPA.com",
+        "start_url": "https://www.dpdpa.com",
+        "lane": "knowledge"
+      },
+      {
+        "name": "CADP",
+        "start_url": "https://cadp.in",
+        "lane": "knowledge"
+      },
+      {
+        "name": "DPDP India",
+        "start_url": "https://www.dpdpindia.in",
+        "lane": "knowledge"
+      },
+      {
+        "name": "DPDPA Compliance Analyser",
+        "start_url": "https://dpdpacomplianceanalyser.com",
+        "lane": "knowledge"
+      },
+      {
+        "name": "GoTrust education hub",
+        "start_url": "https://dpdpa.co.in",
+        "lane": "knowledge"
+      },
+      {
+        "name": "ConsentOS guides",
+        "start_url": "https://consentos.in",
+        "lane": "cmp"
+      }
+    ],
+    "2_consent_ops": [
+      {
+        "name": "ConsentX",
+        "start_url": "https://www.consentx.io",
+        "lane": "cmp"
+      },
+      {
+        "name": "Consently",
+        "start_url": "https://www.consently.in",
+        "lane": "cmp"
+      },
+      {
+        "name": "DPDP Comply",
+        "start_url": "https://comply.askmeidentity.com",
+        "lane": "cmp"
+      },
+      {
+        "name": "ConsentiQo",
+        "start_url": "https://consentiqo.com",
+        "lane": "cmp"
+      }
+    ],
+    "3_suites": [
+      {
+        "name": "Complynz",
+        "start_url": "https://complynz.com",
+        "lane": "suite"
+      },
+      {
+        "name": "Privy by IDfy",
+        "start_url": "https://www.privybyidfy.com",
+        "lane": "suite"
+      },
+      {
+        "name": "Redacto",
+        "start_url": "https://www.redacto.ai",
+        "lane": "suite"
+      },
+      {
+        "name": "Consentin",
+        "start_url": "https://www.consentin.com",
+        "lane": "suite"
+      },
+      {
+        "name": "Concur",
+        "start_url": "https://concur.live",
+        "lane": "suite"
+      },
+      {
+        "name": "DPDPA Shield",
+        "start_url": "https://dpdpashield.in",
+        "lane": "suite"
+      },
+      {
+        "name": "ComplyDP",
+        "start_url": "https://www.complydp.com",
+        "lane": "suite"
+      },
+      {
+        "name": "dcomply",
+        "start_url": "https://dcomply.in",
+        "lane": "suite"
+      },
+      {
+        "name": "GoTrust DPDPA product",
+        "start_url": "https://www.gotrust.tech",
+        "lane": "suite"
+      },
+      {
+        "name": "Seqrite DPDP",
+        "start_url": "https://www.seqrite.com/dpdp-act-and-compliance-solutions/",
+        "lane": "suite"
+      },
+      {
+        "name": "miniOrange DPDP",
+        "start_url": "https://www.miniorange.com/data-privacy/dpdp/",
+        "lane": "suite"
+      },
+      {
+        "name": "KavachOne",
+        "start_url": "https://kavachone.com",
+        "lane": "suite"
+      }
+    ],
+    "4_people": [
+      {
+        "name": "Tsaaro",
+        "start_url": "https://tsaaro.com",
+        "lane": "people"
+      },
+      {
+        "name": "DPO India",
+        "start_url": "https://www.dpo-india.com",
+        "lane": "people"
+      },
+      {
+        "name": "DPDP Consultants",
+        "start_url": "https://www.dpdpconsultants.com",
+        "lane": "people"
+      }
+    ],
+    "5_skip": [
+      {
+        "name": "GoTrust India (license advisory)",
+        "start_url": "https://gotrust.in",
+        "lane": "adjacent",
+        "skip_reason": "Not a DPDPA product"
+      },
+      {
+        "name": "Perfios",
+        "start_url": "https://perfios.ai",
+        "lane": "adjacent",
+        "skip_reason": "Homepage is BFSI onboarding, not a DPDP suite"
+      },
+      {
+        "name": "Leegality eSign parent",
+        "start_url": "https://www.leegality.com",
+        "lane": "adjacent",
+        "skip_reason": "eSign/eStamp; DPDP product is Consentin"
+      }
+    ]
+  }
+}

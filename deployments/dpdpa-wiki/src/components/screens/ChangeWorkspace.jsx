@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getEventById, getKOByUrn, getActionsForEvent, CONFLICTS } from "../../data/mockData";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
 import { 
   StatusBadge, 
   PriorityBadge, 
@@ -8,13 +9,14 @@ import {
   TrustIndicator, 
   CitationCard, 
   TimeDisplay, 
-  ObjectTypeBadge 
+  ObjectTypeBadge,
+  EmptyState
 } from "../ui/SharedComponents";
 
 export default function ChangeWorkspace() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const event = getEventById(id);
+  const event = MOCKS_ENABLED ? getEventById(id) : null;
 
   const [activeTab, setActiveTab] = useState("overview");
   const [applicability, setApplicability] = useState("unknown");
@@ -25,7 +27,7 @@ export default function ChangeWorkspace() {
     return (
       <div className="card text-center" style={{ padding: "var(--space-12)" }}>
         <h3>Event not found</h3>
-        <button className="btn btn-primary" onClick={() => navigate("/changes")} style={{ marginTop: "var(--space-4)" }}>
+        <button className="btn btn-primary" onClick={() => navigate("/workspace/changes")} style={{ marginTop: "var(--space-4)" }}>
           Back to Changes
         </button>
       </div>
@@ -63,7 +65,7 @@ export default function ChangeWorkspace() {
     <div className="change-workspace flex flex-col gap-6">
       {/* ── Breadcrumb ── */}
       <div className="text-small">
-        <span style={{ cursor: "pointer", color: "var(--text-link)" }} onClick={() => navigate("/changes")}>
+        <span style={{ cursor: "pointer", color: "var(--text-link)" }} onClick={() => navigate("/workspace/changes")}>
           Regulatory Changes
         </span>{" "}
         / {event.title.substring(0, 40)}...

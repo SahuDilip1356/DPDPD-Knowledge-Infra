@@ -29,7 +29,7 @@ function unquote(value) {
   return v;
 }
 
-function parseFrontmatter(source) {
+export function parseFrontmatter(source) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source);
   if (!match) return { data: {}, body: source };
 
@@ -117,7 +117,7 @@ function createRenderer() {
     renderer: {
       heading(token) {
         const inline = this.parser.parseInline(token.tokens);
-        const plain = token.text.replace(/[*_`\[\]]/g, "").trim();
+        const plain = token.text.replace(/[*_`[\]]/g, "").trim();
 
         let id = slugify(plain);
         const n = seen.get(id) ?? 0;

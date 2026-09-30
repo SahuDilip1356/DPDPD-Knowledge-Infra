@@ -1,76 +1,52 @@
 # Project State — DPDPD Knowledge Infra
 
-**Last updated:** 2026-08-01 13:55 IST  
-**Branch:** `main`  
-**Phase:** Post Sprint 1–7 spine — product polish + knowledge growth strategy  
-**Resume cue:** “resume Knowledge Infra” / “continue from STATE”
+**Last updated:** 2026-09-29
+**Working branch:** `reconcile/trial` (the DPDPA Wiki rebuild merged with Codex's backend hardening); nothing merged to `main` yet
+**Production:** dpdpa.wiki still serves `main` @ a3dab16 (29 Aug). Preview-before-prod applies to every release.
+**Resume cue:** "resume Knowledge Infra" / "continue from STATE"
 
----
+## Where we are
 
-## Where we are (one paragraph)
+The public site, **DPDPA Wiki — SaralPrivacy Knowledge Infra**, is rebuilt and approved on preview: 75 law pages
+(44 sections, the Schedule, 23 Rules, 7 Schedules) in the gazette's words with commencement dates, a 32-term
+glossary, a six-module visual course with self-tests, and three decision aids — 127 prerendered pages. Every
+legal statement passes a build-time citation guard. The founder workspace lives under `/workspace` (noindex,
+lazily loaded) and now includes Codex's Acts / Rules / Interpretations / Discussions screens.
 
-DPDPA Privacy Knowledge Infrastructure is largely built: schemas, Git ledger, factory agents, grounded reasoning API, Supabase/Pinecone path, Docker, and React dashboard. Seeded knowledge = **45 KOs + ~52 graph edges + 6 events + 5 actions**. Session work focused on understanding architecture, knowledge/graph inventory (Section 6 walkthrough), UI look/blank-page troubleshooting, and a strategy discussion on how to add topics to Core vs other trust layers. **Lots of local uncommitted UI/content work** (Bible, Certification Course, Infographic, branding, style polish) — not committed yet.
+Knowledge store (Supabase + Pinecone `dpdpa-knowledge`): verbatim primary objects for every provision (Act
+sections at v2 after the gazette-furniture cleanup), 511 verified answer objects, graph edges. Competitive
+intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 canonical questions
+(`staging/competitive_intel/`, gitignored; backup in the main checkout).
 
----
+## Layout
 
-## Working on now / parked mid-flight
+| Path | What |
+|---|---|
+| `deployments/dpdpa-wiki/` | Public site + workspace (React 19, Vite 8, custom prerender). `npm run build && npx vitest run` |
+| `deployments/dpdpa-backend/` | Canonical FastAPI backend. `python -m pytest -q` (98 tests) |
+| `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` |
+| `src/competitive_intel/` | Crawl, ground truth, claims, question graph, knowledge-object builder |
+| `src/` (api, reasoning, storage, tests) | **Legacy copy** of the backend, drifted from the canonical tree; not deployed |
+| `specs/dpdpa-wiki-reimagine/` | Intent → spec → plan for the site (validator passes) |
+| `.github/workflows/` | `spec-chain.yml`, `release-gate.yml` (site build+tests, backend tests, offline evals) |
 
-1. **Uncommitted WIP on `main`** (do not lose on restart):
-   - New: `DPDPA_BIBLE.md`, `Bible.jsx`, `CertificationCourse.jsx`, `InfographicDashboard.jsx`, `certificationData.js`, `SaralPrivacyLogo.jsx`, Brand Guidelines folder
-   - Routes wired: `/bible`, `/course`, `/infographic` (+ nav for course/bible)
-   - Modified: App shell, AdminAudit, Ask, CommandCenter, Factory, KnowledgeExplorer, mockData, design tokens/CSS, API service, orchestrator, schema, tests
-   - Also: `.agent/`, `.cursor/` local agent folders
+## Open loops
 
-2. **Frontend runtime:** Vite was restarted successfully at `http://127.0.0.1:5173/` — blank preview was usually a stuck Cursor tab, not a compile failure. Production `npm run build` succeeded (large JS chunk warning only).
+1. **Adopt and release:** founder review of `reconcile/trial` preview → merge to `main` → production.
+2. **Remove the legacy root `src/` backend copy** once nothing imports it (evals no longer do).
+3. **Corpus integrity (M2):** 12 questionable live objects (fake "Consent Notice Rules 2024", mock notice-test,
+   duplicate Rule 7, draft Rule 4, 7 unsourced opinions) await "close them"; seed script objects are
+   schema-invalid.
+4. **Evals are synthetic** (one fabricated object, mock model) — add real-corpus cases.
+5. **Bundle:** public JS 229–231 KB gz vs 200 KB budget — route-level splitting task running separately.
+6. **Not built:** server-enforced roles, persistent Factory review board, hosted Ask end to end, email delivery.
+7. **Video pilot (spec T20–T21):** provisions not chosen (recommendation S6, S8, R7).
+8. **Security:** an OpenAI key is visible in Cursor's process environment — rotate it.
 
-3. **Knowledge growth decision (discussed, not decided):**
-   - Core = Trust L1/L2 primary law objects with evidence + URNs
-   - Other UI sections are windows onto the same graph (not separate encyclopedias)
-   - Fork offered: **A) statute-complete Core backlog** vs **B) 5 business clusters** (Consent, Breach, Children, SDF, Cross-border)
-   - Dilip had not yet chosen A vs B before pause
+## Decisions (settled — don't re-litigate)
 
----
-
-## Solid foundation (already committed historically)
-
-| Area | Status |
-|------|--------|
-| Sprints 1–6 (schema → factory → API/reasoning) | Done on `main` |
-| Sprint 7 dashboard + Admin Audit + Docker | Done on `main` |
-| Seed corpus (~45 KOs across trust layers) | In `seed_full_knowledge_base.py` |
-| MeitY poll + ingest CLI + Gemini OCR path | Exists |
-| Staging inbox PDF | `staging/inbox/G.S.R_102_E_25_07_2026.pdf` |
-| Local ledger samples | 2 KOs under `staging/temp_ledger/` |
-
----
-
-## Next session — suggested first moves
-
-1. Read this file + last episodic digest  
-2. `git status` — review uncommitted WIP; commit in logical chunks if Dilip wants  
-3. Ask Dilip to pick knowledge growth strategy **A vs B** (or hybrid)  
-4. If B: draft the 5 clusters with required KOs/edges/actions  
-5. If A: list missing Act sections / Rules nodes vs seed  
-6. Optionally harden Bible so it always syncs from KO URNs (avoid drift)
-
----
-
-## How to run (quick)
-
-```bash
-# Backend
-source .venv/bin/activate
-uvicorn src.api.api_service:app --port 8000 --reload
-
-# Frontend
-cd frontend && npm run dev -- --host 127.0.0.1 --port 5173
-# Open http://127.0.0.1:5173/today
-```
-
----
-
-## Open questions for Dilip
-
-- Knowledge growth: statute-complete Core first, or SaralPrivacy-critical clusters first?
-- Commit the Bible / Certification / Infographic / brand WIP this session?
-- Is Certification Course in-scope for Knowledge Infra MVP, or a parallel product surface?
+- Competitor content is discovery only: never canonical, never republished, never embedded, never used for fine-tuning. RAG over our own corpus, no fine-tuning.
+- Law text is written only by `src/competitive_intel/*ground_truth*.py` → `scripts/sync-law.mjs`; never hand-edited.
+- Knowledge objects are never overwritten: new version + `system_time_end` on the old one (`build_knowledge_objects.py revise`).
+- Site name "DPDPA Wiki", owner line "SaralPrivacy Knowledge Infra". MSME guide retired (301 → /learn/what-is-dpdpa). Module 6 hands off to saralprivacy.com/assessment.
+- Lessons: short version → one mechanism figure → worked example → full text folded; colour = role.

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../data/supabaseClient";
 import { REGULATORY_EVENTS } from "../../data/mockData";
-import { StatusBadge, PriorityBadge, ImpactBadge } from "../ui/SharedComponents";
+import { MOCKS_ENABLED } from "../../data/runtimeMode";
+import { StatusBadge, ImpactBadge } from "../ui/SharedComponents";
 
 
 export default function ChangesFeed() {
@@ -30,9 +31,9 @@ export default function ChangesFeed() {
           }
         }
       } catch (err) {
-        console.warn("Supabase load failed, falling back to mockData.js:", err);
+        console.warn("Supabase changes load failed:", err);
       }
-      setEvents(REGULATORY_EVENTS);
+      setEvents(MOCKS_ENABLED ? REGULATORY_EVENTS : []);
       setLoading(false);
     };
 
@@ -153,7 +154,7 @@ export default function ChangesFeed() {
               <div 
                 key={event.id} 
                 className="card card-interactive flex flex-col gap-3"
-                onClick={() => navigate(`/changes/${event.id}`)}
+                onClick={() => navigate(`/workspace/changes/${event.id}`)}
               >
                 <div className="flex justify-between items-start gap-4">
                   <div>
@@ -218,7 +219,7 @@ export default function ChangesFeed() {
                   marginTop: "8px"
                 }} />
                 
-                <div className="timeline-card card card-interactive flex-1 flex flex-col gap-3" onClick={() => navigate(`/changes/${event.id}`)}>
+                <div className="timeline-card card card-interactive flex-1 flex flex-col gap-3" onClick={() => navigate(`/workspace/changes/${event.id}`)}>
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-meta">{event.date_published}</span>

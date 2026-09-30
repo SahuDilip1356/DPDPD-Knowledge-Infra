@@ -1,34 +1,35 @@
 # Current State
 
-_Last updated: 2026-08-29 20:25 · mid-session checkpoint_
+_Last updated: 2026-09-28 08:12 · mid-session checkpoint_
 
 ## Handoff (auto-summary — no explicit block found)
 
 
 **git diff --stat:**
 ```
-.agent/CURRENT.md                      | 65 +++++++++++++--------------------
- .agent/sessions/2026-08-22-90c6538c.md | 67 ++++++++++++++++++++++++++++++++++
- 2 files changed, 92 insertions(+), 40 deletions(-)
- 2 files changed, 92 insertions(+), 40 deletions(-)
+.agent/CURRENT.md | 33 +++++++++++++++------------------
+ requirements.txt  |  3 +++
+ 2 files changed, 18 insertions(+), 18 deletions(-)
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 ```
 
 **Topics this session:**
-- Sidebar hyperlink is not aligned with the subject
+- how much time it will take you to complete?
+- keep posting me in every 10 minutes
+- where we are now
+- Remaining	4,482 is complete?
+- what next here?
 
 **Key points / decisions:**
-- What was wrong
-- The fix
-- Also added
+- Done. All 15,564 claims are verified, the registry is complete, and the backup is synced. 
+- Where competitors get the law wrong. Every site sits between 4.5% and 7% incorrect. dcompl
+- Every approved build job is finished. The knowledge infrastructure is complete on disk and
 
 **Last assistant note:**
-rights-do-your-customers-employees-and-candidates-have  emitted=true
-```
+ing is not blocked when the law pages finish. My recommendation: retire the MSME guide with a 301, and hand module 6 off to the saralprivacy.com assessment page.
 
-## Also added
+4. **Say "supersede"** on the three draft-numbered Rule objects in Supabase. Two minutes, and it removes the last known wrong law in the live store.
 
-The sidebar now **tracks your scroll position** — the active section is marked as you read. Previously it showed where you could go but never where you were, which in a 7,000-word document is most of what a contents list is for. Marked with a saffron rule on the left edge plus weight, not colour alone.
+Two things I would leave alone for now: the Apify seed run stays parked as you asked, and the OpenAI account is not needed while OpenRouter has $2.61.
 
-Pushed as `5f7265c`; I'm watching for the deploy and will confirm.
-
-Once it's up, reload and click a few TOC entries — they should now jump to the right section, and the sidebar should follow as you scroll.
+One optional item worth two minutes: refresh the ledger artifact with the final claim verdicts so the page you share matches the files.
