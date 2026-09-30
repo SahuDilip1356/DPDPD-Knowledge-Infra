@@ -82,7 +82,12 @@ describe("site files (T11, AC14, AC15)", () => {
   it("vercel.json serves the workspace as an app, redirects old paths, and has no catch-all", () => {
     const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
     expect(cfg.rewrites.some((r) => r.source === "/(.*)")).toBe(false);
-    expect(cfg.rewrites.some((r) => r.source.startsWith("/workspace/"))).toBe(true);
+    const ws = cfg.rewrites.find((r) => r.source === "/workspace/:path*");
+    expect(ws, "workspace rewrite").toBeTruthy();
+    // With cleanUrls on, "/workspace/index.html" is itself redirected, so a rewrite to it
+    // serves the 404 page. The destination must be the clean path.
+    if (cfg.cleanUrls) expect(ws.destination).not.toMatch(/\.html$/);
+    expect(ws.destination).toBe("/workspace");
     for (const old of ["/today", "/ask", "/admin"]) expect(cfg.redirects.some((r) => r.source === old && r.permanent)).toBe(true);
   });
 });
