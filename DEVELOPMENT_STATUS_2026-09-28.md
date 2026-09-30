@@ -90,3 +90,9 @@ The specification's 6–8 week estimate assumes two engineers and a part-time re
 - **State:** Repository analysis complete; frontend build/prerender passed; backend tests and seed validation reveal unresolved gates. Application source was not changed.
 - **Open loops:** Current hosted deployment/DB/vector status, visual acceptance, approved roadmap scope, corpus migration, backend test isolation, persistent editorial workflow, and release gates.
 - **Next step:** Close M1 with preserved WIP and reproducible tests, then prioritize M2 corpus integrity before broader feature expansion.
+
+## Handoff — 30 September recheck
+
+- **State:** No evidence of further implementation or roadmap refinement since this assessment in the inspected local checkout. Latest commit remains `a3dab16`; tracked diff remains 48 files / 2,481 insertions / 2,741 deletions. No later modification times were found in canonical backend source/scripts, frontend source, specs, or evaluation source. September 29 session captures repeat the prior diff statistics.
+- **Open loops:** Existing gaps remain visible in source: fixture-backed factory, mock-only change detail, disabled email delivery, and root-backend evaluation imports. Tests and cloud deployments were not rechecked during this comparison.
+- **Next step:** Close M1, then validate and migrate the corpus as described above. Changes in another checkout or remote branch are outside this recheck.
