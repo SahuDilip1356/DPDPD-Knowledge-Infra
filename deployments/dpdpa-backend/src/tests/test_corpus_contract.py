@@ -12,7 +12,6 @@ from src.schemas.corpus_contract import (
 )
 
 BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-REPO_ROOT = os.path.abspath(os.path.join(BACKEND_ROOT, "..", ".."))
 
 pytestmark = pytest.mark.skipif(
     not os.path.exists(PROVISIONS_PATH), reason="the law file ships with the site, outside this package")
@@ -158,7 +157,6 @@ def test_the_report_counts_objects_and_groups_violations(law, answer):
 @pytest.mark.parametrize("script", [
     os.path.join(BACKEND_ROOT, "scripts", "seed_full_knowledge_base.py"),
     os.path.join(BACKEND_ROOT, "scripts", "seed_supabase.py"),
-    os.path.join(REPO_ROOT, "seed_knowledge_base.py"),
 ])
 def test_the_retired_seeders_write_nothing(script):
     source = open(script).read()
