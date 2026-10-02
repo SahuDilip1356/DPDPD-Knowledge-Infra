@@ -1,13 +1,13 @@
 # Project State — DPDPD Knowledge Infra
 
-**Last updated:** 2026-09-29
-**Working branch:** `reconcile/trial` (the DPDPA Wiki rebuild merged with Codex's backend hardening); nothing merged to `main` yet
-**Production:** dpdpa.wiki still serves `main` @ a3dab16 (29 Aug). Preview-before-prod applies to every release.
+**Last updated:** 2026-09-30
+**Production:** dpdpa.wiki serves `main` @ 4feac5e (DPDPA Wiki, merged 30 Sep as PR #3 and #4). Preview-before-prod applies to every release.
+**Open PRs:** #5 route splitting (`perf/route-splitting`); trusted corpus (`trusted-corpus`: real-corpus evals, ranked retrieval, corpus contract).
 **Resume cue:** "resume Knowledge Infra" / "continue from STATE"
 
 ## Where we are
 
-The public site, **DPDPA Wiki — SaralPrivacy Knowledge Infra**, is rebuilt and approved on preview: 75 law pages
+The public site, **DPDPA Wiki — SaralPrivacy Knowledge Infra**, is live: 75 law pages
 (44 sections, the Schedule, 23 Rules, 7 Schedules) in the gazette's words with commencement dates, a 32-term
 glossary, a six-module visual course with self-tests, and three decision aids — 127 prerendered pages. Every
 legal statement passes a build-time citation guard. The founder workspace lives under `/workspace` (noindex,
@@ -23,30 +23,40 @@ intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 
 | Path | What |
 |---|---|
 | `deployments/dpdpa-wiki/` | Public site + workspace (React 19, Vite 8, custom prerender). `npm run build && npx vitest run` |
-| `deployments/dpdpa-backend/` | Canonical FastAPI backend. `python -m pytest -q` (98 tests) |
-| `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` |
-| `src/competitive_intel/` | Crawl, ground truth, claims, question graph, knowledge-object builder |
+| `deployments/dpdpa-backend/` | Canonical FastAPI backend. `python -m pytest -q` (122 tests) |
+| `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` (synthetic); `--corpus real` scores citations over the verified law + 511 answer objects (`golden_corpus.jsonl`, rebuilt by `build_golden.py`); `--live` calls the model and prints cost |
+| `src/competitive_intel/` | Crawl, ground truth, claims, question graph, knowledge-object builder (`audit`, `repair`, `conform`, `quarantine` hold the store to the corpus contract) |
+| `deployments/dpdpa-backend/src/schemas/corpus_contract.py` | What every live object must satisfy: `stored_object_schema.json`, plus every gazette quote and hash checked against the law file the site is built from |
 | `src/` (api, reasoning, storage, tests) | **Legacy copy** of the backend, drifted from the canonical tree; not deployed |
 | `specs/dpdpa-wiki-reimagine/` | Intent → spec → plan for the site (validator passes) |
 | `.github/workflows/` | `spec-chain.yml`, `release-gate.yml` (site build+tests, backend tests, offline evals) |
 
 ## Open loops
 
-1. **Adopt and release:** founder review of `reconcile/trial` preview → merge to `main` → production.
-2. **Remove the legacy root `src/` backend copy** once nothing imports it (evals no longer do).
-3. **Corpus integrity (M2):** 12 questionable live objects (fake "Consent Notice Rules 2024", mock notice-test,
-   duplicate Rule 7, draft Rule 4, 7 unsourced opinions) await "close them"; seed script objects are
-   schema-invalid.
-4. **Evals are synthetic** (one fabricated object, mock model) — add real-corpus cases.
-5. **Bundle:** public JS 229–231 KB gz vs 200 KB budget — route-level splitting task running separately.
-6. **Not built:** server-enforced roles, persistent Factory review board, hosted Ask end to end, email delivery.
-7. **Video pilot (spec T20–T21):** provisions not chosen (recommendation S6, S8, R7).
-8. **Security:** an OpenAI key is visible in Cursor's process environment — rotate it.
+1. **Store write awaiting the founder's word** (`build_knowledge_objects.py conform`, then `quarantine`). The live
+   audit on 30 Sep: 616 live objects, 203 conform. 384 answers carry evidence hashes of the Act text from before
+   the gazette-furniture cleanup, and 4 of them quote a margin note as part of Section 10(1); `conform` publishes
+   a re-verified version of each and verified records for the Act and the Rules as documents. 27 hand-written
+   seed objects (5 penalty, 10 opinion, 4 rule, 2 case, 2 notification, 2 circular, 1 judgement, and
+   `notice-test` with two live versions) have no verifiable source; `quarantine` closes them. The staged answers
+   and the eval snapshot are already repaired, so until `conform` runs they are one version ahead of the store.
+2. **Remove the legacy root `src/` backend copy** (api, reasoning, storage, factory, schemas, tests); nothing
+   imports it. `src/competitive_intel/` stays.
+3. **Two schemas.** `knowledge_object_schema.json` is the factory's ledger document; `stored_object_schema.json`
+   is what is live. The factory path (`publishing_agent`, `publish_ko`) does not yet produce rows that pass the
+   stored contract (no evidence hash at item level, no `source_credibility`).
+4. **Retrieval.** The ranked fallback lifts offline citation recall from 1.4% to 44.7% and refuses 2 of 4
+   withheld-support cases. `--corpus real --live` has not been run (costs cents; needs the founder's opt-in).
+5. **Not built:** server-enforced roles, persistent Factory review board, hosted Ask end to end, email delivery.
+6. **Video pilot (spec T20–T21):** provisions not chosen (recommendation S6, S8, R7).
+7. **Security:** an OpenAI key is visible in Cursor's process environment — rotate it.
+8. **www.dpdpa.wiki** does not resolve; add it in Vercel as a redirect and create the DNS record.
 
 ## Decisions (settled — don't re-litigate)
 
 - Competitor content is discovery only: never canonical, never republished, never embedded, never used for fine-tuning. RAG over our own corpus, no fine-tuning.
 - Law text is written only by `src/competitive_intel/*ground_truth*.py` → `scripts/sync-law.mjs`; never hand-edited.
-- Knowledge objects are never overwritten: new version + `system_time_end` on the old one (`build_knowledge_objects.py revise`).
+- Knowledge objects are never overwritten: new version + `system_time_end` on the old one (`build_knowledge_objects.py revise` / `conform`).
+- The seed scripts are retired (they exit without writing): their objects are unverified and share URNs with the verbatim Act sections. Publishing goes through `build_knowledge_objects.py`, which refuses anything that breaks the corpus contract.
 - Site name "DPDPA Wiki", owner line "SaralPrivacy Knowledge Infra". MSME guide retired (301 → /learn/what-is-dpdpa). Module 6 hands off to saralprivacy.com/assessment.
 - Lessons: short version → one mechanism figure → worked example → full text folded; colour = role.

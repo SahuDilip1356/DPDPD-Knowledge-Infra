@@ -115,3 +115,71 @@ def evaluate_case(
             "severity": case.get("severity", 3)
         }
     }
+
+
+# ---------------------------------------------------------------------------
+# Real-corpus scorers: citations are scored as provision labels
+# (S1–S44, ACT-SCHEDULE, R1–R23, SCH-FIRST … SCH-SEVENTH).
+# ---------------------------------------------------------------------------
+
+import re
+
+ORDINALS = ["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH", "SEVENTH",
+            "EIGHTH", "NINTH", "TENTH", "ELEVENTH", "TWELFTH"]
+
+_NUMBER_LIST = r"(\d{1,3}[A-Z]?(?:\([^)\s]{1,6}\))*(?:\s*(?:,|and|or|to|&)\s*\d{1,3}[A-Z]?(?:\([^)\s]{1,6}\))*)*)"
+_PROVISION_REF = re.compile(
+    r"\b(?P<kind>Sections?|Sec\.|Rules?)\s+" + _NUMBER_LIST + r"(?!\d)", re.I
+)
+_SCHEDULE_REF = re.compile(r"\b(?P<ord>" + "|".join(ORDINALS) + r")\s+Schedule\b", re.I)
+# "Section 43A of the Information Technology Act" names another statute; "section 8 of
+# the Act" and "Rule 7 of the DPDP Rules" name this one.
+_OTHER_STATUTE = re.compile(
+    r"\s+of\s+the\s+(?!(?:DPDP|Digital\s+Personal\s+Data|Act\b|said\s+Act|Rules\b|principal\s+Act))",
+    re.I,
+)
+
+
+def provision_mentions(text: str) -> List[Dict[str, Any]]:
+    """Every provision the text names, as {"raw", "label"}.
+
+    `label` is the canonical label the mention would have if it existed (S12, R7,
+    SCH-EIGHTH); whether it exists is for the caller's provision list to decide.
+    References to other statutes are skipped.
+    """
+    mentions = []
+    for match in _PROVISION_REF.finditer(text or ""):
+        if _OTHER_STATUTE.match(text, match.end()):
+            continue
+        prefix = "R" if match.group("kind").lower().startswith("rule") else "S"
+        numbers = re.sub(r"\([^)]*\)", "", match.group(2))
+        for number in re.findall(r"\d{1,3}[A-Z]?", numbers):
+            mentions.append({"raw": match.group(0), "label": f"{prefix}{number.upper()}"})
+    for match in _SCHEDULE_REF.finditer(text or ""):
+        mentions.append({"raw": match.group(0), "label": f"SCH-{match.group('ord').upper()}"})
+    return mentions
+
+
+def score_cited_subset_retrieved(cited_urns: List[str], retrieved_urns: List[str]) -> bool:
+    """Every cited object was actually retrieved for this query."""
+    return set(cited_urns) <= set(retrieved_urns)
+
+
+def score_provision_recall(cited_labels: Set[str], expected: List[str]) -> Optional[float]:
+    """Share of the expected provisions the answer cites. None when nothing is expected."""
+    if not expected:
+        return None
+    return len(set(expected) & set(cited_labels)) / len(set(expected))
+
+
+def nonexistent_provisions(
+    cited_labels: Set[str], answer_text: str, valid_labels: Set[str]
+) -> List[str]:
+    """Provisions cited (by object) or named (in the answer text) that do not exist."""
+    named = {m["label"] for m in provision_mentions(answer_text)}
+    return sorted((set(cited_labels) | named) - set(valid_labels))
+
+
+def score_refusal(grounded: bool, expect_sufficient: bool) -> bool:
+    """Answers when the corpus supports the question; refuses when it does not."""
+    return bool(grounded) == bool(expect_sufficient)

@@ -1,0 +1,17 @@
+{
+  "golden": "evals/golden_corpus.jsonl",
+  "holdout": true,
+  "summary": {
+    "runs": 64,
+    "passed": 17,
+    "cited_subset_retrieved": 1.0,
+    "no_nonexistent_provision": 1.0,
+    "provision_recall_mean": 0.4472,
+    "provision_recall_full": 0.25,
+    "answered_when_supported": 1.0,
+    "refused_when_unsupported": 0.5,
+    "retrieved_count_mean": 4.6562,
+    "expected_in_retrieved": 0.725,
+    "prompt_tokens_est_mean": 2502
+  }
+}

@@ -60,3 +60,9 @@ jobs:
       - run: pip install -r deployments/dpdpa-backend/requirements.txt httpx
       - name: Offline eval run (synthetic corpus, mock model — a regression check, not a quality claim)
         run: python evals/runner.py --offline --runs 1
+      - name: Real-corpus eval tests (no network)
+        run: python -m pytest -q -p no:cacheprovider evals/test_real_corpus.py
+      - name: Corpus contract (every answer's quotes and hashes against the gazette text)
+        run: python -m pytest -q -p no:cacheprovider evals/test_corpus_contract.py
+      - name: Real-corpus offline eval (verified law + 511 answer objects, mock model; citation invariants, metrics held to baseline)
+        run: python evals/runner.py --corpus real --offline --runs 1

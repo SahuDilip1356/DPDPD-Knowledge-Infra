@@ -12,7 +12,7 @@
 - Architecture is three layers: permanent knowledge (Git ledger + Supabase Postgres + Pinecone), grounded reasoning, then consumer apps
 - Core knowledge is Trust Layers 1–2 (Act/Rules/Judgements) with evidence and URNs; Bible, Changes, Actions, Ask, and Factory are windows onto the same graph
 - Ingestion runs through factory agents (scout → parse → cite → structure → ontology → relations → dedup → reason → translate → publish), usually started via `ingest_document.py`
-- Seeded starter corpus lives in `seed_full_knowledge_base.py`; session handoff files live under `memory/`; competitor harvest JSONL lives under `staging/harvest/` and is classified with `harvest/classify_pages.py`
+- The seed scripts (`seed_full_knowledge_base.py`, `seed_supabase.py`, `seed_knowledge_base.py`) are retired and exit without writing: their objects are unverified. The live corpus is published by `src/competitive_intel/build_knowledge_objects.py` and must pass `deployments/dpdpa-backend/src/schemas/corpus_contract.py`; session handoff files live under `memory/`; competitor harvest JSONL lives under `staging/harvest/` and is classified with `harvest/classify_pages.py`
 - React dashboard lives in `frontend/`; Command Center is `/today` on local Vite at `http://127.0.0.1:5173`
 - Apify MCP is connected; competitor crawls use `apify/website-content-crawler` on public pages only (no login, admin, app, or dashboard); skip gotrust.in, perfios.ai, and leegality.com, and crawl GoTrust’s DPDPA product at gotrust.tech
 - Never import DPDPA.com or other competitor pages into Setu; keep a separate Competitive Intelligence Corpus as Layer 4–5 opinions, not law

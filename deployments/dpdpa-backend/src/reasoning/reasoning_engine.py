@@ -14,6 +14,7 @@ import requests
 from typing import Dict, List, Optional, Tuple
 
 from src.reasoning.guardrails import InputGuardrail, OutputGuardrail
+from src.reasoning.keyword_ranker import rank_by_relevance
 from src.reasoning.model_client import MockModelClient
 from src.reasoning.tracer import TraceContext
 
@@ -87,7 +88,7 @@ class GroundedReasoningEngine:
     def retrieve_context(self, query: str) -> List[Dict]:
         """
         Retrieves relevant Knowledge Objects using Pinecone semantic search,
-        falling back to database keyword matching and GitLedger scanning if offline.
+        falling back to ranked keyword matching (database, then GitLedger) if offline.
         """
         matched_kos = []
         
@@ -146,28 +147,24 @@ class GroundedReasoningEngine:
                 finally:
                     session.close()
 
-        # 2. Fallback to SQL keyword search if vector search returned no results
+        # 2. Fallback to ranked keyword search if vector search returned no results
         if not matched_kos and self.db_client:
+            candidates = []
             if getattr(self.db_client, "supabase", None):
                 try:
                     res = self.db_client.supabase.table("knowledge_objects").select("*").is_("system_time_end", "null").execute()
-                    if res.data:
-                        words = query.lower().split()
-                        for row in res.data:
-                            entities = row.get("entities") or row.get("body", {}).get("entities", [])
-                            ko_text = f"{row['title']} {row['summary']} {' '.join(entities)}".lower()
-                            if any(word in ko_text for word in words):
-                                matched_kos.append({
-                                    "urn": row["urn"],
-                                    "title": row["title"],
-                                    "summary": row["summary"],
-                                    "entities": entities,
-                                    "evidence": row["evidence"],
-                                    "business_impact": row["business_impact"],
-                                    "confidence_score": float(row["confidence_score"]),
-                                    "version": row["version"],
-                                    "date": row.get("legal_time_start", "")[:10] if row.get("legal_time_start") else "unknown"
-                                })
+                    for row in res.data or []:
+                        candidates.append({
+                            "urn": row["urn"],
+                            "title": row["title"],
+                            "summary": row["summary"],
+                            "entities": row.get("entities") or row.get("body", {}).get("entities", []),
+                            "evidence": row["evidence"],
+                            "business_impact": row["business_impact"],
+                            "confidence_score": float(row["confidence_score"]),
+                            "version": row["version"],
+                            "date": row.get("legal_time_start", "")[:10] if row.get("legal_time_start") else "unknown"
+                        })
                 except Exception as e:
                     print(f"[Supabase] Error running keyword scan: {str(e)}")
             else:
@@ -178,27 +175,22 @@ class GroundedReasoningEngine:
                     active_kos = session.query(KnowledgeObject).filter(
                         KnowledgeObject.system_time_end == None
                     ).all()
-                    
-                    # Simple keyword lookup in title/summary
-                    words = query.lower().split()
                     for db_ko in active_kos:
-                        entities = db_ko.body.get("entities", []) if db_ko.body else []
-                        ko_text = f"{db_ko.title} {db_ko.summary} {' '.join(entities)}".lower()
-                        if any(word in ko_text for word in words):
-                            matched_kos.append({
-                                "urn": db_ko.urn,
-                                "title": db_ko.title,
-                                "summary": db_ko.summary,
-                                "entities": db_ko.entities if hasattr(db_ko, 'entities') else db_ko.body.get("entities", []),
-                                "evidence": db_ko.evidence,
-                                "business_impact": db_ko.business_impact,
-                                "confidence_score": float(db_ko.confidence_score),
-                                "version": db_ko.version,
-                                "date": db_ko.legal_time_start.strftime("%Y-%m-%d") if db_ko.legal_time_start else "unknown"
-                            })
+                        candidates.append({
+                            "urn": db_ko.urn,
+                            "title": db_ko.title,
+                            "summary": db_ko.summary,
+                            "entities": db_ko.entities or (db_ko.body or {}).get("entities", []),
+                            "evidence": db_ko.evidence,
+                            "business_impact": db_ko.business_impact,
+                            "confidence_score": float(db_ko.confidence_score),
+                            "version": db_ko.version,
+                            "date": db_ko.legal_time_start.strftime("%Y-%m-%d") if db_ko.legal_time_start else "unknown"
+                        })
                 finally:
                     session.close()
-                
+            matched_kos = rank_by_relevance(query, candidates)
+
         # 3. Fallback to GitLedger scanning if database is empty or not configured
         if not matched_kos and self.git_ledger:
             # Recursively walk git ledger objects folder
@@ -220,11 +212,7 @@ class GroundedReasoningEngine:
                     except Exception:
                         continue
                 
-                words = query.lower().split()
-                for data in latest_versions.values():
-                    ko_text = f"{data.get('title', '')} {data.get('summary', '')} {' '.join(data.get('entities', []))}".lower()
-                    if any(word in ko_text for word in words):
-                        matched_kos.append(data)
+                matched_kos = rank_by_relevance(query, list(latest_versions.values()))
                         
         return matched_kos
 
