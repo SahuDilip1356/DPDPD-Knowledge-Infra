@@ -1,21 +1,20 @@
-import { Marked } from "marked";
-import { parseFrontmatter } from "./guides";
-import { extractCitations, routeForLabel } from "./citations";
-import { getProvision, formatDate, isInForce } from "./law";
+import { modules, loaders } from "virtual:course";
+import { getProvision } from "./law";
+import { routeForLabel } from "./citations";
 import { SITE } from "./site";
 
 /**
- * Course modules: loader, citation linker and head-tag builder.
+ * Course modules: lookup, loading and head tags.
  *
  * One Markdown file per module under src/content/modules/NN-slug.md (see the
- * README there). The front-matter is the Module record from the spec; the body
- * is the intro followed by one `## ` section per lesson. Vite inlines the files
- * at build time, so the same records feed the prerender, the client and the
- * tests.
+ * README there). src/lib/module-build.js turns them into records at build
+ * time, served through virtual:course (scripts/vite-content.mjs), so the same
+ * records feed the prerender, the client and the tests.
  *
- * The loader is tolerant — a half-written module still produces a record — and
- * tests/modules.test.js is strict about the shape, so an author sees a failing
- * test rather than a build that will not start.
+ * On the server every record is complete. In the browser the list holds each
+ * module's summary — enough for the course index, the home page and the
+ * course track — and loadModule() fetches one module's lessons and self-test
+ * for the page that shows them.
  */
 
 export const TOTAL_MODULES = 6;
@@ -25,276 +24,42 @@ export const LEARN_TITLE = "Learn the DPDPA — a six-module course | DPDPA Wiki
 export const LEARN_DESCRIPTION =
   "Six short modules on India's Digital Personal Data Protection Act, 2023 and the DPDP Rules, 2025, in order from what the Act is to what it asks of your business. Every statement cites its section or rule; every module ends in a self-test.";
 
-const RAW = import.meta.glob("../content/modules/*.md", {
-  query: "?raw",
-  import: "default",
-  eager: true
-});
-
-/* ── Front-matter helpers ────────────────────────────────────────── */
-
-/** "[S1, S2]" or "S2, R2" or ["S1"] → ["S1", "S2"]. */
-export function labelList(value) {
-  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
-  return String(value ?? "")
-    .replace(/^\s*\[|\]\s*$/g, "")
-    .split(",")
-    .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-    .filter(Boolean);
-}
-
-/** "b" → 1, "2" → 2, "B" → 1; anything else → -1. */
-function answerIndex(value) {
-  const v = String(value ?? "").trim().toLowerCase();
-  if (/^[a-d]$/.test(v)) return v.charCodeAt(0) - 97;
-  if (/^[0-3]$/.test(v)) return Number(v);
-  return -1;
-}
-
-function quizItem(raw) {
-  const options = ["a", "b", "c", "d"].every((k) => raw[k] != null)
-    ? ["a", "b", "c", "d"].map((k) => String(raw[k]))
-    : labelList(raw.options);
-  return {
-    q: String(raw.q ?? "").trim(),
-    options,
-    answer: answerIndex(raw.answer),
-    cites: labelList(raw.cites)
-  };
-}
-
-function nullable(value) {
-  const v = String(value ?? "").trim();
-  return v === "" || v.toLowerCase() === "null" || v === "~" ? null : v;
-}
-
-/* ── Markdown ────────────────────────────────────────────────────── */
-
-function slugify(text) {
-  return text.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
-}
-
-const md = new Marked();
-
-/* ── Citation linking ────────────────────────────────────────────── */
-
-// A number with optional sub-clauses: "6", "6(4)", "8(5)(a)".
-const NUM = String.raw`\d{1,2}(?:\s?\([^)\s]{1,4}\))*`;
-// A list of them: "4, 5 and 7", "8(5) and 8(6)", "17 to 19", "3, 5, or 6".
-const CONJ = String.raw`\s*(?:,\s*(?:and|or)?|and|&|or|to|–|-)\s*`;
-const LIST = `${NUM}(?:${CONJ}${NUM})*`;
-const ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh"];
-
-const CITE = new RegExp(
-  [
-    String.raw`\b(?<secword>[Ss]ections?)\s+(?<seclist>${LIST})`,
-    String.raw`\b(?<ruleword>[Rr]ules?)\s+(?<rulelist>${LIST})`,
-    String.raw`\b(?<ord>${ORDINALS.map((o) => `[${o[0].toUpperCase()}${o[0]}]${o.slice(1)}`).join("|")})\s+[Ss]chedule\b`,
-    // Capital S only: "build the schedule" in prose is not the Act's penalty Schedule.
-    String.raw`\b(?<act>[Tt]he\s+Schedule(?:\s+to\s+the\s+Act)?)\b`
-  ].join("|"),
-  "g"
-);
-const NUM_TOKEN = new RegExp(`(${NUM})`, "g");
-
-function anchor(label, text) {
-  const route = routeForLabel(label);
-  return getProvision(label) && route ? `<a class="cite" href="${route}">${text}</a>` : text;
-}
-
-/**
- * Turns inline references in rendered HTML into links to provision pages,
- * leaving the wording as it stands. Only text is touched: nothing inside an
- * existing <a>, <code> or <pre> is rewritten. A cited Rule (or Rules Schedule)
- * that is not yet in force gets an "applies from" badge after its first link.
- *
- * `badged` is shared across calls so the badge appears once per lesson even
- * when the lesson is rendered in several pieces.
- */
-export function linkCitations(html, { badged = new Set(), onDate = new Date() } = {}) {
-  const badge = (label) => {
-    const p = getProvision(label);
-    if (!p || badged.has(label) || isInForce(p, onDate) !== false) return "";
-    badged.add(label);
-    return `<span class="cite-badge">applies from ${formatDate(p.in_force_from)}</span>`;
-  };
-  const linkList = (word, list, prefix) => {
-    let first = true;
-    const linked = list.replace(NUM_TOKEN, (token) => {
-      const n = /^\d+/.exec(token)[0];
-      const label = `${prefix}${Number(n)}`;
-      const text = first ? `${word} ${token}` : token;
-      first = false;
-      return anchor(label, text) + badge(label);
-    });
-    return linked; // the first link already carries the word ("Section 3(a)")
-  };
-  const replaceText = (text) =>
-    text.replace(CITE, (m, ...rest) => {
-      const g = rest.at(-1);
-      if (g.secword) return linkList(g.secword, g.seclist, "S");
-      if (g.ruleword) return linkList(g.ruleword, g.rulelist, "R");
-      if (g.ord) {
-        const label = `SCH-${g.ord.toUpperCase()}`; // ord may be "First" or "first"
-        return anchor(label, m) + badge(label);
-      }
-      if (g.act) return anchor("ACT-SCHEDULE", m);
-      return m;
-    });
-
-  // Walk tags and text separately so markup is never matched as prose.
-  const parts = String(html).split(/(<[^>]+>)/);
-  let skip = 0;
-  return parts
-    .map((part) => {
-      if (part.startsWith("<")) {
-        if (/^<(a|code|pre)\b/i.test(part)) skip++;
-        else if (/^<\/(a|code|pre)\b/i.test(part)) skip = Math.max(0, skip - 1);
-        return part;
-      }
-      return skip > 0 || !part ? part : replaceText(part);
-    })
-    .join("");
-}
-
-/* ── Module records ──────────────────────────────────────────────── */
-
-function splitLessons(body) {
-  const sections = body.replace(/^\s*#\s+.+?(\r?\n|$)/, "").split(/^(?=##\s)/m);
-  const intro = sections[0] && !/^##\s/.test(sections[0]) ? sections.shift() : "";
-  const seen = new Map();
-  const lessons = sections.map((sec) => {
-    const m = /^##\s+(.+?)\s*$/m.exec(sec);
-    const heading = (m?.[1] || "").replace(/[*_`]/g, "").trim();
-    let id = slugify(heading) || "lesson";
-    const n = seen.get(id) ?? 0;
-    seen.set(id, n + 1);
-    if (n > 0) id = `${id}-${n}`;
-    const text = sec.slice(m ? m.index + m[0].length : 0);
-    return { heading, id, markdown: text.trim(), cites: extractCitations(sec) };
-  });
-  return { intro: intro.trim(), lessons };
-}
-
-/**
- * A lesson body as ordered blocks. Container directives mark the visual
- * pieces; everything else is prose.
- *
- *   ::: short            the lesson in two sentences, shown first
- *   ::: figure           a JSON figure spec (components/learn/Figure.jsx)
- *   ::: example <title>  a worked example from a business
- *
- * Malformed figure JSON throws, naming the lesson, so a broken figure fails
- * the build instead of disappearing from the page.
- */
-export function lessonBlocks(markdown, where = "") {
-  const blocks = [];
-  let prose = [];
-  let open = null;
-  const flush = () => {
-    const text = prose.join("\n").trim();
-    if (text) blocks.push({ type: "prose", markdown: text });
-    prose = [];
-  };
-  for (const line of String(markdown).split(/\r?\n/)) {
-    const start = /^:::\s*(short|figure|example)\b\s*(.*)$/.exec(line.trim());
-    if (!open && start) {
-      flush();
-      open = { name: start[1], arg: start[2].trim(), lines: [] };
-      continue;
-    }
-    if (open && line.trim() === ":::") {
-      const body = open.lines.join("\n").trim();
-      if (open.name === "figure") {
-        let spec;
-        try {
-          spec = JSON.parse(body);
-        } catch (err) {
-          throw new Error(`Figure in ${where} is not valid JSON: ${err.message}`);
-        }
-        blocks.push({ type: "figure", spec });
-      } else {
-        blocks.push({ type: open.name, title: open.arg, markdown: body });
-      }
-      open = null;
-      continue;
-    }
-    (open ? open.lines : prose).push(line);
-  }
-  if (open) throw new Error(`Unclosed ::: ${open.name} in ${where}`);
-  flush();
-  return blocks;
-}
-
-/** One Module record from a Markdown source. Exported for the tests' fixtures. */
-export function buildModule(source, path = "") {
-  const { data, body } = parseFrontmatter(source);
-  const file = path.split("/").pop() || "";
-  const slug = String(data.slug || file.replace(/^\d\d-/, "").replace(/\.md$/, "")).trim();
-  const order = Number(data.order ?? /^(\d\d)-/.exec(file)?.[1] ?? 0);
-  const { intro, lessons } = splitLessons(body);
-  const handoff = data.handoff_url ? { label: String(data.handoff_label || "Continue"), url: String(data.handoff_url) } : null;
-
-  const introBadged = new Set();
-  return {
-    slug,
-    order,
-    title: String(data.title || "").trim(),
-    summary: String(data.summary || "").trim(),
-    minutes: Number(data.minutes) || Math.max(1, Math.ceil(body.split(/\s+/).filter(Boolean).length / 200)),
-    provisions: labelList(data.provisions),
-    next: nullable(data.next),
-    handoff,
-    quiz: Array.isArray(data.quiz) ? data.quiz.filter((q) => q && typeof q === "object").map(quizItem) : [],
-    intro_html: intro ? linkCitations(md.parse(intro), { badged: introBadged }) : "",
-    intro_cites: extractCitations(intro),
-    lessons: lessons.map(({ heading, id, markdown, cites }) => {
-      const badged = new Set();
-      const blocks = lessonBlocks(markdown, `${file} › ${heading}`).map((b) =>
-        b.type === "figure" ? b : { ...b, html: linkCitations(md.parse(b.markdown), { badged }) }
-      );
-      return {
-        heading,
-        id,
-        cites,
-        blocks,
-        short: blocks.find((b) => b.type === "short")?.html || "",
-        html: blocks.filter((b) => b.type === "prose").map((b) => b.html).join("\n")
-      };
-    })
-  };
-}
-
-const MODULES = Object.entries(RAW)
-  .filter(([path]) => /\d\d-.+\.md$/.test(path))
-  .map(([path, source]) => buildModule(source, path))
-  .sort((a, b) => a.order - b.order);
+const MODULES = [...modules].sort((a, b) => a.order - b.order);
+const loading = new Map();
 
 export function listModules() {
   return MODULES;
 }
 
+/** A module's record: complete once loaded (always, outside the browser), its summary before. */
 export function getModule(slug) {
   return MODULES.find((m) => m.slug === slug) || null;
 }
 
-/** The module after / before this one in the course, by declared `next` or by order. */
-/** Questions readers ask about this module's provisions, most-asked first, deduplicated. */
-export function moduleQuestions(m, limit = 5) {
-  const seen = new Set();
-  const out = [];
-  for (const label of m.provisions) {
-    for (const q of getProvision(label)?.questions || []) {
-      if (seen.has(q.id)) continue;
-      seen.add(q.id);
-      out.push({ ...q, label });
-      break; // the top question per provision keeps the list spread across the module
-    }
-    if (out.length >= limit) break;
-  }
-  return out;
+/** True when the record carries its lessons and self-test. */
+export function isModuleLoaded(m) {
+  return !loaders || "lessons" in m;
 }
 
+/**
+ * Fetches one module's lessons and self-test into its record. Resolves to the
+ * record, or null for a slug that names no module; repeat calls share a promise.
+ */
+export function loadModule(slug) {
+  const m = getModule(slug);
+  if (!m || isModuleLoaded(m)) return Promise.resolve(m);
+  if (!loading.has(slug)) {
+    loading.set(slug, loaders[slug]().then((mod) => Object.assign(m, mod.default)));
+  }
+  return loading.get(slug);
+}
+
+/** Questions readers ask about this module's provisions, most-asked first, one per provision. */
+export function moduleQuestions(m, limit = 5) {
+  return m.questions.slice(0, limit);
+}
+
+/** The module after / before this one in the course, by declared `next` or by order. */
 export function nextModule(m) {
   return (m.next && getModule(m.next)) || MODULES.find((x) => x.order === m.order + 1) || null;
 }

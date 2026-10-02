@@ -40,7 +40,7 @@ export default function LearnIndex() {
                   <span className="learn-card-title">{m.title}</span>
                   <span className="learn-card-summary">{m.summary}</span>
                   <span className="learn-card-meta">
-                    {m.minutes} min read · {m.lessons.length} lessons · {m.provisions.length} provisions · {m.quiz.length}-question self-test
+                    {m.minutes} min read · {m.lessonCount} lessons · {m.provisions.length} provisions · {m.quizCount}-question self-test
                   </span>
                 </Link>
               </li>

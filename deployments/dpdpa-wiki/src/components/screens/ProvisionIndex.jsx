@@ -6,10 +6,12 @@ import {
   routeFor, commencement, ACT_INDEX_TITLE, RULES_INDEX_TITLE
 } from "../../lib/law";
 import { usePageTitle } from "../../lib/usePageTitle";
+import { useToday } from "../../lib/useToday";
 import "../../styles/law.css";
 
 function Item({ p, showDate }) {
-  const badge = showDate ? commencement(p) : null;
+  const today = useToday();
+  const badge = showDate ? commencement(p, today) : null;
   return (
     <li>
       <Link to={routeFor(p)} className="law-index-item">

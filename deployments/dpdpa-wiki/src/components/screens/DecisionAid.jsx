@@ -5,6 +5,7 @@ import NotFound from "./NotFound";
 import { getTool, toolTitle } from "../../lib/tools";
 import { getProvision, routeFor, displayLabel, commencement } from "../../lib/law";
 import { usePageTitle } from "../../lib/usePageTitle";
+import { useToday } from "../../lib/useToday";
 import "../../styles/law.css";
 import "../../styles/tools.css";
 
@@ -146,8 +147,9 @@ function ProvisionLinks({ label, cites }) {
 
 function ProvisionLink({ label }) {
   const p = getProvision(label);
+  const today = useToday();
   if (!p) return <span>{label}</span>;
-  const badge = commencement(p);
+  const badge = commencement(p, today);
   return (
     <Link to={routeFor(p)} className="tool-cite">
       <span className="tool-cite-label">{displayLabel(p)}</span>

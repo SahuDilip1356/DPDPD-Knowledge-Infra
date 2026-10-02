@@ -13,6 +13,10 @@
  *
  * Workspace routes are left alone. They sit behind interaction and live data,
  * and nobody should be finding /admin in a search result.
+ *
+ * Each page's root carries data-route, so main.jsx hydrates only HTML rendered
+ * for the URL it is on, and modulepreload links for the page's own screen and
+ * data chunks, so they download alongside the entry script instead of after it.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -22,9 +26,45 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const dist = path.join(root, "dist");
 const template = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 
-const { render, publicRoutes, headFor } = await import(
+const { render, publicRoutes, headFor, chunksFor } = await import(
   path.join(root, "dist-ssr", "entry-server.js")
 );
+
+// Vite's client manifest maps source ids to built chunks. It is a build
+// artefact, not something to serve: moved out of dist/ into dist-ssr/, where
+// tests/bundle-budget.test.js reads it.
+const manifestPath = path.join(dist, ".vite", "manifest.json");
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+fs.renameSync(manifestPath, path.join(root, "dist-ssr", "client-manifest.json"));
+fs.rmSync(path.join(dist, ".vite"), { recursive: true, force: true });
+
+// The entry and its static imports are already in the template.
+const inTemplate = new Set();
+const closure = (key, into) => {
+  const entry = manifest[key];
+  if (!entry) throw new Error(`no chunk for ${key} in the client manifest`);
+  if (into.has(entry.file)) return;
+  into.add(entry.file);
+  for (const dep of entry.imports || []) closure(dep, into);
+};
+closure("index.html", inTemplate);
+
+/** <link rel=modulepreload> tags for the chunks a route renders from, beyond the entry's. */
+function preloadsFor(route) {
+  const files = new Set();
+  for (const id of chunksFor(route)) closure(id, files);
+  return [...files]
+    .filter((f) => !inTemplate.has(f))
+    .map((f) => `<link rel="modulepreload" crossorigin href="/${f}">`)
+    .join("\n    ");
+}
+
+/** The template with a route's markup in the root and its chunks preloaded. */
+function withRoute(route, html) {
+  const preloads = preloadsFor(route);
+  const doc = template.replace('<div id="root"></div>', `<div id="root" data-route="${route}">${html}</div>`);
+  return preloads ? doc.replace("</head>", `  ${preloads}\n  </head>`) : doc;
+}
 
 const routes = publicRoutes();
 const SITE = "https://dpdpa.wiki";
@@ -42,7 +82,7 @@ for (const route of routes) {
   }
 
   const head = headFor(route);
-  let doc = template.replace('<div id="root"></div>', `<div id="root">${html}</div>`);
+  let doc = withRoute(route, html);
 
   if (head) {
     // Replace the template's own title and description so they are not
@@ -88,7 +128,7 @@ try {
     '<meta name="robots" content="noindex" />',
     `<link rel="canonical" href="${SITE}/404" />`
   ].join("\n    ");
-  let doc = template.replace('<div id="root"></div>', `<div id="root">${html404}</div>`);
+  let doc = withRoute("/404", html404);
   doc = doc
     .replace(/\n?\s*<title>[\s\S]*?<\/title>/, "")
     .replace(/\n?\s*<meta name="description"[^>]*>/, "")
