@@ -221,26 +221,24 @@ class GroundedReasoningEngine:
         Builds the strict context envelope forcing the LLM to ground itself
         and use standard citation formats.
         """
+        # Each object is cited by its own URN. Evidence lines name the provision a quote
+        # comes from, not the source document's URN: shown a source URN, the model cited
+        # it instead of the object, and the output guardrail then dropped every citation.
         context_str = ""
         for i, ko in enumerate(context_kos):
             context_str += f"--- KNOWLEDGE OBJECT {i+1} ---\n"
-            context_str += f"URN: {ko['urn']}\n"
+            context_str += f"CITE AS: [{ko['urn']}]\n"
             context_str += f"Title: {ko['title']}\n"
             context_str += f"Date: {ko['date']}\n"
             context_str += f"Version: {ko['version']}\n"
             context_str += f"Summary: {ko['summary']}\n"
             context_str += f"Confidence Score: {ko['confidence_score']}\n"
-            
-            context_str += "Citations/Evidence:\n"
+
+            context_str += "Quoted law supporting this object:\n"
             for ev in ko.get("evidence", []):
-                coords = ev.get("coordinates", {})
-                context_str += (
-                    f"  - Source: {ev.get('source_urn')} | "
-                    f"Text: \"{ev.get('citation_text')}\" | "
-                    f"Page: {coords.get('page')} | "
-                    f"Section: {coords.get('section')} | "
-                    f"Hash: {coords.get('hash')}\n"
-                )
+                coords = ev.get("coordinates") or {}
+                where = ", ".join(str(v) for k, v in coords.items() if k in ("section", "rule", "schedule", "page") and v)
+                context_str += f"  - {where or 'Quote'}: \"{ev.get('citation_text')}\"\n"
             context_str += f"Business Impact: {ko.get('business_impact', {}).get('impact_summary', '')}\n"
             context_str += f"Recommended Business Action: {ko.get('business_impact', {}).get('action_required', '')}\n\n"
 
@@ -248,8 +246,8 @@ class GroundedReasoningEngine:
 Your task is to answer the user's query using ONLY the provided Knowledge Object contexts.
 
 CRITICAL INSTRUCTIONS:
-1. Every fact or claim must have an inline citation formatted as: [URN (Page X, Section Y, Hash: Z)].
-2. Use only URNs and evidence present in the supplied Knowledge Object context.
+1. Every fact or claim must have an inline citation: the URN shown after "CITE AS" for the object it comes from, in square brackets, exactly as shown there. Name the section or rule in the sentence itself.
+2. Cite only those object URNs, and list the same URNs in "cited_urns". Never cite a source document (a URN containing ":source:").
 3. If the context is insufficient, set "sufficient_evidence" to false and explain the limitation in "answer". Do not extrapolate.
 4. Return only a JSON object matching this schema:
 {{

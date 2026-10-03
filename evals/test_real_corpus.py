@@ -74,7 +74,7 @@ class FakeLive(ModelClient):
 
     def generate_json(self, prompt):
         FakeLive.calls += 1
-        urn = re.search(r"URN: (\S+)", prompt).group(1)
+        urn = re.search(r"CITE AS: \[(\S+)\]", prompt).group(1)
         return {"answer": f"Section 99 applies [{urn}].", "cited_urns": [urn],
                 "sufficient_evidence": True}
 
