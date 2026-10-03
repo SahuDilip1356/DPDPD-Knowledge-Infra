@@ -16,6 +16,7 @@
 - React dashboard lives in `frontend/`; Command Center is `/today` on local Vite at `http://127.0.0.1:5173`
 - Apify MCP is connected; competitor crawls use `apify/website-content-crawler` on public pages only (no login, admin, app, or dashboard); skip gotrust.in, perfios.ai, and leegality.com, and crawl GoTrust’s DPDPA product at gotrust.tech
 - Never import DPDPA.com or other competitor pages into Setu; keep a separate Competitive Intelligence Corpus as Layer 4–5 opinions, not law
+- Two lanes, decided 2026-10-03. **Law lane:** the Act, the Rules and other official sources (notifications, Board orders, regulator directions, judgments), each held in its own words from an official URL and checked by the corpus contract; only this lane feeds Ask, the knowledge store, the search index and the public site. **Market lane:** competitor and market data (sites, products, pricing, accuracy scores, the market-map pack in `staging/competitive_intel/market-map/`); internal, gitignored, read by people and editorial planning only, never stored as knowledge objects, never indexed, never published under a competitor's name
 - Classifier trays are LAW/RULES, INTERPRETATION, FAQ, BLOG, TEMPLATE, CASE LAW, TOOL, COURSE, and COMMERCIAL
 - Competitor pages default to unpublished; claims must be verified against Act, Rules, Gazette, MeitY, DPB, or courts before canonical use
 - DPDPA.com case-law lists are JavaScript-rendered; use Playwright with a content wait, not an HTTP-only crawl; their DPDPA Board-order groups are still empty / “coming soon”

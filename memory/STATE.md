@@ -55,6 +55,7 @@ intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 
 ## Decisions (settled — don't re-litigate)
 
 - Competitor content is discovery only: never canonical, never republished, never embedded, never used for fine-tuning. RAG over our own corpus, no fine-tuning.
+- Two lanes (2026-10-03): the **law lane** (Act, Rules, official sources; verified; feeds Ask, the store, the index and the site) and the **market lane** (competitor and market data; internal, gitignored under `staging/competitive_intel/market-map/`; people and editorial planning only). Expansion of the base comes from official sources, spec `specs/official-sources/`.
 - Law text is written only by `src/competitive_intel/*ground_truth*.py` → `scripts/sync-law.mjs`; never hand-edited.
 - Knowledge objects are never overwritten: new version + `system_time_end` on the old one (`build_knowledge_objects.py revise` / `conform`).
 - The seed scripts are retired (they exit without writing): their objects are unverified and share URNs with the verbatim Act sections. Publishing goes through `build_knowledge_objects.py`, which refuses anything that breaks the corpus contract.
