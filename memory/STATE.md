@@ -1,8 +1,7 @@
 # Project State — DPDPD Knowledge Infra
 
-**Last updated:** 2026-09-30
-**Production:** dpdpa.wiki serves `main` @ 4feac5e (DPDPA Wiki, merged 30 Sep as PR #3 and #4). Preview-before-prod applies to every release.
-**Open PRs:** #5 route splitting (`perf/route-splitting`); trusted corpus (`trusted-corpus`: real-corpus evals, ranked retrieval, corpus contract).
+**Last updated:** 2026-10-02
+**Production:** dpdpa.wiki serves `main` @ 7074dae (route splitting #5 and trusted corpus #6 merged 2 Oct). Preview-before-prod applies to every release.
 **Resume cue:** "resume Knowledge Infra" / "continue from STATE"
 
 ## Where we are
@@ -27,30 +26,27 @@ intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 
 | `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` (synthetic); `--corpus real` scores citations over the verified law + 511 answer objects (`golden_corpus.jsonl`, rebuilt by `build_golden.py`); `--live` calls the model and prints cost |
 | `src/competitive_intel/` | Crawl, ground truth, claims, question graph, knowledge-object builder (`audit`, `repair`, `conform`, `quarantine` hold the store to the corpus contract) |
 | `deployments/dpdpa-backend/src/schemas/corpus_contract.py` | What every live object must satisfy: `stored_object_schema.json`, plus every gazette quote and hash checked against the law file the site is built from |
-| `src/` (api, reasoning, storage, tests) | **Legacy copy** of the backend, drifted from the canonical tree; not deployed |
 | `specs/dpdpa-wiki-reimagine/` | Intent → spec → plan for the site (validator passes) |
 | `.github/workflows/` | `spec-chain.yml`, `release-gate.yml` (site build+tests, backend tests, offline evals) |
 
 ## Open loops
 
-1. **Store write awaiting the founder's word** (`build_knowledge_objects.py conform`, then `quarantine`). The live
+1. **Store write: the founder runs it** (Claude's auto mode blocks writes to the shared store) (`build_knowledge_objects.py conform`, then `quarantine`). The live
    audit on 30 Sep: 616 live objects, 203 conform. 384 answers carry evidence hashes of the Act text from before
    the gazette-furniture cleanup, and 4 of them quote a margin note as part of Section 10(1); `conform` publishes
    a re-verified version of each and verified records for the Act and the Rules as documents. 27 hand-written
    seed objects (5 penalty, 10 opinion, 4 rule, 2 case, 2 notification, 2 circular, 1 judgement, and
    `notice-test` with two live versions) have no verifiable source; `quarantine` closes them. The staged answers
    and the eval snapshot are already repaired, so until `conform` runs they are one version ahead of the store.
-2. **Remove the legacy root `src/` backend copy** (api, reasoning, storage, factory, schemas, tests); nothing
-   imports it. `src/competitive_intel/` stays.
-3. **Two schemas.** `knowledge_object_schema.json` is the factory's ledger document; `stored_object_schema.json`
+2. **Two schemas.** `knowledge_object_schema.json` is the factory's ledger document; `stored_object_schema.json`
    is what is live. The factory path (`publishing_agent`, `publish_ko`) does not yet produce rows that pass the
    stored contract (no evidence hash at item level, no `source_credibility`).
-4. **Retrieval.** The ranked fallback lifts offline citation recall from 1.4% to 44.7% and refuses 2 of 4
+3. **Retrieval.** The ranked fallback lifts offline citation recall from 1.4% to 44.7% and refuses 2 of 4
    withheld-support cases. `--corpus real --live` has not been run (costs cents; needs the founder's opt-in).
-5. **Not built:** server-enforced roles, persistent Factory review board, hosted Ask end to end, email delivery.
-6. **Video pilot (spec T20–T21):** provisions not chosen (recommendation S6, S8, R7).
-7. **Security:** an OpenAI key is visible in Cursor's process environment — rotate it.
-8. **www.dpdpa.wiki** does not resolve; add it in Vercel as a redirect and create the DNS record.
+4. **Not built:** server-enforced roles, persistent Factory review board, hosted Ask end to end, email delivery.
+5. **Video pilot (spec T20–T21):** provisions not chosen (recommendation S6, S8, R7).
+6. **Security:** an OpenAI key is visible in Cursor's process environment — rotate it.
+7. **www.dpdpa.wiki** does not resolve; add it in Vercel as a redirect and create the DNS record.
 
 ## Decisions (settled — don't re-litigate)
 
