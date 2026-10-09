@@ -15,3 +15,7 @@ dist/
 
 .vite/
 .vercel
+
+# Session memory (handoffs, digests) — written by the memory hooks, backed up privately
+# in ~/.progression-memory; never published from this public repo.
+.agent/
