@@ -74,7 +74,7 @@ a SPA. This is contained — no framework migration.
 # Phase 2 — Turn the engine on (this week)
 
 ### 2.1 Deploy the backend to Railway 🟦
-Per [DEPLOY.md](DEPLOY.md) Phase 1. Root directory `deployments/dpdpa-backend`,
+Per [DEPLOY.md](../runbooks/DEPLOY.md) Phase 1. Root directory `deployments/dpdpa-backend`,
 six variables, generate a domain, confirm `/health` returns 200.
 
 ### 2.2 Wire the API into the frontends ⬜
