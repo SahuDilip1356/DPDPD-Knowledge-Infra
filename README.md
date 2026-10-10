@@ -3,9 +3,23 @@
 An enterprise compliance knowledge management system for the **Digital Personal Data Protection Act (DPDPA), 2023**. Built with a bitemporal graph database model, automated layout-aware LLM vision ingestion, Outbound Webhook alerts, and a grounded Reasoning Assistant.
 
 The canonical runtime backend is `deployments/dpdpa-backend/`. The root Dockerfile
-is a compatibility entry point that builds that directory. The older root `src/`
-tree is retained temporarily only to preserve uncommitted evaluation work and must
-not be used for deployment.
+is a compatibility entry point that builds that directory.
+
+---
+
+## 🗂️ Repository map
+
+| Path | What | Deploys to |
+| :--- | :--- | :--- |
+| `deployments/dpdpa-wiki/` | Public DPDPA Wiki + founder workspace (React 19, Vite 8, prerender) | Vercel → dpdpa.wiki |
+| `deployments/dpdpa-backend/` | FastAPI backend: grounded reasoning, factory agents, storage, corpus contract | Railway |
+| `src/competitive_intel/` | Law ground truth, crawl, claim checks, knowledge-object builder (`build_knowledge_objects.py`) | — |
+| `evals/` | Eval runner, golden sets, baselines | CI |
+| `harvest/` | Competitor harvest seeds and classifiers (market lane) | — |
+| `specs/` | Intent → spec → plan chains, checked by `scripts/validate_chain.py` | CI |
+| `docs/` | Foundations, architecture, runbooks, plans, design — see [docs/README.md](docs/README.md) | — |
+| `memory/` | Project state and decisions; resume from `memory/STATE.md` | — |
+| `staging/` | Local working data, gitignored (crawls, market-map pack, staged objects) | — |
 
 ---
 
@@ -108,12 +122,12 @@ python3 scripts/ingest_document.py "https://egazette.gov.in/notif.pdf" --urn "ur
 
 The backend protects every `/admin/*` endpoint with the transitional
 `X-Admin-Key` control. The actions and factory screens still require the role-based,
-server-enforced workflow described in `COMPREHENSIVE_BUILD_SPEC.md`; their current
+server-enforced workflow described in [`docs/plans/COMPREHENSIVE_BUILD_SPEC.md`](docs/plans/COMPREHENSIVE_BUILD_SPEC.md); their current
 client-side login state is not an authorization boundary.
 
-### Accessing the Admin Audit Panel (`/admin`)
+### Accessing the Admin Audit Panel (`/workspace/admin`)
 1. Generate an admin key, store it in `ADMIN_API_KEY` for the backend, and restart the service.
-2. Open `http://localhost:5173/admin`.
+2. Open `http://localhost:5173/workspace/admin`.
 3. Enter the same key in the admin authorization form. It is retained only in the browser tab's `sessionStorage`.
 4. The dashboard then loads:
    - **Live Search Logs:** Real-time log table of user searches submitted to the Grounded Assistant.

@@ -26,6 +26,7 @@ intelligence corpus: 7,446 pages, 15,564 claims verified against the law, 1,779 
 | `evals/` | Eval runner — imports the canonical backend. `python evals/runner.py --offline` (synthetic); `--corpus real` scores citations over the verified law + 511 answer objects (`golden_corpus.jsonl`, rebuilt by `build_golden.py`); `--live` calls the model and prints cost |
 | `src/competitive_intel/` | Crawl, ground truth, claims, question graph, knowledge-object builder (`audit`, `repair`, `conform`, `quarantine` hold the store to the corpus contract) |
 | `deployments/dpdpa-backend/src/schemas/corpus_contract.py` | What every live object must satisfy: `stored_object_schema.json`, plus every gazette quote and hash checked against the law file the site is built from |
+| `docs/` | Foundations, architecture, runbooks, historical plans, design; index in `docs/README.md` |
 | `specs/dpdpa-wiki-reimagine/` | Intent → spec → plan for the site (validator passes) |
 | `.github/workflows/` | `spec-chain.yml`, `release-gate.yml` (site build+tests, backend tests, offline evals) |
 
