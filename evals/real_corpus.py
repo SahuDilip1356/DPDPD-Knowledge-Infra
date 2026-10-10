@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import update
 
-from src.reasoning.model_client import MockModelClient, ModelClient
+from src.reasoning.model_client import MockModelClient, ModelClient, ModelUnavailable
 from src.reasoning.reasoning_engine import GroundedReasoningEngine
 from src.storage.db_client import DatabaseClient
 from src.storage.models import KnowledgeObject
@@ -182,6 +182,9 @@ class RecordingEngine(GroundedReasoningEngine):
 
 
 # ---------------------------------------------------------------- cost
+
+MAX_OUTAGE_STREAK = 3  # consecutive ModelUnavailable calls before the run stops
+
 
 class BudgetExceeded(RuntimeError):
     pass
@@ -378,10 +381,12 @@ def run_real_corpus_suite(
     print("=======================================================\n")
 
     results, stopped = [], None
+    unavailable, streak = [], 0  # outages are unmeasured, never scored as refusals
     for case in cases:
         hidden = list(case.get("withheld_urns", []))
         if holdout and case.get("answer_urn"):
             hidden.append(case["answer_urn"])
+        scored = False
         for run in range(runs_per_case):
             with corpus.withheld(hidden):
                 started = time.perf_counter()
@@ -391,6 +396,14 @@ def run_real_corpus_suite(
                 except BudgetExceeded as exc:
                     stopped = str(exc)
                     break
+                except ModelUnavailable as exc:
+                    unavailable.append({"id": case["id"], "run_index": run + 1, "error": str(exc)})
+                    streak += 1
+                    if streak >= MAX_OUTAGE_STREAK:
+                        stopped = f"the model was unavailable {streak} times in a row ({exc})"
+                        break
+                    continue
+                streak = 0
                 retrieved = [ko["urn"] for ko in engine.last_retrieved]
                 # What a live call would send, so an offline run still shows the bill.
                 prompt_chars = len(engine.construct_grounded_prompt(
@@ -401,8 +414,13 @@ def run_real_corpus_suite(
             result["details"]["retrieval_path"] = engine.last_path
             result["details"]["prompt_tokens_est"] = prompt_chars // CHARS_PER_TOKEN
             results.append(result)
+            scored = True
+        if not scored and unavailable and unavailable[-1]["id"] == case["id"]:
+            print(f"⚠️ {case['id']:20} {case['kind']:16} {'—':8} not measured: {unavailable[-1]['error']}")
         if stopped:
             break
+        if not scored:
+            continue
         last = results[-1]
         recall = last["scores"]["provision_recall"]
         cost = f" · ${meter.spent:.4f}" if meter else ""
@@ -412,7 +430,9 @@ def run_real_corpus_suite(
               f"· retrieved {last['details']['retrieved_count']:3}{cost} | {case['input'][:50]}")
 
     if not results:
-        print(f"\n[real-corpus] Stopped before the first case: {stopped}")
+        reason = stopped or (f"the model was unavailable for all {len(unavailable)} call(s)"
+                             if unavailable else "no cases ran")
+        print(f"\n[real-corpus] Nothing was measured: {reason}")
         return 3
 
     summary = summarise(results)
@@ -424,9 +444,15 @@ def run_real_corpus_suite(
             stored = json.load(f)
         if stored.get("holdout") == holdout and not limit:
             baseline = stored["summary"]
+    summary["model_unavailable"] = len(unavailable)
     failures = check_gates(summary, baseline)
-    if stopped:
+    if unavailable:
+        failures.append(f"{len(unavailable)} call(s) not measured: the model was unavailable "
+                        f"({unavailable[-1]['error']})")
+    if stopped and not stopped.startswith("the model was unavailable"):
         failures.append(f"stopped by the cost guard: {stopped}")
+    elif stopped:
+        failures.append(f"stopped early: {stopped}")
 
     report = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -438,6 +464,7 @@ def run_real_corpus_suite(
         "summary": summary,
         "cost": meter.summary() if meter else {"usd": 0.0, "basis": "mock model, no network"},
         "gate_failures": failures,
+        "model_unavailable": unavailable,
         "results": results,
     }
     os.makedirs(REPORTS_DIR, exist_ok=True)
@@ -460,6 +487,8 @@ def run_real_corpus_suite(
     print(f" expected law in retrieval:    {pct(summary['expected_in_retrieved'])}")
     print(f" objects retrieved (mean):     {summary['retrieved_count_mean']:.0f}")
     print(f" prompt size (mean, est.):     {summary['prompt_tokens_est_mean']:,} tokens")
+    if unavailable:
+        print(f" NOT MEASURED (model down):    {len(unavailable)} call(s) — excluded, not refusals")
     if meter:
         c = meter.summary()
         print(f" Cost: ${c['usd']:.4f} — {c['calls']} model calls, {c['tokens_in']:,} in / "
