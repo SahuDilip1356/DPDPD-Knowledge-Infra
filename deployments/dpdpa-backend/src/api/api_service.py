@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from src.storage.db_client import DatabaseClient
 from src.reasoning.reasoning_engine import GroundedReasoningEngine
-from src.reasoning.model_client import ModelClient
+from src.reasoning.model_client import ModelClient, ModelUnavailable
 
 # Initialize FastAPI App
 app = FastAPI(
@@ -271,6 +271,17 @@ def post_query(request: QueryRequest) -> Dict:
             response.get("trace", {}).get("total_duration_ms", 0.0),
         )
         return response
+    except ModelUnavailable:
+        # An outage is not a refusal: say so, so clients retry instead of trusting "no answer".
+        try:
+            log_search_query(request.query, False)
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=503,
+            detail="The answer model is unavailable right now. Please try again shortly.",
+            headers={"Retry-After": "60"},
+        )
     except Exception as e:
         try:
             log_search_query(request.query, False)

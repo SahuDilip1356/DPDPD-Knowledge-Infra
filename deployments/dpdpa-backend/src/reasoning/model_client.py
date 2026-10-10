@@ -7,6 +7,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+class ModelUnavailable(RuntimeError):
+    """The model provider could not be reached or refused the call: a network error, a
+    timeout, an HTTP error such as 429 'credit exhausted', or no provider configured.
+
+    Distinct from a malformed answer, which still fails closed as INSUFFICIENT_EVIDENCE.
+    Callers must not report an outage as a refusal: the API returns 503, the evals count it
+    as unmeasured. Messages never include the request URL (Gemini puts the key in it)."""
+
+
+def _describe_outage(provider: str, exc: Exception) -> str:
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    if status is not None:
+        return f"{provider} returned HTTP {status}"
+    return f"{provider} unreachable ({type(exc).__name__})"
+
 class ModelClient:
     """
     Provider chain for grounded generation (the cook):
@@ -113,24 +129,43 @@ class ModelClient:
                 "GEMINI_API_KEY, OPENAI_API_KEY or OPENROUTER_API_KEY."
             )
 
+    @property
+    def provider_name(self) -> str:
+        if self.gpt_oss_enabled:
+            return "GPT-OSS"
+        if self.gemini_key:
+            return "Gemini"
+        return self.oai_provider or "no provider"
+
     def generate_json(self, prompt: str) -> Dict:
-        """Generate a structured response and fail closed after one retry."""
+        """Generate a structured response, retrying once.
+
+        A malformed answer fails closed as INSUFFICIENT_EVIDENCE. A provider outage raises
+        ModelUnavailable instead, so it is never mistaken for a grounded refusal.
+        """
         raw = ""
         last_error = "MALFORMED_JSON"
 
-        for _attempt in range(2):
+        if not self.is_configured:
+            raise ModelUnavailable("No model provider is configured for structured generation.")
+
+        for attempt in range(2):
             try:
                 if self.gpt_oss_enabled:
                     raw = self._generate_json_gpt_oss(prompt)
                 elif self.gemini_key:
                     raw = self._generate_json_gemini(prompt)
-                elif self.oai_key:
-                    raw = self._generate_json_openai(prompt)
                 else:
-                    raise ValueError(
-                        "No model API key configured for structured generation."
-                    )
+                    raw = self._generate_json_openai(prompt)
+            except requests.exceptions.RequestException as exc:
+                if attempt == 1:
+                    raise ModelUnavailable(_describe_outage(self.provider_name, exc)) from None
+                continue
+            except Exception as exc:
+                last_error = f"MALFORMED_JSON: {exc}"
+                continue
 
+            try:
                 parsed = json.loads(self._strip_json_fence(raw))
                 if not isinstance(parsed, dict):
                     raise ValueError("Structured model response must be a JSON object.")

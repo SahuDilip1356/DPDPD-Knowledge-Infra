@@ -92,3 +92,39 @@ def test_live_run_reports_cost_and_catches_invented_law(monkeypatch, isolated):
     result = report(isolated)
     assert result["cost"]["usd"] > 0 and result["cost"]["calls"] == 1
     assert result["results"][0]["details"]["nonexistent_provisions"] == ["S99"]
+
+
+class DownLive(FakeLive):
+    """A configured client whose provider is down (e.g. 429 credit exhausted)."""
+
+    def generate_json(self, prompt):
+        FakeLive.calls += 1
+        raise real_corpus.ModelUnavailable("OpenRouter returned HTTP 429")
+
+
+class FlakyLive(FakeLive):
+    """Down for the first call only, then a valid refusal."""
+
+    def generate_json(self, prompt):
+        FakeLive.calls += 1
+        if FakeLive.calls == 1:
+            raise real_corpus.ModelUnavailable("OpenRouter returned HTTP 503")
+        return {"answer": "INSUFFICIENT_EVIDENCE: not covered.", "cited_urns": [],
+                "sufficient_evidence": False}
+
+
+def test_outage_is_not_scored_as_refusal_and_stops_after_a_streak(monkeypatch, isolated):
+    monkeypatch.setattr(real_corpus, "ModelClient", DownLive)
+    FakeLive.calls = 0
+    assert real_corpus.run_real_corpus_suite(live=True, limit=6, max_cost_usd=5.0) == 3
+    assert FakeLive.calls == real_corpus.MAX_OUTAGE_STREAK
+    assert not list(isolated.glob("real_corpus_*.json"))  # nothing measured, nothing reported
+
+
+def test_partial_outage_is_counted_and_fails_the_gate(monkeypatch, isolated):
+    monkeypatch.setattr(real_corpus, "ModelClient", FlakyLive)
+    FakeLive.calls = 0
+    assert real_corpus.run_real_corpus_suite(live=True, limit=3, max_cost_usd=5.0) == 1
+    result = report(isolated)
+    assert result["summary"]["model_unavailable"] == 1 and result["summary"]["runs"] == 2
+    assert any("not measured" in f for f in result["gate_failures"])
