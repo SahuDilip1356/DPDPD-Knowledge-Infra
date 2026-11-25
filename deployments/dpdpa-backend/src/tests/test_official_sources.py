@@ -495,3 +495,142 @@ def test_a_redirect_chain_cannot_bounce_through_an_off_list_host(tmp_path):  # r
     })
     result = fetcher(tmp_path, session).fetch(e)
     assert result.status == "refused" and "https://evil.example/bounce" not in session.calls
+
+
+# ── code review round 2 ─────────────────────────────────────────────────────
+
+def test_an_edited_text_file_without_a_registry_hash_is_not_recorded(tmp_path):  # review 2.1
+    e = entry()
+    path = write_registry(tmp_path, [e])
+    doc = pdf_bytes("Section 2 comes into force.")
+    fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})).fetch(e)       # files, no registry hashes
+    (tmp_path / "store" / e["id"] / "text.txt").write_text("Section 2 never comes into force.\n", encoding="utf-8")
+    results, updated = osrc.run(path, fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})))
+    assert results[0].status == "changed" and "text.txt" in results[0].detail
+    assert updated == [] and not osrc.load_registry(path)[0].get("text_sha256")
+
+
+def test_a_fresh_clone_with_different_extracted_text_restores_nothing(tmp_path, monkeypatch):  # restore guard
+    doc, e = pdf_bytes("Section 2 comes into force."), entry()
+    first = fetcher(tmp_path / "a", Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    e.update(sha256=first.sha256, text_sha256=first.text_sha256, text_method="pdf")
+    monkeypatch.setattr(osrc, "pdf_text", lambda body: "A different extraction.\n")
+    again = fetcher(tmp_path / "b", Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    assert again.status == "changed" and not (tmp_path / "b" / "store" / e["id"]).exists()
+
+
+def test_a_fresh_clone_restores_the_source_file_too(tmp_path):
+    doc, e = pdf_bytes("Section 2 comes into force."), entry()
+    first = fetcher(tmp_path / "a", Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    e.update(sha256=first.sha256, text_sha256=first.text_sha256, text_method="pdf")
+    fetcher(tmp_path / "b", Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    assert (tmp_path / "b" / "store" / e["id"] / "source.pdf").read_bytes() == doc
+
+
+def test_record_never_writes_over_an_existing_hash(tmp_path):
+    e = entry(sha256="a" * 64)
+    path = write_registry(tmp_path, [e])
+    assert osrc.record(path, [osrc.Result(e["id"], "stored", "", "b" * 64, "c" * 64, "pdf")]) == []
+    assert osrc.load_registry(path)[0]["sha256"] == "a" * 64
+
+
+def test_record_validates_before_replacing(tmp_path, monkeypatch):
+    e = entry()
+    path = write_registry(tmp_path, [e])
+    before = open(path, "rb").read()
+    real = osrc.load_registry
+
+    def strict(p=osrc.REGISTRY_PATH):
+        if ".tmp-" in p:
+            raise osrc.RegistryError("bad temporary file")
+        return real(p)
+
+    monkeypatch.setattr(osrc, "load_registry", strict)
+    with pytest.raises(osrc.RegistryError):
+        osrc.record(path, [osrc.Result(e["id"], "stored", "", "b" * 64, "c" * 64, "pdf")])
+    assert open(path, "rb").read() == before
+    assert [p.name for p in tmp_path.iterdir() if ".tmp-" in p.name] == []
+
+
+def test_a_failed_write_leaves_no_folder_behind(tmp_path, monkeypatch):  # review 2.3
+    e, calls = entry(), []
+    real = osrc._write
+
+    def flaky(path, data):
+        calls.append(path)
+        if len(calls) == 2:
+            raise OSError("disk full")
+        real(path, data)
+
+    monkeypatch.setattr(osrc, "_write", flaky)
+    with pytest.raises(OSError):
+        fetcher(tmp_path, Session({e["url"]: Response(e["url"], pdf_bytes("x"))})).fetch(e)
+    assert list((tmp_path / "store").iterdir()) == []
+
+
+def test_unreachable_robots_means_do_not_fetch(tmp_path):
+    e = entry()
+
+    class Down(Session):
+        def get(self, url, **kwargs):
+            self.calls.append(url)
+            if url.endswith("/robots.txt"):
+                raise ConnectionError("no route")
+            return self.routes[url]
+
+    session = Down({e["url"]: Response(e["url"], pdf_bytes("x"))})
+    assert fetcher(tmp_path, session).fetch(e).status == "refused"
+    assert e["url"] not in session.calls
+
+
+def test_robots_404_means_no_rules(tmp_path):
+    e = entry()
+
+    class Missing(Session):
+        def get(self, url, **kwargs):
+            if url.endswith("/robots.txt"):
+                return Response(url, b"", status=404, ctype="text/html")
+            return self.routes[url]
+
+    assert fetcher(tmp_path, Missing({e["url"]: Response(e["url"], pdf_bytes("x"))})).fetch(e).status == "stored"
+
+
+def test_an_oversized_robots_file_counts_as_unreadable(tmp_path):
+    e = entry()
+    huge = b"User-agent: *\nAllow: /\n" + b"#" * (osrc.ROBOTS_MAX_BYTES + 1)
+    session = Session({e["url"]: Response(e["url"], pdf_bytes("x"))}, robots=huge.decode())
+    assert fetcher(tmp_path, session).fetch(e).status == "refused"
+
+
+def test_the_deadline_bounds_a_real_slow_sender(monkeypatch):           # review 2.2, real socket
+    import socket
+    import threading
+    import time as _time
+    import requests
+    monkeypatch.setattr(osrc, "DEADLINE_SECONDS", 1)
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    port = server.getsockname()[1]
+
+    def drip():
+        conn, _ = server.accept()
+        conn.recv(4096)
+        conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: application/pdf\r\nContent-Length: 100000\r\n\r\n")
+        try:
+            for _ in range(40):
+                conn.sendall(b"x")
+                _time.sleep(0.25)
+        except OSError:
+            pass
+        finally:
+            conn.close()
+
+    threading.Thread(target=drip, daemon=True).start()
+    f = osrc.Fetcher(session=requests.Session())
+    resp = requests.get(f"http://127.0.0.1:{port}/slow.pdf", stream=True, timeout=5)
+    started = _time.monotonic()
+    body, problem = f._read(resp)
+    assert body is None and "took longer" in problem
+    assert _time.monotonic() - started < 4
+    server.close()

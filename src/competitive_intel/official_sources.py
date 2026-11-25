@@ -23,7 +23,10 @@ import hashlib
 import io
 import os
 import re
+import shutil
 import sys
+import tempfile
+import threading
 import time
 from dataclasses import dataclass
 from datetime import date
@@ -262,13 +265,27 @@ class Fetcher:
             if declared and declared.isdigit() and int(declared) > cap:
                 return None, f"response is over {cap // (1024 * 1024) or cap} {'MB' if cap >= 1024 * 1024 else 'bytes'}"
             deadline = self.clock() + DEADLINE_SECONDS
+            late = f"download took longer than {DEADLINE_SECONDS} s"
+            expired = threading.Event()
+            timer = threading.Timer(DEADLINE_SECONDS, lambda: (expired.set(), _abort(resp)))
+            timer.daemon = True
+            timer.start()
             body = bytearray()
-            for chunk in resp.iter_content(chunk_size=65536):
-                body += chunk
-                if len(body) > cap:
-                    return None, f"response is over {cap // (1024 * 1024) or cap} {'MB' if cap >= 1024 * 1024 else 'bytes'}"
-                if self.clock() > deadline:
-                    return None, f"download took longer than {DEADLINE_SECONDS} s"
+            try:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    body += chunk
+                    if len(body) > cap:
+                        return None, f"response is over {cap // (1024 * 1024) or cap} {'MB' if cap >= 1024 * 1024 else 'bytes'}"
+                    if expired.is_set() or self.clock() > deadline:
+                        return None, late
+            except Exception:
+                if expired.is_set():
+                    return None, late
+                raise
+            finally:
+                timer.cancel()
+            if expired.is_set():
+                return None, late
             return bytes(body), None
         finally:
             resp.close()
@@ -353,8 +370,15 @@ class Fetcher:
             text_path, want = os.path.join(folder, "text.txt"), e.get("text_sha256")
             if os.path.exists(text_path):
                 with open(text_path, encoding="utf-8") as f:
-                    if want and sha256(f.read()) != want:
-                        return Result(rid, "changed", "text.txt on disk does not match text_sha256", file_hash)
+                    on_disk = sha256(f.read())
+                # Registered hash if there is one; otherwise a fresh extraction is the reference, so a
+                # hand-edited text.txt is never recorded as machine-extracted law.
+                expected = want or (sha256(text) if text.strip() and e.get("text_method") != "manual" else None)
+                if expected and on_disk != expected:
+                    return Result(rid, "changed", "text.txt on disk does not match the extracted text", file_hash)
+                if not expected and not want:
+                    return Result(rid, "unchanged", "text.txt kept, not verifiable without a registered hash",
+                                  file_hash, None, None)
             missing = {} if sources else {f"source.{ext}": body}
             if not os.path.exists(text_path) and want:
                 if sha256(text) != want:
@@ -376,16 +400,41 @@ class Fetcher:
         return Result(rid, "stored", "", file_hash, sha256(text), method)
 
 
+def _abort(resp) -> None:
+    """Stop a download from another thread. Closing the response does not wake a read blocked on the
+    socket, so shut the socket down first (requests -> urllib3 -> http.client -> socket)."""
+    import socket as _socket
+    sock = None
+    try:
+        sock = resp.raw._fp.fp.raw._sock
+    except AttributeError:
+        pass
+    if sock is not None:
+        try:
+            sock.shutdown(_socket.SHUT_RDWR)
+        except OSError:
+            pass
+    try:
+        resp.close()
+    except Exception:
+        pass
+
+
 def _store(folder: str, fresh: Dict[str, bytes], extra: Dict[str, bytes]) -> None:
     """New folder: write into a temporary folder, then rename it into place, so a failed run leaves nothing
     half-written. Existing folder: add only files that are missing, never writing over one."""
     files = {**fresh, **extra}
     if not os.path.isdir(folder):
-        tmp = f"{folder}.partial-{os.getpid()}"
-        os.makedirs(tmp)
-        for name, data in files.items():
-            _write(os.path.join(tmp, name), data)
-        os.rename(tmp, folder)
+        parent = os.path.dirname(folder)
+        os.makedirs(parent, exist_ok=True)
+        tmp = tempfile.mkdtemp(prefix=f".{os.path.basename(folder)}.partial-", dir=parent)
+        try:
+            for name, data in files.items():
+                _write(os.path.join(tmp, name), data)
+            os.rename(tmp, folder)
+        except BaseException:
+            shutil.rmtree(tmp, ignore_errors=True)
+            raise
         return
     for name, data in files.items():
         _write(os.path.join(folder, name), data)
