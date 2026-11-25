@@ -102,7 +102,7 @@ training.
 - if_wrong: voice tuning on the briefings goes ahead, subject to the legal-error gate.
 
 ### A3: The 208 briefings teach voice without teaching wrong law
-They carry no section numbers, and 4 overstate a fine. Once the 4 are fixed, the rest
+They carry no section numbers. Three overstate a fine and one makes an unsourced claim. Once the 4 are fixed, the rest
 are assumed to hold no other legal error.
 - validate_by: a second legal read of a random 30 of the 204 others, and the invented
   term check run over all 208 (T7). Before any training.
@@ -112,11 +112,13 @@ are assumed to hold no other legal error.
 - validate_by: Dilip confirms on the decision sheet (D0).
 - if_wrong: the client list in the spec changes; the engine does not.
 
-### A5: Questions to the engine may contain personal data, and India hosting is preferred but not required by the Act
-Section 16 lets the Central Government restrict transfers to countries it notifies.
-Whether any country is notified today has to be checked in the law lane before a
-non-India host is used.
-- validate_by: check the notifications in the law lane before D1 is signed (T1).
+### A5: Questions may contain personal data; does the law require them to stay in India?
+Section 16 lets the Central Government restrict transfers to countries it notifies, and
+section 16(2) keeps stricter sector rules in force. The Rules also have a provision on
+transfers outside India. Until these are checked in the law lane, India hosting is
+treated as preferred, and no conclusion is drawn.
+- validate_by: T1 checks section 16 notifications, the Rules' transfer provision and the
+  sector rules kept by section 16(2), before D1 is signed.
 - if_wrong: only India-region hosting options stay on the sheet.
 
 ### A6: Readability scores are a fair proxy for "an 8th-grader can read it"
@@ -127,8 +129,8 @@ non-India host is used.
 ## Success criterion
 
 - leading: on the live real-corpus eval, provision recall rises from 71% to at least
-  85%, with 100% of answers free of non-existent provisions and at least 3 of 4
-  withheld-support cases refused; checked from the eval report on the first run after
+  85%, with 100% of answers free of non-existent provisions and 4 of 4 withheld-support
+  cases refused (3 of 4 today); checked from the eval report on the first run after
   the retrieval tasks land.
 - lagging: of the 101 street questions, at most 5 get no answer (from 17), and blind
   readers prefer the new answers in at least 65% of pairs, with zero new legal errors

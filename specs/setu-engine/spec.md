@@ -105,6 +105,8 @@ Only `published` explainers are returned to clients; others return 404.
 | 400 | question missing, too short or too long; unknown audience or format | `{"error": "invalid_request", "field": "..."}` |
 | 401 | missing or unknown client key | `{"error": "unauthorized"}` |
 | 429 | client over its rate limit | `{"error": "rate_limited"}`, `Retry-After` header |
+| 404 | explainer not found or not published | `{"error": "not_found"}` |
+| 500 | unexpected engine failure | `{"error": "internal"}`; the trace id is logged |
 | 503 | answer model or retrieval store unreachable | `{"error": "unavailable"}`, `Retry-After` header |
 
 ## System context
@@ -158,7 +160,7 @@ untrusted until checked); explainer drafts to publishing (a human signs each one
 | # | Risk | Type | Mitigation | Status | Tested by |
 |---|---|---|---|---|---|
 | K1 | The answer model invents a term or provision | failure | Checker refuses any claim whose quote, id or legal term is not in the law lane | mitigated | AC4, AC5 |
-| K2 | A question carries an instruction to ignore the law or reveal the prompt | security | Input guard refuses known patterns; the model sees provisions only; the checker runs whatever the model says | mitigated | AC9 |
+| K2 | A question carries an instruction to ignore the law or reveal the prompt | security | Input guard refuses known patterns; the model sees provisions only; the checker checks whatever the model writes | mitigated | AC9 |
 | K3 | Questions with personal data leave India | privacy | D1 prefers an India-region option; logs drop card and PAN-like strings | open | AC10, D1 |
 | K4 | Voice tuning teaches the overstated fines in 4 briefings | failure | The 4 are fixed and the invented-term check runs over the set before any training | mitigated | AC12 |
 | K5 | A plain-English sentence drifts from what the law says | failure | Each sentence carries its gazette quote; a human signs each explainer | mitigated | AC14, AC15 |
@@ -207,24 +209,26 @@ untrusted until checked); explainer drafts to publishing (a human signs each one
 - traces: G2
 - given: any answered response
 - when: the checker runs
-- then: every `claims[].quote` is found verbatim in the official text of its URN; a
-  response with even one missing quote is returned as `refused` with code `check_failed`
+- then: every `claims[].quote` is one unbroken run of at least 6 words found, with exact
+  case and only whitespace normalised, in the official text of its URN; a quote with "…",
+  "..." or any elision fails; a response with even one failing quote is returned as `refused` with code `check_failed`
   and the failed claim is in the log
 
 ### AC5: No invented provisions or terms
 - traces: G2
 - given: an answer that names a section, rule, penalty amount or capitalised legal term
 - when: the checker runs
-- then: a section or rule that does not exist, an amount not in the Schedule, or a legal
-  term not found in the law lane (for example "Data Personal Breach Inquiry") turns the
-  response into `refused/check_failed`
+- then: a section or rule that does not exist, an amount not in the Schedule, or a
+  capitalised legal term found neither in the law lane nor on the reviewed allowlist of
+  names (such as India, RBI, Aadhaar, SaralPrivacy) turns the response into
+  `refused/check_failed`; "Data Personal Breach Inquiry" fails, "RBI" passes
 
 ### AC6: The engine refuses when the law does not answer
 - traces: G3
 - given: the 4 withheld-support cases and 10 out-of-scope questions (foreign law,
   traffic fines, a company's own revenue)
 - when: they are sent
-- then: at least 3 of 4 withheld cases and 10 of 10 out-of-scope questions are refused
+- then: 4 of 4 withheld cases and 10 of 10 out-of-scope questions are refused
   with the right code and a reason the reader can follow
 
 ### AC7: Answers say when duties start
@@ -276,7 +280,8 @@ untrusted until checked); explainer drafts to publishing (a human signs each one
   (prompt-only or tuned)
 - when: two blind readers compare each pair and the live eval is run with the chosen
   voice
-- then: the chosen voice wins at least 65% of pairs, and recall, no-nonexistent-provision
+- then: the chosen voice wins at least 65% of pairs (each held-out briefing becomes one
+  question, drafted from its headline and edited by Dilip before the test), and recall, no-nonexistent-provision
   and refusal scores are no lower than with the current voice
 
 ### AC14: Every explainer sentence points to gazette words
@@ -305,6 +310,29 @@ untrusted until checked); explainer drafts to publishing (a human signs each one
 - when: Dilip reads it
 - then: each choice D0–D6 has a recommendation, at least one alternative, a cost with
   its source and date, the main risk, and an empty yes/no line
+
+### AC18: The answer text holds no unchecked legal statement
+- traces: G2
+- given: an answered response
+- when: the checker runs
+- then: `answer` is built only from the `claims[].text` sentences plus connecting
+  sentences; a connecting sentence that names a section, rule, amount, deadline or
+  capitalised legal term fails the response as `refused/check_failed`
+
+### AC19: Each answer's cost is logged and old logs are deleted
+- traces: G1
+- given: answered and refused requests over time
+- when: each request completes, and when the daily clean-up runs
+- then: the log line carries input tokens, output tokens and USD cost; log lines older
+  than 90 days are gone after the next clean-up, and the clean-up logs how many it removed
+
+### AC20: The chatbot can stream and follow up
+- traces: G1
+- given: a chat client that sends a `conversation_id` and asks for a stream
+- when: it sends a follow-up such as "what about children?"
+- then: the first words arrive within 2 s; retrieval uses the follow-up plus the previous
+  question only (no earlier answers); claims are checked before the stream is marked
+  final, and a failed check replaces the streamed text with the refusal
 
 ## Non-functional
 

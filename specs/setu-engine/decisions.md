@@ -55,7 +55,7 @@ All prices were retrieved on 2026-11-25. Each answer is costed at the measured m
 |---|---|---|---|---|---|
 | **A. gpt-oss-120b on Amazon Bedrock, Mumbai (recommended)** | 0.18 / 0.71 | **$0.73** | Yes: the AWS card lists ap-south-1 as "In-Region" | Apache-2.0, open weights | [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-oss-120b.html), [Bedrock pricing](https://aws.amazon.com/bedrock/pricing/) (price feed, Mumbai) |
 | B. gpt-oss-20b on Bedrock, Mumbai | 0.08 / 0.35 | $0.34 | Yes, as for A | Apache-2.0 | [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-oss-20b.html), same pricing page |
-| C. Claude Haiku 5.5 (Anthropic API, or Bedrock Global) | 0.10 / 0.50 | $0.45 ($0.495 if pinned to the US) | No: Bedrock Mumbai and Hyderabad offer "Global" only, and the API's geo setting is "global" or "us" | Proprietary API, cannot be fine-tuned by us | [Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing), [Bedrock regions](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#regions), [data residency](https://platform.claude.com/docs/en/manage-claude/data-residency) |
+| C. Claude Haiku 5.5 (Anthropic API, or Bedrock Global) | 0.10 / 0.50 | $0.45 ($0.495 if pinned to the US) | No: Bedrock Mumbai and Hyderabad offer "Global" only, and the API's geo setting is "global" or "us" | Proprietary API; this plan has no way to tune it (not checked further) | [Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing), [Bedrock regions](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#regions), [data residency](https://platform.claude.com/docs/en/manage-claude/data-residency) |
 | Baseline today: gpt-4o-mini on OpenRouter | 0.15 / 0.60 | $0.62 | No | Proprietary | [OpenRouter endpoints](https://openrouter.ai/api/v1/models/openai/gpt-4o-mini/endpoints) |
 | Not recommended: gpt-oss-120b through OpenRouter, cheapest provider | 0.03 / 0.15 | $0.14 | No endpoint is tagged India | Apache-2.0 | [OpenRouter endpoints](https://openrouter.ai/api/v1/models/openai/gpt-oss-120b/endpoints) |
 | Not recommended: Claude Sonnet 5.5 | 2 / 10 | $9.00 | No | Proprietary | [Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
@@ -71,8 +71,11 @@ candidate before anything is switched over.
 **Two caveats:**
 - gpt-oss counts its reasoning as output tokens, so real output may be well above 400.
   T2 measures actual tokens. Even at 3× the output, A stays under $1.60 per 1,000.
-- Before A's India hosting can be called a requirement, T1 checks in the law lane
-  whether any country is notified under section 16 (assumption A5).
+- Before India hosting can be called a requirement, T1 checks the law lane: section 16
+  notifications, the Rules' provision on transfers outside India, and sector rules that
+  section 16(2) keeps in force (assumption A5).
+
+Hosting check result: [NEED: T1 fills this in before you sign D1]
 
 **Why A:** it is the only strong option that keeps questions, which may hold personal
 data, inside India. It is open-weight, so a voice adapter (D3) can be trained on its
@@ -80,9 +83,15 @@ smaller sibling. It is near the price of today's model. C may write better and c
 less. If you rule that hosting in India is not needed, T2's bake-off decides between A
 and C on the eval.
 
-**Rule for the bake-off (T2):** pick the cheapest India-hosted option that scores within
-3 points of the best option on recall and refusals, with zero non-existent provisions.
-If C beats both India options by more than 5 points, this sheet comes back to you.
+**Rule for the bake-off (T2):** every option must have zero non-existent provisions. Pick
+the cheapest India-hosted option that scores within 3 points of the best option on
+recall and refusals. If no India-hosted option is within 3 points, this sheet comes back
+to you with the numbers.
+
+**Linked to D3:** if you also say yes to tuning in D3 and tuning wins, answers move from
+120b to gpt-oss-20b plus the adapter. That reader must pass the same rule, and must be
+servable from Mumbai (T10 checks). If it cannot be served from Mumbai, D3 comes back to
+you.
 
 - [ ] Yes: A, decided by the T2 bake-off against B and C under the rule above
 - [ ] Yes, but India hosting is not required: let T2 choose freely among A, B and C
@@ -91,7 +100,8 @@ If C beats both India options by more than 5 points, this sheet comes back to yo
 ## D2: Which three retrieval changes first?
 
 What exists today: Pinecone vector search returns the top 5 objects. A BM25 word search
-(keyword_ranker.py) runs only when Pinecone is down. The 64-case real-corpus eval
+(keyword_ranker.py) runs only as a fallback: when Pinecone is down, unconfigured, or
+returns no match above its score floor. The 64-case real-corpus eval
 (evals/runner.py) scores offline recall at 44.7%, full recall at 25%, and 72.5% of the
 expected objects retrieved. Live recall after PR #9 is 71%. Answers were withheld in 17
 of the 101 street questions.
@@ -187,7 +197,10 @@ flag (T16), and switches over only after the live eval and the street set pass.
 ## D6: Order of work and what needs you
 
 Order: T1, T2 and T8 first (the facts, the bake-off and the checker), then retrieval
-(T3–T6), the interface (T11, T12, T16), voice (T7, T9, T10) and explainers (T13–T15).
+(T3–T6), refusals (T17), the interface (T11, T12, T16, T18, T19), voice (T7, T9, T10)
+and explainers (T13–T15). The project rules still describe GPT-OSS as "a retrieval
+model over the graph, not weight training"; PR #12 updates them to the voice-only
+wording, so no rules change is made here.
 You are needed for: every live eval run (cents each), the glossary review, the voice
 prompt text, the 4 briefing fixes, explainer sign-off, the explainer table migration and
 any training run.

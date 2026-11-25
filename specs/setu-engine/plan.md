@@ -60,20 +60,22 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - risk: tier1
 - size: S
 - complexity: 4
-- verify: test "$(grep -c '^- \[ \] Yes' specs/setu-engine/decisions.md)" -ge 7 && ! grep -n 'TBD' specs/setu-engine/decisions.md
+- verify: grep -q '^Hosting check result: ' specs/setu-engine/decisions.md && ! grep -q 'Hosting check result: \[NEED' specs/setu-engine/decisions.md
 - notes: use PR #12's official-source registry (sources/official.yaml) once merged. Check
-  from the law lane whether any country is notified under section 16
-  before writing D1's residency line (A5). Every price needs its URL and retrieval date.
+  the law lane for section 16 notifications, the Rules' provision on transfers outside India
+  and the sector rules kept by section 16(2), and write the result on D1's "Hosting check
+  result" line (A5). Every price needs its URL and retrieval date.
 
 ### T2: Add a reader-model switch to the real-corpus eval and run the bake-off
-- implements: AC2, AC6
+- implements: AC2
 - depends_on: none
 - files: evals/runner.py, evals/real_corpus.py, evals/test_real_corpus.py, evals/reports/
 - risk: tier2
 - size: S
 - complexity: 4
-- verify: python3 -m pytest evals/test_real_corpus.py -q
-- notes: add `--chat-model` and record the model in the report. The live runs cost cents
+- verify: python3 -m pytest evals/test_real_corpus.py -q -k chat_model
+- notes: write `test_chat_model_flag_recorded_in_report` first. Add `--chat-model`, record
+  tokens and latency (p50, p95) per model, and record the model in the report. The live runs cost cents
   each through OpenRouter (`OPENAI_API_KEY= ... --live --price-in ... --price-out ...`);
   Dilip opts in to each live run. Retrieval stays fixed so A1 can be tested.
 
@@ -110,10 +112,10 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - notes: hard part is the token budget: expansion may add at most 3 objects and must keep
   the prompt under 4,000 tokens. Carry `in_force_from` from the law files onto each claim.
 
-### T6: Add the street-word rewriter and commit the 101-question street set
+### T6: Add the street-word rewriter and a gitignored street-question eval
 - implements: AC3
 - depends_on: T3
-- files: deployments/dpdpa-backend/src/reasoning/query_rewriter.py, deployments/dpdpa-backend/src/reasoning/street_glossary.json, evals/street_questions.jsonl, deployments/dpdpa-backend/src/tests/test_query_rewriter.py
+- files: deployments/dpdpa-backend/src/reasoning/query_rewriter.py, deployments/dpdpa-backend/src/reasoning/street_glossary.json, evals/street_eval.py, deployments/dpdpa-backend/src/tests/test_query_rewriter.py
 - risk: tier1
 - size: M
 - complexity: 6
@@ -124,8 +126,10 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
   `classified-street.csv` in the JV Creatives Content-Intelligence cluster
   20261002-001 (iCloud; may need downloading). The 2026-11-25 match against the 511
   answers found 56 answered, 9 partial, 17 site page, 17 no match and 2 dropped. Both files
-  are market-lane data: commit the question text only, never anything taken from a
-  competitor page. The 17 no-match and 9 partial questions are the first test cases.
+  are market-lane data, so the questions stay gitignored under `staging/` and
+  `evals/street_eval.py` reads them from there; nothing from them or from competitor
+  pages is committed. Glossary entries are written from the law text by us, not lifted
+  from the questions' sources. The 17 no-match and 9 partial questions are the first test cases.
 
 ### T7: Build the clean voice set from the briefings
 - implements: AC12
@@ -139,18 +143,22 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
   (gitignored; never commit the data). The script refuses to build while any of the 4
   dates in REVIEW-BEFORE-PUBLISHING.md (2026-05-13, 06-04, 08-31, 09-30) still holds its
   flagged claim. Runs the T8 lexicon over every row. Writes 168 train and 40 held-out rows
-  to the gitignored staging folder.
+  to the gitignored staging folder. For each held-out briefing, draft one question from its headline
+  for Dilip to edit; those 40 questions are AC13's test set.
 
 ### T8: Check every claim against the law lane before an answer leaves
-- implements: AC4, AC5, AC9
+- implements: AC4, AC5, AC9, AC18
 - depends_on: none
 - files: deployments/dpdpa-backend/src/reasoning/claim_checker.py, deployments/dpdpa-backend/src/reasoning/guardrails.py, deployments/dpdpa-backend/src/tests/test_claim_checker.py
 - risk: tier1
 - size: M
 - complexity: 6
 - verify: cd deployments/dpdpa-backend && python3 -m pytest src/tests/test_claim_checker.py src/tests/test_hardening.py -q
-- notes: reuse the verbatim-quote matching in schemas/corpus_contract.py, do not write a
-  second one. PR #12 (feat/official-sources-t1-t2, unmerged) makes the contract reject
+- notes: the matcher in schemas/corpus_contract.py (lines 59-66) is case-insensitive and
+  accepts "…" elision, which can splice a "not" out of a sentence. Add a strict mode to it
+  (exact case, no elision, at least 6 words) rather than a second matcher, and test the
+  spliced-"not" case. Keep a reviewed allowlist of names (India, RBI, Aadhaar,
+  SaralPrivacy) for the term check. PR #12 (feat/official-sources-t1-t2, unmerged) makes the contract reject
   evidence from unregistered sources and adds the official-source registry; build on it
   after it merges, do not copy it. Test cases must include "Data Personal Breach Inquiry", a fine of ₹300
   crore, and "Section 45".
@@ -228,7 +236,7 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - risk: tier2
 - size: S
 - complexity: 3
-- verify: test -s evals/explainer_comprehension.md && grep -q 'Result:' evals/explainer_comprehension.md
+- verify: grep -Eq '^Result: [0-9]+ of 30 answers correct' evals/explainer_comprehension.md
 - notes: two readers outside law, three questions each; tests A6.
 
 ### T16: Point the wiki's Ask at `/v1/answer` behind a flag
@@ -238,6 +246,41 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - risk: tier2
 - size: S
 - complexity: 4
-- verify: cd deployments/dpdpa-wiki && npm run build
+- verify: cd deployments/dpdpa-wiki && npm run build && grep -q 'VITE_ASK_V1' src/lib/api.js
 - notes: default the flag off; the old path stays until the live eval and street set pass
   on the new one. Other clients follow the same contract in their own repos.
+
+### T17: Add the out-of-scope set and the refusal codes
+- implements: AC6
+- depends_on: T8
+- files: evals/out_of_scope.jsonl, deployments/dpdpa-backend/src/reasoning/guardrails.py, deployments/dpdpa-backend/src/tests/test_refusal_codes.py
+- risk: tier1
+- size: S
+- complexity: 4
+- verify: cd deployments/dpdpa-backend && python3 -m pytest src/tests/test_refusal_codes.py -q
+- notes: 10 questions we write ourselves (foreign law, traffic fines, a company's revenue,
+  "is my company compliant?"). Map existing refusal reasons to `out_of_scope`,
+  `not_in_law`, `needs_advice` and `check_failed`.
+
+### T18: Log cost per answer and delete logs after 90 days
+- implements: AC19
+- depends_on: T11
+- files: deployments/dpdpa-backend/src/api/api_service.py, deployments/dpdpa-backend/src/storage/db_client.py, deployments/dpdpa-backend/src/tests/test_log_retention.py
+- risk: tier1
+- size: S
+- complexity: 5
+- verify: cd deployments/dpdpa-backend && python3 -m pytest src/tests/test_log_retention.py -q
+- notes: prices per model come from config, not code. The clean-up is a scheduled job;
+  Dilip turns it on in production.
+
+### T19: Stream chat answers and support follow-ups
+- implements: AC20
+- depends_on: T11, T8
+- files: deployments/dpdpa-backend/src/api/v1_answer.py, deployments/dpdpa-backend/src/reasoning/reasoning_engine.py, deployments/dpdpa-backend/src/tests/test_v1_stream.py
+- risk: tier1
+- size: M
+- complexity: 7
+- verify: cd deployments/dpdpa-backend && python3 -m pytest src/tests/test_v1_stream.py -q
+- notes: hard part: the checker can only run once the claims are complete, so the stream
+  must be marked provisional and replaced by the refusal if a check fails. The engine
+  keeps only the previous question per conversation, for at most 30 minutes.
