@@ -14,7 +14,7 @@ Today each place that answers a DPDPA question would need its own way of doing i
 only the wiki's Ask has one. Its answers are grounded in the Act and the Rules, but it
 finds the right provision for only part of each question: on the 64-case real-corpus
 eval it recalls 44.7% of the expected provisions offline and 71% live. On a 101-question
-set of street questions, 17 got no answer at all.
+set of street questions, 17 matched no answer at all and 9 only partly.
 
 Answers written freely by a general model are not safe: earlier gpt-4o drafts invented
 legal terms such as "Data Personal Breach Inquiry", which appear nowhere in the law.

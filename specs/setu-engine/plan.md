@@ -120,8 +120,12 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - verify: cd deployments/dpdpa-backend && python3 -m pytest src/tests/test_query_rewriter.py -q
 - notes: the rewriter adds law terms to the query; it never removes words and never adds
   a fact. Each glossary entry maps to a term that occurs in the Act or Rules text (the
-  test checks this). Dilip reviews the glossary (Ask first). The 17 unanswered street
-  questions are the first test cases.
+  test checks this). Dilip reviews the glossary (Ask first). Source of the questions:
+  `classified-street.csv` in the JV Creatives Content-Intelligence cluster
+  20261002-001 (iCloud; may need downloading). The 2026-11-25 match against the 511
+  answers found 56 answered, 9 partial, 17 site page, 17 no match and 2 dropped. Both files
+  are market-lane data: commit the question text only, never anything taken from a
+  competitor page. The 17 no-match and 9 partial questions are the first test cases.
 
 ### T7: Build the clean voice set from the briefings
 - implements: AC12
