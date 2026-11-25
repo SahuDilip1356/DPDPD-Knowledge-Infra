@@ -30,7 +30,7 @@ from datetime import date
 from html.parser import HTMLParser
 from typing import Callable, Dict, List, Optional
 from urllib import robotparser
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -60,8 +60,14 @@ HEX64 = re.compile(r"^[a-f0-9]{64}$")
 
 USER_AGENT = "SaralPrivacy-KnowledgeInfra/1.0 (+https://dpdpa.wiki; official-source fetcher)"
 MAX_BYTES = 25 * 1024 * 1024
+ROBOTS_MAX_BYTES = 512 * 1024
+MAX_PAGES = 2000
+MAX_HOPS = 5
 MIN_GAP_SECONDS = 1.0
-TIMEOUT = 60
+TIMEOUT = 60             # per socket read
+DEADLINE_SECONDS = 300   # whole download
+REDIRECTS = (301, 302, 303, 307, 308)
+CHARSETS = {"utf-8", "utf8", "us-ascii", "ascii", "iso-8859-1", "latin-1", "windows-1252"}
 
 
 class RegistryError(ValueError):
@@ -75,7 +81,11 @@ def url_allowed(authority: str, url: str) -> bool:
     except ValueError:
         return False
     host = (parts.hostname or "").lower().rstrip(".")
-    if parts.scheme != "https" or not host or parts.username or parts.password:
+    try:
+        port = parts.port
+    except ValueError:
+        return False
+    if parts.scheme != "https" or not host or parts.username or parts.password or port not in (None, 443):
         return False
     return any(host == d or host.endswith("." + d) for d in AUTHORITIES.get(authority, ()))
 
@@ -87,9 +97,9 @@ def _check_entry(e: Dict, n: int) -> List[str]:
     problems = [f"{where}: missing {k}" for k in REQUIRED if not e.get(k)]
     if problems:
         return problems
-    if not ID_RE.match(str(e["id"])):
+    if not ID_RE.fullmatch(str(e["id"])):
         problems.append(f"{where}: id must be lowercase letters, digits and hyphens")
-    if not URN_RE.match(str(e["urn"])):
+    if not URN_RE.fullmatch(str(e["urn"])):
         problems.append(f"{where}: urn {e['urn']!r} is not urn:ki:in:dpdp:source:<id>")
     if e["authority"] not in AUTHORITIES:
         problems.append(f"{where}: unknown authority {e['authority']!r}")
@@ -109,10 +119,10 @@ def _check_entry(e: Dict, n: int) -> List[str]:
     if method == "manual" and not e.get("reviewed_by"):
         problems.append(f"{where}: text_method manual needs reviewed_by")
     for key in ("sha256", "text_sha256"):
-        if e.get(key) is not None and not HEX64.match(str(e[key])):
+        if e.get(key) is not None and not HEX64.fullmatch(str(e[key])):
             problems.append(f"{where}: {key} is not a 64-character hex digest")
     issued = e.get("issued_on")
-    if issued is not None and not isinstance(issued, date) and not re.match(r"^\d{4}-\d{2}-\d{2}$", str(issued)):
+    if issued is not None and not isinstance(issued, date) and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(issued)):
         problems.append(f"{where}: issued_on must be YYYY-MM-DD")
     return problems
 
@@ -183,8 +193,11 @@ def html_text(body: bytes, charset: str = "utf-8") -> str:
 
 
 def pdf_text(body: bytes) -> str:
+    """Extracted text; empty when the PDF is over the page cap (it then needs manual text)."""
     from pypdf import PdfReader
     reader = PdfReader(io.BytesIO(body))
+    if len(reader.pages) > MAX_PAGES:
+        raise ValueError(f"pdf has {len(reader.pages)} pages, over the {MAX_PAGES}-page cap")
     return _tidy("\n".join((page.extract_text() or "") for page in reader.pages))
 
 
@@ -215,98 +228,161 @@ class Fetcher:
         self.last: Dict[str, float] = {}
         self.robots: Dict[str, robotparser.RobotFileParser] = {}
 
-    def _get(self, url: str, **kwargs):
+    def _get(self, url: str):
+        """One request, never following redirects, at least MIN_GAP_SECONDS after the last one to this host."""
         host = urlsplit(url).hostname
         if host in self.last:
             wait = MIN_GAP_SECONDS - (self.clock() - self.last[host])
             if wait > 0:
                 self.sleep(wait)
         try:
-            return self.session.get(url, timeout=TIMEOUT, **kwargs)
+            return self.session.get(url, timeout=TIMEOUT, stream=True, allow_redirects=False)
         finally:
             self.last[host] = self.clock()
 
-    def _robots_allow(self, url: str) -> bool:
-        parts = urlsplit(url)
-        host = parts.hostname
-        if host not in self.robots:
-            rp = robotparser.RobotFileParser()
-            try:
-                resp = self._get(f"https://{host}/robots.txt")
-                if resp.status_code in (401, 403):
-                    rp.disallow_all = True
-                elif resp.status_code < 400:
-                    rp.parse(resp.text.splitlines())
-                else:
-                    rp.allow_all = True
-            except Exception:
-                rp.allow_all = True  # unreachable robots.txt: the standard reading is "no rules"
-            self.robots[host] = rp
-        return self.robots[host].can_fetch(USER_AGENT, url)
+    def _follow(self, authority: str, url: str):
+        """(response, problem). Each hop is checked against the allowlist before it is requested."""
+        for _ in range(MAX_HOPS + 1):
+            if not url_allowed(authority, url):
+                return None, f"{url} is off the {authority} allowlist"
+            resp = self._get(url)
+            if resp.status_code not in REDIRECTS:
+                return resp, None
+            location = resp.headers.get("Location")
+            resp.close()
+            if not location:
+                return None, f"HTTP {resp.status_code} without a Location"
+            url = urljoin(url, location)
+        return None, f"more than {MAX_HOPS} redirects"
 
-    def _download(self, e: Dict):
-        """(body, content_type, problem). The whole redirect chain must stay on the allowlist."""
-        resp = self._get(e["url"], stream=True, allow_redirects=True)
+    def _read(self, resp, cap: int = MAX_BYTES):
+        """(body, problem), within the size cap and the whole-download deadline."""
         try:
-            for hop in [*getattr(resp, "history", []), resp]:
-                if not url_allowed(e["authority"], hop.url):
-                    return None, None, f"redirected off the allowlist to {urlsplit(hop.url).hostname}"
-            if resp.status_code >= 400:
-                return None, None, f"HTTP {resp.status_code}"
             declared = resp.headers.get("Content-Length")
-            if declared and declared.isdigit() and int(declared) > MAX_BYTES:
-                return None, None, "response is over 25 MB"
+            if declared and declared.isdigit() and int(declared) > cap:
+                return None, f"response is over {cap // (1024 * 1024) or cap} {'MB' if cap >= 1024 * 1024 else 'bytes'}"
+            deadline = self.clock() + DEADLINE_SECONDS
             body = bytearray()
             for chunk in resp.iter_content(chunk_size=65536):
                 body += chunk
-                if len(body) > MAX_BYTES:
-                    return None, None, "response is over 25 MB"
-            return bytes(body), resp.headers.get("Content-Type", ""), None
+                if len(body) > cap:
+                    return None, f"response is over {cap // (1024 * 1024) or cap} {'MB' if cap >= 1024 * 1024 else 'bytes'}"
+                if self.clock() > deadline:
+                    return None, f"download took longer than {DEADLINE_SECONDS} s"
+            return bytes(body), None
         finally:
             resp.close()
 
+    def _robots_allow(self, authority: str, url: str) -> bool:
+        host = urlsplit(url).hostname
+        if host not in self.robots:
+            rp = robotparser.RobotFileParser()
+            rp.allow_all = True  # no readable robots.txt: the standard reading is "no rules"
+            try:
+                resp, problem = self._follow(authority, f"https://{host}/robots.txt")
+                if resp is not None:
+                    if resp.status_code in (401, 403):
+                        rp.allow_all, rp.disallow_all = False, True
+                        resp.close()
+                    elif resp.status_code < 400:
+                        body, problem = self._read(resp, ROBOTS_MAX_BYTES)
+                        if body is not None:
+                            rp.allow_all = False
+                            rp.parse(body.decode("utf-8", errors="replace").splitlines())
+                    else:
+                        resp.close()
+            except Exception:
+                pass
+            self.robots[host] = rp
+        return self.robots[host].can_fetch(USER_AGENT, url)
+
+    def _extract(self, body: bytes, ctype: str):
+        """(ext, method, text, problem); ext None means refused."""
+        if body.startswith(b"%PDF") or "pdf" in ctype.lower():
+            try:
+                return "pdf", "pdf", pdf_text(body), None
+            except Exception as exc:  # malformed or oversized: a manual case, never a crash
+                return "pdf", "pdf", "", f"pdf text not extracted: {exc if isinstance(exc, ValueError) else type(exc).__name__}"
+        if "html" in ctype.lower():
+            found = re.search(r"charset=([\w-]+)", ctype, re.I)
+            charset = (found.group(1) if found else "utf-8").lower()
+            if charset not in CHARSETS:
+                return None, None, "", f"charset {charset!r} is not accepted"
+            return "html", "html", html_text(body, charset), None
+        return None, None, "", f"unsupported content type {ctype!r}"
+
     def fetch(self, e: Dict) -> Result:
-        rid = e["id"]
-        if not url_allowed(e.get("authority", ""), e.get("url", "")):
-            return Result(rid, "refused", f"{e.get('url')} is not on the {e.get('authority')} allowlist")
-        if not self._robots_allow(e["url"]):
+        rid = str(e.get("id"))
+        problems = _check_entry(e, 0)
+        if problems:
+            return Result(rid, "refused", "; ".join(problems))
+        if not self._robots_allow(e["authority"], e["url"]):
             return Result(rid, "refused", "robots.txt disallows this URL")
-        body, ctype, problem = self._download(e)
+        resp, problem = self._follow(e["authority"], e["url"])
+        if problem:
+            return Result(rid, "refused", problem)
+        if resp.status_code >= 400:
+            resp.close()
+            return Result(rid, "refused", f"HTTP {resp.status_code}")
+        ctype = resp.headers.get("Content-Type", "")
+        body, problem = self._read(resp)
         if problem:
             return Result(rid, "refused", problem)
 
         file_hash = sha256(body)
         folder = os.path.join(self.out_root, rid)
-        existing = [n for n in os.listdir(folder) if n.startswith("source.")] if os.path.isdir(folder) else []
+        names = os.listdir(folder) if os.path.isdir(folder) else []
+        sources = [n for n in names if n.startswith("source.")]
+        if names and not sources:
+            return Result(rid, "refused", f"incomplete folder {folder}: it has no source file; remove it and retry")
         stored_hash = e.get("sha256")
-        if not stored_hash and existing:
-            with open(os.path.join(folder, existing[0]), "rb") as f:
+        if not stored_hash and sources:
+            with open(os.path.join(folder, sources[0]), "rb") as f:
                 stored_hash = sha256(f.read())
-        if stored_hash:
-            if stored_hash == file_hash:
-                return Result(rid, "unchanged", "", file_hash, e.get("text_sha256"), e.get("text_method"))
+
+        if stored_hash and stored_hash != file_hash:
             return Result(rid, "changed", f"file hash is now {file_hash}; registered {stored_hash}", file_hash)
 
-        if body.startswith(b"%PDF") or "pdf" in ctype.lower():
-            ext, method = "pdf", "pdf"
-            try:
-                text = pdf_text(body)
-            except Exception as exc:  # a malformed PDF is a manual case, never a crash
-                text = ""
-                problem = f"pdf text extraction failed: {type(exc).__name__}"
-        elif "html" in ctype.lower():
-            charset = (re.search(r"charset=([\w-]+)", ctype) or [None, "utf-8"])[1]
-            ext, method, text = "html", "html", html_text(body, charset)
-        else:
-            return Result(rid, "refused", f"unsupported content type {ctype!r}")
+        ext, method, text, problem = self._extract(body, ctype)
+        if ext is None:
+            return Result(rid, "refused", problem)
 
-        os.makedirs(folder, exist_ok=True)
-        _write(os.path.join(folder, f"source.{ext}"), body)
+        if stored_hash:  # unchanged: check what is on disk, and restore what is missing
+            text_path, want = os.path.join(folder, "text.txt"), e.get("text_sha256")
+            if os.path.exists(text_path):
+                with open(text_path, encoding="utf-8") as f:
+                    if want and sha256(f.read()) != want:
+                        return Result(rid, "changed", "text.txt on disk does not match text_sha256", file_hash)
+            missing = {} if sources else {f"source.{ext}": body}
+            if not os.path.exists(text_path) and want:
+                if sha256(text) != want:
+                    return Result(rid, "changed", "extracted text no longer matches text_sha256", file_hash)
+                missing["text.txt"] = text.encode("utf-8")
+            if missing:
+                _store(folder, missing, {})
+            return Result(rid, "unchanged", "", file_hash, want, e.get("text_method"))
+
         if not text.strip():
+            _store(folder, {f"source.{ext}": body}, {})
             return Result(rid, "needs_manual", problem or "no extractable text; register with text_method: manual",
                           file_hash, None, None)
-        _write(os.path.join(folder, "text.txt"), text.encode("utf-8"))
+        _store(folder, {f"source.{ext}": body, "text.txt": text.encode("utf-8")}, {})
         return Result(rid, "stored", "", file_hash, sha256(text), method)
+
+
+def _store(folder: str, fresh: Dict[str, bytes], extra: Dict[str, bytes]) -> None:
+    """New folder: write into a temporary folder, then rename it into place, so a failed run leaves nothing
+    half-written. Existing folder: add only files that are missing, never writing over one."""
+    files = {**fresh, **extra}
+    if not os.path.isdir(folder):
+        tmp = f"{folder}.partial-{os.getpid()}"
+        os.makedirs(tmp)
+        for name, data in files.items():
+            _write(os.path.join(tmp, name), data)
+        os.rename(tmp, folder)
+        return
+    for name, data in files.items():
+        _write(os.path.join(folder, name), data)
 
 
 def _write(path: str, data: bytes) -> None:

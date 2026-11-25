@@ -46,11 +46,15 @@ HTML = (b"<html><head><title>Notice</title><script>var tracker=1;</script><style
 
 
 class Response:
-    def __init__(self, url, body=b"", status=200, ctype="application/pdf", history=(), length=None):
+    def __init__(self, url, body=b"", status=200, ctype="application/pdf", history=(), length=None,
+                 location=None, on_chunk=None):
         self.url, self.status_code, self.history = url, status, list(history)
         self.headers = {"Content-Type": ctype}
         if length is not None:
             self.headers["Content-Length"] = str(length)
+        if location is not None:
+            self.headers["Location"] = location
+        self.on_chunk = on_chunk
         self._body = body
         self.text = body.decode("latin-1") if isinstance(body, bytes) else body
 
@@ -60,6 +64,8 @@ class Response:
 
     def iter_content(self, chunk_size=1):
         for i in range(0, len(self._body), chunk_size):
+            if self.on_chunk:
+                self.on_chunk()
             yield self._body[i:i + chunk_size]
 
     def close(self):
@@ -243,13 +249,102 @@ def test_an_unchanged_document_is_reported_unchanged(tmp_path):
     assert fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})).fetch(e).status == "unchanged"
 
 
-def test_redirect_off_the_allowlist_stores_nothing(tmp_path):             # E2.11
+@pytest.mark.parametrize("location", [
+    "https://evil.example/fake.pdf",
+    "http://169.254.169.254/latest/meta-data/",
+    "http://www.meity.gov.in/static/plain.pdf",          # same host, but not https
+    "https://www.meity.gov.in:8443/static/a.pdf",       # an unusual port
+])
+def test_redirect_off_the_allowlist_is_never_requested(tmp_path, location):  # E2.11, security F1
     e = entry()
-    hop = Response(e["url"], status=302)
-    final = Response("https://evil.example/fake.pdf", pdf_bytes("Fake."), history=[hop])
-    result = fetcher(tmp_path, Session({e["url"]: final})).fetch(e)
-    assert result.status == "refused" and "evil.example" in result.detail
+    evil = Response(location, pdf_bytes("Fake."))
+    session = Session({e["url"]: Response(e["url"], status=302, location=location), location: evil})
+    result = fetcher(tmp_path, session).fetch(e)
+    assert result.status == "refused" and "allowlist" in result.detail
+    assert location not in session.calls
     assert not (tmp_path / "store" / e["id"]).exists()
+
+
+def test_a_redirect_within_the_allowlist_is_followed(tmp_path):
+    e = entry()
+    target = "https://www.meity.gov.in/static/uploads/2025/11/moved.pdf"
+    session = Session({e["url"]: Response(e["url"], status=301, location="/static/uploads/2025/11/moved.pdf"),
+                       target: Response(target, pdf_bytes("Moved text."))})
+    assert fetcher(tmp_path, session).fetch(e).status == "stored"
+
+
+def test_redirect_loops_are_cut_off(tmp_path):
+    e = entry()
+    session = Session({e["url"]: Response(e["url"], status=302, location=e["url"])})
+    result = fetcher(tmp_path, session).fetch(e)
+    assert result.status == "refused" and "redirects" in result.detail
+
+
+def test_robots_redirect_off_the_allowlist_is_not_followed(tmp_path):     # security F1 variant
+    e = entry()
+    robots = "https://www.meity.gov.in/robots.txt"
+    session = Session({e["url"]: Response(e["url"], pdf_bytes("x")),
+                       robots: Response(robots, status=302, location="https://evil.example/huge")})
+    session.get = lambda url, **kw: (session.calls.append(url), session.routes[url])[1]
+    assert fetcher(tmp_path, session).fetch(e).status == "stored"
+    assert "https://evil.example/huge" not in session.calls
+
+
+def test_a_slow_download_is_cut_off(tmp_path):                            # security F3
+    e = entry()
+    clock = Clock()
+    slow = Response(e["url"], pdf_bytes("x") + b" " * 200_000, on_chunk=lambda: setattr(clock, "now", clock.now + 120))
+    result = fetcher(tmp_path, Session({e["url"]: slow}), clock).fetch(e)
+    assert result.status == "refused" and "took longer" in result.detail
+
+
+@pytest.mark.parametrize("ctype", ["text/html; charset=utf-7", "text/html; charset=no-such-codec"])
+def test_an_unexpected_charset_is_refused(tmp_path, ctype):               # security F4
+    e = entry(url="https://www.meity.gov.in/notice")
+    result = fetcher(tmp_path, Session({e["url"]: Response(e["url"], HTML, ctype=ctype)})).fetch(e)
+    assert result.status == "refused" and "charset" in result.detail
+
+
+def test_an_id_with_a_trailing_newline_is_refused(tmp_path):              # security F5
+    with pytest.raises(osrc.RegistryError):
+        osrc.load_registry(write_registry(tmp_path, [entry(id="abc\n")]))
+    assert fetcher(tmp_path, Session({})).fetch(entry(id="abc\n")).status == "refused"
+
+
+def test_a_fresh_clone_gets_its_files_back(tmp_path):                     # security A1
+    doc, e = pdf_bytes("Section 2 comes into force."), entry()
+    first = fetcher(tmp_path / "a", Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    e.update(sha256=first.sha256, text_sha256=first.text_sha256, text_method="pdf")
+    again = fetcher(tmp_path / "b", Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    folder = tmp_path / "b" / "store" / e["id"]
+    assert again.status == "unchanged"
+    assert sha((folder / "text.txt").read_text(encoding="utf-8")) == e["text_sha256"]
+
+
+def test_an_edited_text_file_is_reported(tmp_path):                       # security A1
+    doc, e = pdf_bytes("Section 2 comes into force."), entry()
+    first = fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    e.update(sha256=first.sha256, text_sha256=first.text_sha256, text_method="pdf")
+    text = tmp_path / "store" / e["id"] / "text.txt"
+    text.write_text("Section 2 never comes into force.\n", encoding="utf-8")
+    result = fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})).fetch(e)
+    assert result.status == "changed" and "text.txt" in result.detail
+
+
+def test_a_half_written_folder_is_reported_not_crashed(tmp_path):         # security A2
+    e = entry()
+    folder = tmp_path / "store" / e["id"]
+    folder.mkdir(parents=True)
+    (folder / "text.txt").write_text("left over", encoding="utf-8")
+    result = fetcher(tmp_path, Session({e["url"]: Response(e["url"], pdf_bytes("x"))})).fetch(e)
+    assert result.status == "refused" and "incomplete" in result.detail
+
+
+def test_a_pdf_over_the_page_cap_needs_manual_text(tmp_path, monkeypatch):  # security F2
+    monkeypatch.setattr(osrc, "MAX_PAGES", 0)
+    e = entry()
+    result = fetcher(tmp_path, Session({e["url"]: Response(e["url"], pdf_bytes("x"))})).fetch(e)
+    assert result.status == "needs_manual" and "pages" in result.detail
 
 
 def test_user_agent_names_the_project(tmp_path):                          # E2.12
