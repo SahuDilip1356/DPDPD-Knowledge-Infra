@@ -86,7 +86,7 @@ Live-store writes (T6) are run by the founder.
 
 ### T8 — Apply the Removal of Difficulties Order to the Act text
 - status: todo
-- implements: AC7, G1
+- implements: AC1
 - depends_on: T2
 - files: sources/official.yaml, src/competitive_intel/ground_truth.py,
          deployments/dpdpa-wiki/src/data/law/provisions.json,
