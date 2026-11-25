@@ -277,20 +277,22 @@ class Fetcher:
         host = urlsplit(url).hostname
         if host not in self.robots:
             rp = robotparser.RobotFileParser()
-            rp.allow_all = True  # no readable robots.txt: the standard reading is "no rules"
+            rp.disallow_all = True  # unreachable or 5xx: assume complete disallow (RFC 9309, 2.3.1.4)
             try:
                 resp, problem = self._follow(authority, f"https://{host}/robots.txt")
-                if resp is not None:
-                    if resp.status_code in (401, 403):
-                        rp.allow_all, rp.disallow_all = False, True
-                        resp.close()
-                    elif resp.status_code < 400:
-                        body, problem = self._read(resp, ROBOTS_MAX_BYTES)
-                        if body is not None:
-                            rp.allow_all = False
-                            rp.parse(body.decode("utf-8", errors="replace").splitlines())
-                    else:
-                        resp.close()
+                if resp is None:
+                    # robots.txt redirects off the allowlist: we cannot read it, so it counts as unavailable
+                    rp.disallow_all, rp.allow_all = False, True
+                elif resp.status_code in (401, 403) or resp.status_code >= 500:
+                    resp.close()
+                elif resp.status_code < 400:
+                    body, problem = self._read(resp, ROBOTS_MAX_BYTES)
+                    if body is not None:
+                        rp.disallow_all = False
+                        rp.parse(body.decode("utf-8", errors="replace").splitlines())
+                else:  # 4xx: unavailable, no rules apply
+                    resp.close()
+                    rp.disallow_all, rp.allow_all = False, True
             except Exception:
                 pass
             self.robots[host] = rp
@@ -360,7 +362,11 @@ class Fetcher:
                 missing["text.txt"] = text.encode("utf-8")
             if missing:
                 _store(folder, missing, {})
-            return Result(rid, "unchanged", "", file_hash, want, e.get("text_method"))
+            have = want
+            if not have and os.path.exists(text_path):
+                with open(text_path, encoding="utf-8") as f:
+                    have = sha256(f.read())
+            return Result(rid, "unchanged", "", file_hash, have, e.get("text_method") or (method if have else None))
 
         if not text.strip():
             _store(folder, {f"source.{ext}": body}, {})
@@ -397,10 +403,11 @@ HEADER = ("# Official sources in the law lane (spec specs/official-sources/spec.
 
 
 def record(path: str, results: List[Result]) -> List[str]:
-    """Write fetched hashes into entries that have none yet. Returns the ids updated."""
+    """Write fetched hashes into entries that have none yet, and never over existing ones.
+    The file is rewritten only when something changed, via a validated temporary file."""
     import yaml
     entries = load_registry(path)
-    by_id = {r.id: r for r in results if r.status in ("stored", "needs_manual")}
+    by_id = {r.id: r for r in results if r.sha256 and r.status in ("stored", "needs_manual", "unchanged")}
     updated = []
     for e in entries:
         r = by_id.get(e["id"])
@@ -409,10 +416,32 @@ def record(path: str, results: List[Result]) -> List[str]:
             if r.text_sha256:
                 e["text_sha256"], e["text_method"] = r.text_sha256, r.text_method
             updated.append(e["id"])
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(HEADER + (yaml.safe_dump(entries, sort_keys=False, allow_unicode=True) if entries else "[]\n"))
-    load_registry(path)
+    if not updated:
+        return []
+    tmp = f"{path}.tmp-{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(HEADER + yaml.safe_dump(entries, sort_keys=False, allow_unicode=True))
+    try:
+        load_registry(tmp)
+    except Exception:
+        os.remove(tmp)
+        raise
+    os.replace(tmp, path)
     return updated
+
+
+def run(path: str = REGISTRY_PATH, fetcher: Optional["Fetcher"] = None, ids: Optional[List[str]] = None):
+    """Fetch every active entry (or the given ids); one failure never stops the rest. Returns (results, updated)."""
+    fetcher = fetcher or Fetcher()
+    results = []
+    for e in load_registry(path):
+        if e["status"] != "active" or (ids and e["id"] not in ids):
+            continue
+        try:
+            results.append(fetcher.fetch(e))
+        except Exception as exc:
+            results.append(Result(e["id"], "refused", f"error: {type(exc).__name__}: {str(exc)[:160]}"))
+    return results, record(path, results)
 
 
 def main(argv=None) -> int:
@@ -427,12 +456,9 @@ def main(argv=None) -> int:
     if args.cmd == "check":
         print(f"registry: {len(entries)} entries conform")
         return 0
-    chosen = [e for e in entries if e["status"] == "active" and (not args.id or e["id"] in args.id)]
-    fetcher = Fetcher()
-    results = [fetcher.fetch(e) for e in chosen]
+    results, updated = run(REGISTRY_PATH, ids=args.id)
     for r in results:
         print(f"{r.status:12s} {r.id}  {r.detail}")
-    updated = record(REGISTRY_PATH, results)
     print(f"recorded hashes for {len(updated)} entries")
     return 1 if any(r.status == "changed" for r in results) else 0
 

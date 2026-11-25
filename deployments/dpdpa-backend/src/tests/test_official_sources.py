@@ -403,3 +403,95 @@ def test_record_writes_hashes_into_the_registry(tmp_path):                # AC1
     saved = osrc.load_registry(path)[0]
     assert saved["sha256"] == result.sha256 and saved["text_sha256"] == result.text_sha256
     assert saved["text_method"] == "pdf"
+
+
+# ── code review round 1 ─────────────────────────────────────────────────────
+
+class Boom(Session):
+    def get(self, url, **kwargs):
+        if url.endswith("/robots.txt"):
+            return super().get(url, **kwargs)
+        if "broken" in url:
+            raise ConnectionError("connection reset")
+        return super().get(url, **kwargs)
+
+
+def two_entries():
+    good = entry()
+    bad = entry(id="broken", urn="urn:ki:in:dpdp:source:broken", url="https://www.meity.gov.in/broken.pdf")
+    return bad, good
+
+
+def test_one_failing_entry_does_not_stop_the_run(tmp_path):              # review 2
+    bad, good = two_entries()
+    path = write_registry(tmp_path, [bad, good])
+    session = Boom({good["url"]: Response(good["url"], pdf_bytes("Good text."))})
+    results, updated = osrc.run(path, fetcher(tmp_path, session))
+    by_id = {r.id: r for r in results}
+    assert by_id["broken"].status == "refused" and "ConnectionError" in by_id["broken"].detail
+    assert by_id[good["id"]].status == "stored" and updated == [good["id"]]
+
+
+def test_files_without_registry_hashes_get_recorded_on_rerun(tmp_path):  # review 2, local-file fallback
+    e = entry()
+    path = write_registry(tmp_path, [e])
+    doc = pdf_bytes("Section 2 comes into force.")
+    fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})).fetch(e)   # files written, hashes never recorded
+    results, updated = osrc.run(path, fetcher(tmp_path, Session({e["url"]: Response(e["url"], doc)})))
+    assert results[0].status == "unchanged" and updated == [e["id"]]
+    saved = osrc.load_registry(path)[0]
+    assert saved["sha256"] == sha(doc) and saved["text_sha256"] and saved["text_method"] == "pdf"
+
+
+def test_a_changed_file_on_disk_without_a_registry_hash_is_reported(tmp_path):  # review 3, local-file fallback
+    e = entry()
+    fetcher(tmp_path, Session({e["url"]: Response(e["url"], pdf_bytes("Old."))})).fetch(e)
+    result = fetcher(tmp_path, Session({e["url"]: Response(e["url"], pdf_bytes("New."))})).fetch(e)
+    assert result.status == "changed"
+
+
+def test_a_changed_document_leaves_the_registry_file_untouched(tmp_path):  # E2.10 through record()
+    old, new = pdf_bytes("Original."), pdf_bytes("Amended.")
+    e = entry()
+    path = write_registry(tmp_path, [e])
+    osrc.run(path, fetcher(tmp_path, Session({e["url"]: Response(e["url"], old)})))
+    before = open(path, "rb").read()
+    results, updated = osrc.run(path, fetcher(tmp_path, Session({e["url"]: Response(e["url"], new)})))
+    assert results[0].status == "changed" and updated == []
+    assert open(path, "rb").read() == before
+
+
+def test_record_leaves_the_file_alone_when_nothing_changed(tmp_path):    # review 5
+    path = tmp_path / "official.yaml"
+    path.write_text("# a maintainer's note\n[]\n")
+    assert osrc.record(str(path), []) == []
+    assert path.read_text() == "# a maintainer's note\n[]\n"
+
+
+@pytest.mark.parametrize("status", [403, 503])
+def test_robots_403_or_5xx_means_do_not_fetch(tmp_path, status):        # review 3 and 6
+    e = entry()
+
+    class Robots(Session):
+        def get(self, url, **kwargs):
+            self.calls.append(url)
+            if url.endswith("/robots.txt"):
+                return Response(url, b"", status=status, ctype="text/plain")
+            return self.routes[url]
+
+    session = Robots({e["url"]: Response(e["url"], pdf_bytes("x"))})
+    result = fetcher(tmp_path, session).fetch(e)
+    assert result.status == "refused" and "robots" in result.detail
+    assert e["url"] not in session.calls
+
+
+def test_a_redirect_chain_cannot_bounce_through_an_off_list_host(tmp_path):  # review 3
+    e = entry()
+    hop = "https://www.meity.gov.in/static/hop"
+    session = Session({
+        e["url"]: Response(e["url"], status=302, location=hop),
+        hop: Response(hop, status=302, location="https://evil.example/bounce"),
+        "https://evil.example/bounce": Response("https://evil.example/bounce", status=302, location=e["url"]),
+    })
+    result = fetcher(tmp_path, session).fetch(e)
+    assert result.status == "refused" and "https://evil.example/bounce" not in session.calls
