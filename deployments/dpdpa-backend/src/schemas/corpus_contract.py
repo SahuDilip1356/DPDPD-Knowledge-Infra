@@ -91,9 +91,12 @@ def check_object(row: Dict, law: Dict[str, Dict]) -> List[str]:
 
     quoted = set()
     for item in evidence:
-        if item.get("source_urn") not in GAZETTE_SOURCES:
-            continue
         name = item.get("id") or "evidence"
+        if item.get("source_urn") not in GAZETTE_SOURCES:
+            # Two lanes: until the official-source registry exists (spec official-sources T3),
+            # the Act and the Rules are the only sources evidence may cite.
+            problems.append(f"evidence: {name} cites an unregistered source ({item.get('source_urn')})")
+            continue
         label = evidence_label(item)
         if label not in law:
             problems.append(f"evidence: {name} names no provision of the Act or Rules ({label})")
