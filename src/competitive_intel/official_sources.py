@@ -73,6 +73,10 @@ REDIRECTS = (301, 302, 303, 307, 308)
 CHARSETS = {"utf-8", "utf8", "us-ascii", "ascii", "iso-8859-1", "latin-1", "windows-1252"}
 
 
+_UMASK = os.umask(0)
+os.umask(_UMASK)
+
+
 class RegistryError(ValueError):
     pass
 
@@ -376,7 +380,7 @@ class Fetcher:
                 expected = want or (sha256(text) if text.strip() and e.get("text_method") != "manual" else None)
                 if expected and on_disk != expected:
                     return Result(rid, "changed", "text.txt on disk does not match the extracted text", file_hash)
-                if not expected and not want:
+                if not expected and not want and e.get("text_method") != "manual":
                     return Result(rid, "unchanged", "text.txt kept, not verifiable without a registered hash",
                                   file_hash, None, None)
             missing = {} if sources else {f"source.{ext}": body}
@@ -428,6 +432,7 @@ def _store(folder: str, fresh: Dict[str, bytes], extra: Dict[str, bytes]) -> Non
         parent = os.path.dirname(folder)
         os.makedirs(parent, exist_ok=True)
         tmp = tempfile.mkdtemp(prefix=f".{os.path.basename(folder)}.partial-", dir=parent)
+        os.chmod(tmp, 0o777 & ~_UMASK)  # mkdtemp makes 0700; keep the folder as readable as any other
         try:
             for name, data in files.items():
                 _write(os.path.join(tmp, name), data)

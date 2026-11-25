@@ -634,3 +634,27 @@ def test_the_deadline_bounds_a_real_slow_sender(monkeypatch):           # review
     assert body is None and "took longer" in problem
     assert _time.monotonic() - started < 4
     server.close()
+
+
+# ── code review round 3 ─────────────────────────────────────────────────────
+
+def test_reviewer_typed_text_gets_its_hash_recorded(tmp_path):            # review 3.1
+    e = entry(text_method="manual", reviewed_by="Dilip Sahu")
+    path = write_registry(tmp_path, [e])
+    scan = pdf_bytes()                                                     # image-only
+    first = fetcher(tmp_path, Session({e["url"]: Response(e["url"], scan)})).fetch(entry())
+    assert first.status == "needs_manual"
+    typed = "Section 2 comes into force on publication.\n"
+    (tmp_path / "store" / e["id"] / "text.txt").write_text(typed, encoding="utf-8")
+    results, updated = osrc.run(path, fetcher(tmp_path, Session({e["url"]: Response(e["url"], scan)})))
+    saved = osrc.load_registry(path)[0]
+    assert updated == [e["id"]]
+    assert saved["text_sha256"] == sha(typed) and saved["text_method"] == "manual"
+
+
+def test_store_folders_follow_the_umask(tmp_path):                       # review 3.2
+    e = entry()
+    fetcher(tmp_path, Session({e["url"]: Response(e["url"], pdf_bytes("x"))})).fetch(e)
+    umask = os.umask(0)
+    os.umask(umask)
+    assert (tmp_path / "store" / e["id"]).stat().st_mode & 0o777 == 0o777 & ~umask
