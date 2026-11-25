@@ -5,7 +5,8 @@
 Tick one box per decision. Nothing is built or spent until the box is ticked. Settled on
 2026-11-25 and not reopened here: law reaches users only by look-up over the verified
 law lane, never from model weights; tuning is for voice and format only, on
-SaralPrivacy's own writing.
+SaralPrivacy's own writing. The decision is recorded as "Retrieval for law, fine-tuning for
+voice only" on PR #12.
 
 ## If you still want "a model trained on all DPDPA data"
 

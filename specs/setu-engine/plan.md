@@ -61,7 +61,8 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - size: S
 - complexity: 4
 - verify: test "$(grep -c '^- \[ \] Yes' specs/setu-engine/decisions.md)" -ge 7 && ! grep -n 'TBD' specs/setu-engine/decisions.md
-- notes: check from the law lane whether any country is notified under section 16
+- notes: use PR #12's official-source registry (sources/official.yaml) once merged. Check
+  from the law lane whether any country is notified under section 16
   before writing D1's residency line (A5). Every price needs its URL and retrieval date.
 
 ### T2: Add a reader-model switch to the real-corpus eval and run the bake-off
@@ -145,7 +146,9 @@ expected-in-retrieved 0.725, mean prompt 2,502 tokens) and 0.71 live after PR #9
 - complexity: 6
 - verify: cd deployments/dpdpa-backend && python3 -m pytest src/tests/test_claim_checker.py src/tests/test_hardening.py -q
 - notes: reuse the verbatim-quote matching in schemas/corpus_contract.py, do not write a
-  second one. Test cases must include "Data Personal Breach Inquiry", a fine of ₹300
+  second one. PR #12 (feat/official-sources-t1-t2, unmerged) makes the contract reject
+  evidence from unregistered sources and adds the official-source registry; build on it
+  after it merges, do not copy it. Test cases must include "Data Personal Breach Inquiry", a fine of ₹300
   crore, and "Section 45".
 
 ### T9: Write the prompt-only voice and the blind preference test

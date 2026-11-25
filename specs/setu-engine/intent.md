@@ -24,7 +24,9 @@ them, and they do not sound like SaralPrivacy.
 Dilip has asked for "a model trained on all DPDPA data". On 2026-11-25 he decided that
 the law reaches users only through look-up over the verified law text, never from what a
 model memorised. Training is limited to voice and format, on SaralPrivacy's own writing.
-This plan does not reopen that decision.
+The decision is recorded as "Retrieval for law, fine-tuning for voice only" in the
+project decisions log and the project rules, on PR #12 (not yet merged). This plan does
+not reopen it.
 
 ## Goals
 
