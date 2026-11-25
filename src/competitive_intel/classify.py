@@ -5,7 +5,7 @@ and flags thin or duplicate pages.
 
 Writes  staging/competitive_intel/classified/pages.jsonl      one row per page (no body text)
         staging/competitive_intel/classified/questions.jsonl  one row per distinct question per domain
-        docs/competitive_intel/coverage.md                    topic x competitor matrix (our analysis)
+        references/competitive_intel/coverage.md                    topic x competitor matrix (our analysis)
 
 Usage:  python3 src/competitive_intel/classify.py
 """
@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 
 RAW = "staging/competitive_intel/raw"
 OUT = "staging/competitive_intel/classified"
-REPORT = "docs/competitive_intel/coverage.md"
+REPORT = "references/competitive_intel/coverage.md"
 THIN_WORDS = 40
 
 # Matched against title + headings (strong signal) and body (needs repeated mentions).

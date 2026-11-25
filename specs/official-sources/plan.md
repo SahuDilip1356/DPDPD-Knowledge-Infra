@@ -78,7 +78,7 @@ Live-store writes (T6) are run by the founder.
 - status: todo
 - implements: AC11
 - depends_on: T4, T5
-- files: memory/STATE.md
+- files: context/STATE.md
 - risk: tier1
 - notes: founder runs `official` then `audit`; prerequisite: OpenAI credits restored,
          and the store repair (`conform`, `quarantine`) done

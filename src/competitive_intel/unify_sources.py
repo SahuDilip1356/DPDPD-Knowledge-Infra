@@ -15,7 +15,7 @@ in graph, ≥ 0.75 = near; costs well under a cent) and lexical otherwise (token
 Writes  questions/unified_questions.jsonl   one row per canonical question with `sources`,
                                              `street_hits`, `street_paa`, `street_related`
         questions/street_unique.csv          street questions not in the graph, classified
-        docs/competitive_intel/question_sources.md
+        references/competitive_intel/question_sources.md
 
 Usage:  python3 src/competitive_intel/unify_sources.py
 """
@@ -33,7 +33,7 @@ CI = os.path.join(REPO_ROOT, "staging/competitive_intel")
 GRAPH = os.path.join(CI, "questions/question_graph.jsonl")
 UNIFIED = os.path.join(CI, "questions/unified_questions.jsonl")
 STREET_OUT = os.path.join(CI, "questions/street_unique.csv")
-REPORT = os.path.join(REPO_ROOT, "docs/competitive_intel/question_sources.md")
+REPORT = os.path.join(REPO_ROOT, "references/competitive_intel/question_sources.md")
 PAGES = os.path.join(CI, "classified/pages.jsonl")
 
 STOP = set("the a an of to in for on by with is are be under what who how does do can i my it "

@@ -4,7 +4,7 @@ questions buyers ask that SaralPrivacy does not yet answer.
 
 Inputs  staging/competitive_intel/classified/pages.jsonl        (topic/sector tags per page)
         staging/competitive_intel/questions/question_graph.jsonl (canonical questions + demand)
-Output  docs/competitive_intel/gap_matrix.md
+Output  references/competitive_intel/gap_matrix.md
 
 Emphasis index = SaralPrivacy's share of its pages on a topic ÷ the market's share of its pages on
 that topic. 1.0 = same emphasis as the market; >1 = SaralPrivacy leans in; 0 = absent.
@@ -20,7 +20,7 @@ from fetch import REPO_ROOT
 
 PAGES = os.path.join(REPO_ROOT, "staging/competitive_intel/classified/pages.jsonl")
 GRAPH = os.path.join(REPO_ROOT, "staging/competitive_intel/questions/question_graph.jsonl")
-REPORT = os.path.join(REPO_ROOT, "docs/competitive_intel/gap_matrix.md")
+REPORT = os.path.join(REPO_ROOT, "references/competitive_intel/gap_matrix.md")
 SELF = {"saralprivacy.com", "dpdpa.wiki"}
 
 

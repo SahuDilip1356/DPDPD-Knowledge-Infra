@@ -11,7 +11,7 @@
 - Inventoried seeded knowledge: **45 KOs**, **~52 edges**, **6 events**, **5 actions**; walked Section 6 Consent end-to-end (URN → DB → edges → Explorer/Actions).
 - Described UI look (SaralPrivacy Knowledge Infra control room); blank webview was troubleshooting — app builds and serves; Vite at `127.0.0.1:5173`; build OK.
 - Discussed how to add topics to Core vs other sections (trust-layer decision tree, Event-centric stacking, A vs B growth strategy) — **choice not yet made**.
-- Before laptop restart: asked to remember state → wrote `memory/STATE.md` + this digest.
+- Before laptop restart: asked to remember state → wrote `memory/STATE.md` (now `context/STATE.md`) + this digest.
 
 ## Durable takeaways
 
@@ -26,4 +26,4 @@
 
 ## Resume cue
 
-“Open `memory/STATE.md` and continue — pick A/B knowledge growth or commit WIP.”
+“Open `memory/STATE.md` (now `context/STATE.md`) and continue — pick A/B knowledge growth or commit WIP.”

@@ -211,6 +211,6 @@ not require placing the key in or rebuilding the frontend bundle.
 
 - Git — `.gitignore` now blocks `.env`, `.env.local`, `.env.backup-*` and every
   other variant, while still tracking `.env.example`
-- `memory/`, `CLAUDE.md`, `.agent/` — your own standing rule
+- `context/`, `decisions/`, `CLAUDE.md`, `.agent/` — your own standing rule
 - Any `.md` file, including this one
 - Chat messages, screenshots, or issue trackers
