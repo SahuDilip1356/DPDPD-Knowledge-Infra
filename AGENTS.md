@@ -4,7 +4,7 @@
 - Read architecture and code first, then present comprehensively; do not skip the read-then-explain step for this repo
 - After interruptions or laptop restarts, resume from `memory/STATE.md`; save a checkpoint there when asked to remember state
 - Treat DPDPA.com as competitive intelligence and taxonomy discovery, not canonical law; do not copy competitor templates or courses
-- Exclude training and certification from competitor harvest stacking; use GPT-OSS as a retrieval model over the graph, not weight training
+- Exclude training and certification from competitor harvest stacking. Law answers come from retrieval over the verified graph (GPT-OSS or any model as the reader), never from model weights. Fine-tuning is allowed for voice and format only, on SaralPrivacy's own writing (e.g. the daily briefings, after the flagged ones are fixed); never on law text, competitor or market data (decided 2026-11-25)
 
 ## Learned Workspace Facts
 
