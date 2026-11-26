@@ -134,7 +134,8 @@ few cents each.
 
 | Where | Base model | Cost for 168 rows × 3 epochs (about 0.3M training tokens) | Note | Source |
 |---|---|---|---|---|
-| **Hugging Face Jobs, your account (recommended)** | gpt-oss-20b (sibling of D1's A) | A100 80 GB at $2.50/hour, billed per minute. Estimate 1–2 hours, so $2.50–$5. Not measured; T10's dry run estimates it | Adapter goes to a private repo you own; data stays in your account | [HF Jobs pricing](https://huggingface.co/docs/hub/jobs-pricing) |
+| **Modal, your account (recommended: you have credit)** | gpt-oss-20b, plus a 1–4B model for devices | H100 $3.95/hour, A100 80 GB $2.50/hour, L40S $1.95/hour, billed per second. Estimate $2–$8 a run, $20–$40 for 3–5 runs. Not measured | Adapter goes to a private Hugging Face repo you own | [Modal pricing](https://modal.com/pricing), retrieved 2026-11-26 |
+| Hugging Face Jobs, your account | gpt-oss-20b (sibling of D1's A) | A100 80 GB at $2.50/hour, billed per minute. Estimate 1–2 hours, so $2.50–$5. Not measured; T10's dry run estimates it | Adapter goes to a private repo you own; data stays in your account | [HF Jobs pricing](https://huggingface.co/docs/hub/jobs-pricing) |
 | Together AI hosted fine-tune | gpt-oss-20b | $0.40 per 1M tokens, $4 minimum, so $4 | Data leaves to Together | [Together pricing](https://www.together.ai/pricing) |
 | OpenAI hosted fine-tune | gpt-4.1-mini | Not available: "closed to new users" | Ruled out | [OpenAI pricing](https://developers.openai.com/api/docs/pricing) |
 
