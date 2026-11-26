@@ -285,8 +285,9 @@ a.fig-cite:hover { text-decoration-color: currentColor; }
   width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
   font-size: 14px; font-weight: 700; font-family: var(--font-sans); border: 2px solid;
 }
-.plot-dot.is-ok, .plot-key-item.is-ok .plot-key-n { background: var(--role-principal); border-color: var(--role-principal); color: #fff; }
-.plot-dot.is-no, .plot-key-item.is-no .plot-key-n { background: #fff; border-color: #B03A2E; color: #B03A2E; }
+/* Verdicts are not roles, so they use shape rather than a role colour: filled may be used, hollow and dashed may not. */
+.plot-dot.is-ok, .plot-key-item.is-ok .plot-key-n { background: var(--role-state); border-color: var(--role-state); color: #fff; }
+.plot-dot.is-no, .plot-key-item.is-no .plot-key-n { background: #fff; border-color: var(--role-neutral); border-style: dashed; color: var(--role-neutral); }
 .fig.is-anim .plot-dot.fig-step { transform: translate(-50%, 50%) scale(0.6); }
 .fig.is-anim.is-live .plot-dot.fig-step { transform: translate(-50%, 50%); }
 .plot-x { display: flex; justify-content: space-between; gap: 8px; margin: 2px 18px 0 6px; font-size: 12.5px; color: var(--role-neutral); }
@@ -296,8 +297,8 @@ a.fig-cite:hover { text-decoration-color: currentColor; }
 .plot-key-n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 700; border: 2px solid; }
 .plot-key-label { margin: 3px 0 0; font-weight: 600; font-size: 15px; color: var(--ink); }
 .plot-key-verdict { font-weight: 500; font-size: 13.5px; margin-left: 6px; }
-.plot-key-item.is-ok .plot-key-verdict { color: var(--role-principal); }
-.plot-key-item.is-no .plot-key-verdict { color: #B03A2E; }
+.plot-key-item.is-ok .plot-key-verdict { color: var(--role-state); }
+.plot-key-item.is-no .plot-key-verdict { color: var(--role-neutral); }
 .plot-key-detail { margin: 3px 0 0; font-size: 14px; line-height: 1.5; color: var(--body); }
 .map-routes { list-style: none; padding: 0; display: grid; gap: 0; }
 .map-route { padding: 10px 0; border-top: 1px dashed #CBD3DF; }

@@ -60,7 +60,7 @@ export default function Scenarios() {
           </nav>
 
           <div className="module-legend">
-            <p>Figures use one colour per role, as in the course:</p>
+            <p>Figures use one colour per role, as in the six-module course:</p>
             <RoleLegend />
           </div>
 

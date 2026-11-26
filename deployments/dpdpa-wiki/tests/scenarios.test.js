@@ -54,21 +54,27 @@ describe("napkin scenarios: content (N1–N3)", () => {
     expect(run(planted)).toMatch(/scenarios\.md.*cites S44, outside the module's provisions/);
   });
 
-  it("N2: every curly-quoted fragment is word for word in the provision it cites", () => {
+  it("N2: every curly-quoted fragment is word for word in the provision cited next to it", () => {
+    // A quote is checked against the last citation before it in its own paragraph,
+    // or the first one after it when none comes before
+    // ("Section 6(1)", "Rule 7(2)", "the Schedule"). A paragraph with no citation
+    // falls back to the provisions its scenario cites.
+    const cites = (text) => [...text.matchAll(/\b(Section|Rule)\s+(\d+)|\bSchedule\b/g)].map((m) => ({
+      at: m.index,
+      label: m[1] ? `${m[1][0] === "S" ? "S" : "R"}${m[2]}` : "ACT-SCHEDULE"
+    }));
     let checked = 0;
     for (const sec of lessons) {
-      // Each paragraph's quotes are checked against the provisions that paragraph cites,
-      // or the scenario's provisions when the paragraph names none.
-      const secLabels = [...new Set([...citeLabels(sec), ...(/Schedule/.test(sec) ? ["ACT-SCHEDULE"] : [])])];
+      const secLabels = [...new Set(cites(sec).map((c) => c.label))];
       for (const para of sec.split(/\n\s*\n/)) {
-        const quotes = [...para.matchAll(/“([^”]+)”/g)].map((m) => m[1]);
-        if (!quotes.length) continue;
-        const own = citeLabels(para).concat(/Schedule/.test(para) ? ["ACT-SCHEDULE"] : []);
-        const pool = (own.length ? own : secLabels).filter((l) => LAW[l]);
-        for (const q of quotes) {
+        const near = cites(para);
+        for (const m of para.matchAll(/“([^”]+)”/g)) {
           checked++;
-          const hit = pool.some((l) => norm(LAW[l].text).includes(norm(q)));
-          expect(hit, `“${q}” not found in ${pool.join(", ")}`).toBe(true);
+          const before = near.filter((c) => c.at < m.index).at(-1);
+          const after = near.find((c) => c.at > m.index);
+          const pool = before || after ? [(before || after).label] : secLabels;
+          const hit = pool.some((l) => LAW[l] && norm(LAW[l].text).includes(norm(m[1])));
+          expect(hit, `“${m[1]}” not found in ${pool.join(", ")}`).toBe(true);
         }
       }
     }
@@ -104,7 +110,14 @@ describe("napkin scenarios: content (N1–N3)", () => {
   });
 });
 
-describe("napkin scenarios: new figure types (N5)", () => {
+describe("napkin scenarios: new figure types (N5, N6)", () => {
+  it("N6: the plot and map use role colours and shape only, no colour of their own", () => {
+    const css = fs.readFileSync(path.join(ROOT, "src/styles/figures.css"), "utf8");
+    const own = css.slice(css.indexOf("/* ── map:"));
+    const hexes = (own.match(/#[0-9a-fA-F]{3,6}\b/g) || []).filter((h) => !/^#(fff|FFF|CBD3DF)$/.test(h));
+    expect(hexes).toEqual([]);
+  });
+
   const html = (spec) => renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(Figure, { spec })));
   const map = allFigures.find((f) => f.type === "map");
   const plot = allFigures.find((f) => f.type === "plot");
