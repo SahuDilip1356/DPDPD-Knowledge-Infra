@@ -9,6 +9,8 @@
  *                            per module for the rest
  *   virtual:course/<slug>    one module's finished record: lessons as HTML,
  *                            figures, self-test
+ *   virtual:scenarios        the six napkin scenarios (/learn/scenarios), one
+ *                            record in the module format, built the same way
  *
  * Server builds and tests get complete records from virtual:law and
  * virtual:course, so the prerender and the tests read everything
@@ -28,6 +30,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const LAW_FILE = path.join(ROOT, "src/data/law/provisions.json");
 const MODULES_DIR = path.join(ROOT, "src/content/modules");
+const SCENARIOS_FILE = path.join(ROOT, "src/content/scenarios.md");
 const MODULE_BUILD = pathToFileURL(path.join(ROOT, "src/lib/module-build.js")).href;
 
 /** Fields of a provision that only its own page shows. */
@@ -39,7 +42,7 @@ const BODY_FIELDS = ["text", "source", "questions", "note", "note_cites", "rows"
  */
 export const BUILD_DAY = new Date().toISOString().slice(0, 10);
 
-const IDS = /^virtual:(law|course)(?:\/(.+))?$/;
+const IDS = /^virtual:(law|course|scenarios)(?:\/(.+))?$/;
 const js = (value) => JSON.stringify(value);
 
 export default function content() {
@@ -87,6 +90,14 @@ export default function content() {
         const light = provisions.map((p) => Object.fromEntries(Object.entries(p).filter(([f]) => !BODY_FIELDS.includes(f))));
         const loaders = provisions.map((p) => `  ${js(p.label)}: () => import(${js(`virtual:law/${p.label}`)})`);
         return `export const meta = ${js(meta)};\nexport const provisions = ${js(light)};\nexport const bodies = {\n${loaders.join(",\n")}\n};\n`;
+      }
+
+      if (kind === "scenarios") {
+        this.addWatchFile(SCENARIOS_FILE);
+        const { buildModule } = await import(MODULE_BUILD);
+        const byLabel = Object.fromEntries(readLaw().provisions.map((p) => [p.label, p]));
+        const lawApi = { getProvision: (l) => byLabel[l] || null, onDate: new Date(`${BUILD_DAY}T00:00:00Z`) };
+        return `export default ${js(buildModule(fs.readFileSync(SCENARIOS_FILE, "utf8"), "scenarios.md", lawApi))};`;
       }
 
       for (const f of fs.readdirSync(MODULES_DIR)) this.addWatchFile(path.join(MODULES_DIR, f));

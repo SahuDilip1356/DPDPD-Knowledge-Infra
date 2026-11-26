@@ -9,7 +9,7 @@ import "./styles/components.css";
 /* Public screens. Each is a chunk of its own, so a page loads its screen and
    not the others. */
 const SCREENS = import.meta.glob(
-  "./components/screens/{Home,GuideIndex,Guide,Provision,ProvisionIndex,Glossary,NotFound,LearnIndex,Module,Quiz,DecisionAid}.jsx"
+  "./components/screens/{Home,GuideIndex,Guide,Provision,ProvisionIndex,Glossary,NotFound,LearnIndex,Module,Quiz,DecisionAid,Scenarios}.jsx"
 );
 const ALL_SCREENS = [];
 
@@ -48,6 +48,7 @@ const GlossaryEntry = screen("Glossary");
 const NotFound = screen("NotFound");
 const LearnIndex = screen("LearnIndex");
 const Module = screen("Module");
+const Scenarios = screen("Scenarios");
 const Quiz = screen("Quiz");
 const DecisionAid = screen("DecisionAid");
 
@@ -86,6 +87,7 @@ export const routes = [
   page("/glossary", GlossaryIndex, <GlossaryIndex />),
   page("/glossary/:slug", GlossaryEntry, <GlossaryEntry />),
   page("/learn", LearnIndex, <LearnIndex />),
+  page("/learn/scenarios", Scenarios, <Scenarios />),
   page("/learn/:slug", Module, <Module />, moduleData),
   page("/learn/:slug/quiz", Quiz, <Quiz />, moduleData),
   page("/tools/:slug", DecisionAid, <DecisionAid />),
