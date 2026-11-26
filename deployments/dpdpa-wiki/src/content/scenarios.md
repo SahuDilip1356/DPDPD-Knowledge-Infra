@@ -55,7 +55,7 @@ The Schedule to the Act lists the highest penalty for each kind of breach of the
 {
   "type": "scale",
   "title": "The highest penalty for each kind of breach",
-  "caption": "Six of the Schedule's seven rows. The one left out, row 6, is for breaking a promise made to the Board (a voluntary undertaking). Its limit is the limit for the breach the promise was about.",
+  "caption": "Six of the Schedule's seven rows. The one left out, row 6, is for breaking a promise made to the Board (a voluntary undertaking). Its limit is the limit for the breach the Board's proceedings began with.",
   "items": [
     { "label": "Not keeping reasonable security safeguards", "value": 250, "display": "up to ₹250 crore", "role": "fiduciary", "cite": "the Schedule to the Act" },
     { "label": "Not telling the Board and the affected people about a breach", "value": 200, "display": "up to ₹200 crore", "role": "fiduciary", "cite": "the Schedule to the Act" },
