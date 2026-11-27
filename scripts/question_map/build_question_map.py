@@ -222,15 +222,37 @@ def build(graph, street, target=1000, topic_floor=15):
     return picked
 
 
-def check_output_path(path):
-    """Refuse to write anywhere git would track: the map holds market-lane text."""
-    path = os.path.abspath(path)
-    try:
-        res = subprocess.run(["git", "-C", REPO_ROOT, "check-ignore", "-q", path])
-    except FileNotFoundError:
-        sys.exit("Refusing to write: git is not available to confirm the path is gitignored.")
-    if res.returncode != 0:
-        sys.exit(f"Refusing to write {path}: it is not gitignored. Use staging/.")
+OUT_DIR = os.path.join(REPO_ROOT, "staging", "question-map")
+
+
+def check_outputs(paths):
+    """Refuse unless every path is a plain file directly inside staging/question-map/.
+
+    The map holds market-lane text, so it may only land in that one gitignored folder.
+    Paths are resolved with realpath, an existing symlink is refused, and the folder
+    itself must resolve inside the repo. All paths are checked before anything is written.
+    """
+    allowed = os.path.realpath(OUT_DIR)
+    if os.path.commonpath([allowed, os.path.realpath(REPO_ROOT)]) != os.path.realpath(REPO_ROOT):
+        sys.exit(f"Refusing to write: {OUT_DIR} resolves outside the repository.")
+    for path in paths:
+        if os.path.islink(path):
+            sys.exit(f"Refusing to write {path}: it is a symlink.")
+        real = os.path.realpath(path)
+        if os.path.dirname(real) != allowed:
+            sys.exit(f"Refusing to write {path}: outputs must go directly in staging/question-map/.")
+        try:
+            res = subprocess.run(["git", "-C", REPO_ROOT, "check-ignore", "-q", real])
+        except FileNotFoundError:
+            sys.exit("Refusing to write: git is not available to confirm the path is gitignored.")
+        if res.returncode != 0:
+            sys.exit(f"Refusing to write {path}: it is not gitignored.")
+
+
+def _open_new(path, newline=None):
+    """Open for writing without following a symlink planted after the check."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o644)
+    return os.fdopen(fd, "w", newline=newline)
 
 
 def summary(rows):
@@ -255,23 +277,23 @@ def main():
     ap.add_argument("--topic-floor", type=int, default=15)
     a = ap.parse_args()
 
-    check_output_path(a.out)
+    stem = os.path.splitext(a.out)[0]
+    summary_path, review_path = stem + "_summary.json", stem + "_review.csv"
+    os.makedirs(OUT_DIR, exist_ok=True)
+    check_outputs([a.out, summary_path, review_path])
     with open(a.graph) as f:
         graph = [json.loads(line) for line in f if line.strip()]
     with open(a.street, newline="") as f:
         street = list(csv.DictReader(f))
     rows = build(graph, street, a.target, a.topic_floor)
 
-    os.makedirs(os.path.dirname(a.out), exist_ok=True)
-    with open(a.out, "w") as f:
+    with _open_new(a.out) as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     s = summary(rows)
-    with open(os.path.splitext(a.out)[0] + "_summary.json", "w") as f:
+    with _open_new(summary_path) as f:
         json.dump(s, f, indent=2)
-    review = os.path.join(os.path.dirname(a.out), "review.csv")
-    check_output_path(review)
-    with open(review, "w", newline="") as f:
+    with _open_new(review_path, newline="") as f:
         w = csv.writer(f)
         w.writerow(["id", "question", "kind", "reader", "lane", "first_person", "topic", "demand",
                     "your_call (ok / change to ... / drop)"])

@@ -1,8 +1,10 @@
 # Question map (Setu training guide, step 1)
 
 Builds about 1,000 DPDPA questions, labelled for training-example drafting. The output
-is market-lane data, so it is written only to gitignored `staging/question-map/`; the
-script refuses any other path.
+is market-lane data, so all three outputs (`<name>.jsonl`, `<name>_summary.json`,
+`<name>_review.csv`) are written only directly inside gitignored `staging/question-map/`.
+The script resolves every path, refuses symlinks and any other folder (gitignored or not),
+and checks all three before writing any.
 
 ```bash
 python3 scripts/question_map/build_question_map.py \
