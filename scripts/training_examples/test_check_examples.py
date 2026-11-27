@@ -289,3 +289,16 @@ class TestRound3(unittest.TestCase):
 
     def test_space_before_subsection(self):
         self.assertTrue(c.check(ex(answer="Tell the Board (Section 8 (15))."), LAW, as_of="2030-01-01"))
+
+
+class TestRefusalPhrases(unittest.TestCase):
+    def test_common_lawyer_phrasings_count(self):
+        for a in ("Get legal advice before you use it.", "This needs a lawyer.",
+                  "Check your setup with a lawyer.", "Check the records with a lawyer or your CA.",
+                  "A lawyer can check your case."):
+            e = ex(lane="needs_lawyer", claims=[], provisions=[], answer=a)
+            self.assertEqual(c.check(e, LAW, as_of="2030-01-01"), [], a)
+
+    def test_vague_text_still_fails(self):
+        e = ex(lane="needs_lawyer", claims=[], provisions=[], answer="It depends on many things.")
+        self.assertTrue(c.check(e, LAW, as_of="2030-01-01"))

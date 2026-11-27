@@ -63,8 +63,8 @@ TIME = re.compile(r"(?<![\w-])(" + TIME_NUMBER + r")[\s-]+(hours?|days?|weeks?|m
 
 REFUSAL = re.compile(
     r"\b((the )?(DPDP )?(Act|Rules)( and( the)? Rules)? (does|do) not|there is (none|no)|"
-    r"(ask|speak to|check with|consult) a lawyer|a (question|matter) for a lawyer|"
-    r"a lawyer (needs|can tell|should)|I cannot answer|no one can tell you)",
+    r"(ask|speak to|check with|consult|with) a lawyer|a (question|matter) for a lawyer|"
+    r"needs? a lawyer|legal advice|a lawyer (needs|can|should)|I cannot answer|no one can tell you)",
     re.I,
 )
 DUTY_WORDS = re.compile(r"\b(must|shall|have to|has to|need to|needs to|required to)\b", re.I)
