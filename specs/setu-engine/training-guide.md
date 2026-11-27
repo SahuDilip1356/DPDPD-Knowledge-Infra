@@ -38,7 +38,10 @@ Each question gets three labels:
   when (when a duty starts), where (where data may be sent, where to complain). Dilip
   approved these six on 2026-11-27.
 - **Reader:** business, learner or public.
-- **Lane:** law answers it; law is silent; needs a lawyer (a company's own facts).
+- **Lane:** law answers it; law is silent; needs a lawyer (a company's own facts);
+  comparison (questions about GDPR or another foreign law, held back until Dilip decides
+  on the labelled comparison shelf); off-topic (not about DPDPA, or a trick, which the
+  model learns to decline).
 
 The "law is silent" and "needs a lawyer" questions matter as much as the rest. They teach
 the model to refuse correctly.
