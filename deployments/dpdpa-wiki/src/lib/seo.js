@@ -1,6 +1,7 @@
 import { listGuides, getGuide } from "./guides";
 import { FAQ } from "../data/homeContent";
 import { moduleRoutes, headForModule } from "./modules";
+import { SCENARIOS_PATH, headForScenarios } from "./scenarios";
 import { toolRoutes, headForTool } from "./tools";
 import {
   DOCS, CHAPTERS, listProvisions, getByRoute, provisionRoutes, documentOf, displayLabel,
@@ -117,6 +118,7 @@ export function headFor(path) {
     return term ? glossaryEntryHead(term) : "";
   }
 
+  if (clean === SCENARIOS_PATH) return tags(headForScenarios());
   if (clean === "/learn" || clean.startsWith("/learn/")) {
     const m = headForModule(clean);
     if (m) return tags(m);
@@ -263,6 +265,7 @@ export function publicRoutes() {
   return [
     "/",
     ...moduleRoutes(),
+    SCENARIOS_PATH,
     ...toolRoutes(),
     // Guides retired 2026-09-28 (spec Q1, plan T19 branch A): /guide/* 301s to the course.
     "/act",

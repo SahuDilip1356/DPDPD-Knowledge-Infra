@@ -46,6 +46,12 @@ export default function LearnIndex() {
               </li>
             ))}
           </ol>
+          {/* The path is written out so this page does not pull in the scenarios record. */}
+          <Link to="/learn/scenarios" className="learn-card-link learn-scenarios">
+            <span className="learn-card-num">Scenarios</span>
+            <span className="learn-card-title">Six napkins: the DPDP Act in six pictures</span>
+            <span className="learn-card-summary">One customer, one tiffin service, six everyday questions about her data, each answered with one picture.</span>
+          </Link>
         </div>
       </article>
     </PublicShell>

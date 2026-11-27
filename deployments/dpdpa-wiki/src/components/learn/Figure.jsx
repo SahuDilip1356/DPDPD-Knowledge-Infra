@@ -398,8 +398,92 @@ function Compare({ spec }) {
   );
 }
 
+/* ── map: where data sits and travels, with the border it crosses ── */
+function MapFig({ spec }) {
+  const regions = spec.regions || [];
+  const roleOf = Object.fromEntries(regions.flatMap((r) => (r.places || []).map((pl) => [pl.name, pl.role || "neutral"])));
+  let n = 0;
+  return (
+    <Frame spec={spec} kind="map">
+      <div className="map" style={{ "--cols": regions.length || 1 }}>
+        {regions.map((r, ri) => (
+          <section key={ri} className="map-region" aria-label={r.name}>
+            <p className="map-region-name">{r.name}</p>
+            <ul className="map-places">
+              {(r.places || []).map((pl, i) => (
+                <li key={i} className={`map-place role-${pl.role || "neutral"} fig-step`} style={step(n++)}>
+                  <span className="map-place-name">{pl.name}</span>
+                  {pl.detail && <p className="map-place-detail">{pl.detail}</p>}
+                  <Cite text={pl.cite} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+      {spec.routes?.length > 0 && (
+        <ul className="role-edges map-routes" aria-label="Where the data goes">
+          {spec.routes.map((e, i) => (
+            <li key={i} className="role-edge map-route fig-step" style={step(n + i)}>
+              <span className={`role-chip role-${roleOf[e.from] || "neutral"}`}>{e.from}</span>
+              <span className="map-route-label"><span aria-hidden="true">→ </span>{e.label}<span aria-hidden="true"> →</span></span>
+              <span className={`role-chip role-${roleOf[e.to] || "neutral"}`}>{e.to}</span>
+              <Cite text={e.cite} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Frame>
+  );
+}
+
+/* ── plot: things placed by two questions at once ───────────────────
+   Each point is numbered on the chart and explained in the key below it,
+   so the chart never depends on labels fitting beside the dots. */
+const clamp01 = (v) => Math.min(1, Math.max(0, Number(v) || 0));
+function Plot({ spec }) {
+  const points = spec.points || [];
+  const x = spec.x || {}, y = spec.y || {};
+  return (
+    <Frame spec={spec} kind="plot">
+      <div className="plot-wrap">
+        <p className="plot-y-label">{y.label}</p>
+        <div className="plot-area-wrap">
+          <span className="plot-y-end plot-y-high">{y.high}</span>
+          <div className="plot-area" role="img" aria-label={`${points.length} points placed by two questions: ${x.label}; ${y.label}. The key below lists each one.`}>
+            {points.map((pt, i) => (
+              <span key={i} className={`plot-dot ${pt.ok ? "is-ok" : "is-no"} fig-step`}
+                style={{ ...step(i), left: `${clamp01(pt.x) * 100}%`, bottom: `${clamp01(pt.y) * 100}%` }} aria-hidden="true">
+                {i + 1}
+              </span>
+            ))}
+          </div>
+          <span className="plot-y-end plot-y-low">{y.low}</span>
+          <div className="plot-x">
+            <span>{x.low}</span>
+            <span className="plot-x-label">{x.label}</span>
+            <span>{x.high}</span>
+          </div>
+        </div>
+      </div>
+      <ol className="plot-key">
+        {points.map((pt, i) => (
+          <li key={i} className={`plot-key-item ${pt.ok ? "is-ok" : "is-no"} fig-step`} style={step(points.length + i)}>
+            <span className="plot-key-n" aria-hidden="true">{i + 1}</span>
+            <div>
+              <p className="plot-key-label">{pt.label} <span className="plot-key-verdict">{pt.verdict}</span></p>
+              {pt.detail && <p className="plot-key-detail">{pt.detail}</p>}
+              <Cite text={pt.cite} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    </Frame>
+  );
+}
+
 const TYPES = { gate: Gate, stack: Stack, timeline: Timeline, roles: Roles, changes: Changes, actmap: ActMap,
-  steps: Steps, checklist: Checklist, scale: Scale, compare: Compare };
+  steps: Steps, checklist: Checklist, scale: Scale, compare: Compare, map: MapFig, plot: Plot };
 export const FIGURE_TYPES = Object.keys(TYPES);
 
 export default function Figure({ spec }) {

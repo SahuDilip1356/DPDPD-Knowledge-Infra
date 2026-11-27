@@ -169,6 +169,7 @@ function splitLessons(body) {
  *   ::: short            the lesson in two sentences, shown first
  *   ::: figure           a JSON figure spec (components/learn/Figure.jsx)
  *   ::: example <title>  a worked example from a business
+ *   ::: try <question>   a question the reader answers, with the answer folded
  *
  * Malformed figure JSON throws, naming the lesson, so a broken figure fails
  * the build instead of disappearing from the page.
@@ -183,7 +184,7 @@ export function lessonBlocks(markdown, where = "") {
     prose = [];
   };
   for (const line of String(markdown).split(/\r?\n/)) {
-    const start = /^:::\s*(short|figure|example)\b\s*(.*)$/.exec(line.trim());
+    const start = /^:::\s*(short|figure|example|try)\b\s*(.*)$/.exec(line.trim());
     if (!open && start) {
       flush();
       open = { name: start[1], arg: start[2].trim(), lines: [] };

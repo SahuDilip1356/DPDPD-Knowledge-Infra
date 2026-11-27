@@ -118,3 +118,17 @@ Figure types (fields marked ? are optional):
 | `scale` | magnitudes on one axis | `title, caption?, items: [{label, value: number, display, role?, cite}]` |
 | `changes` | amendments to other laws | `title, caption?, items: [{law, before?, after, omitted?, cite}]` |
 | `actmap` | the Act's chapters (data built in) | `title, caption?` |
+| `map` | where data sits and travels, and the borders it crosses | `title, caption?, regions: [{name, places: [{name, role, detail?, cite?}]}], routes?: [{from, to, label, cite?}]` (route ends name places) |
+| `plot` | things placed by two questions at once | `title, caption?, x: {label, low, high}, y: {label, low, high}, points: [{label, x: 0–1, y: 0–1, ok, verdict, detail?, cite}]` |
+
+A lesson may also end its visual blocks with a question to try. The answer is folded but
+stays in the HTML:
+
+```
+::: try The delivery partner leaks Asha's address. Who answers to her?
+The answer, two or three sentences, citing the provision it rests on.
+:::
+```
+
+`src/content/scenarios.md` (the page at `/learn/scenarios`) uses this format and the same
+citation gate, with one exception: as a scenarios page it may state Schedule amounts.

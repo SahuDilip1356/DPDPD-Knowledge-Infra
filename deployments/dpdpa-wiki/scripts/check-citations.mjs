@@ -6,6 +6,7 @@
  *   provision.note     may cite only provision.note_cites ∪ { its own label }
  *   module lesson      may cite only the module's `provisions`
  *   module quiz item   may cite only labels in its `cites`, all within `provisions`
+ *   scenarios page     src/content/scenarios.md, held to the module rules
  *
  * Modules are Markdown under src/content/modules/*.md with front-matter; lessons
  * are the `## ` sections of the body. Absent modules are fine (none authored yet).
@@ -29,9 +30,14 @@ for (const p of provisions) {
 
 // ── Modules ──
 const modDir = path.join(root, "src/content/modules");
-const files = fs.existsSync(modDir) ? fs.readdirSync(modDir).filter((f) => /^\d\d-.*\.md$/.test(f)).sort() : [];
-for (const f of files) {
-  const src = fs.readFileSync(path.join(modDir, f), "utf8");
+const files = (fs.existsSync(modDir) ? fs.readdirSync(modDir).filter((f) => /^\d\d-.*\.md$/.test(f)).sort() : [])
+  .map((f) => [f, path.join(modDir, f)]);
+// The napkin scenarios page uses the module format and the same rules.
+// CHECK_SCENARIOS_FILE lets a test point the gate at a planted copy.
+const scenariosFile = process.env.CHECK_SCENARIOS_FILE || path.join(root, "src/content/scenarios.md");
+if (fs.existsSync(scenariosFile)) files.push(["scenarios.md", scenariosFile]);
+for (const [f, file] of files) {
+  const src = fs.readFileSync(file, "utf8");
   const fm = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(src);
   if (!fm) { problems.push(`${f}: no front-matter`); continue; }
   const body = src.slice(fm[0].length);
