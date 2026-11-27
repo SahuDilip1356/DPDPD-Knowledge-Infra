@@ -1,17 +1,22 @@
 """Quote checker for Setu training examples (training guide step 2).
 
-Every example must pass before Dilip sees it:
-- each claim cites a real provision id and quotes it word for word: one unbroken run of at
-  least 6 words, exact case, whitespace normalised, no "…" or "..." elision;
-- the answer names no section or rule it does not cite, and no rupee amount that is not in
-  one of its quotes;
-- the answer uses no capitalised legal-looking term that the law text does not contain
-  (catches inventions such as "Data Personal Breach Inquiry");
-- labels are from the approved sets, and refusal lanes say plainly that the law does not
-  answer or that a lawyer is needed.
+Every example must pass before Dilip sees it. The checker fails an example when:
+- a claim cites an unknown provision, or its quote is not one unbroken run of at least 6
+  words, in the same case, from that provision (whitespace ignored, no elision);
+- the answer refers to a section, rule or schedule it does not cite (long and short forms,
+  plurals, ranges), or to a sub-section or clause the cited text does not have;
+- the answer states a rupee amount or a time limit that no quote contains, or a claim
+  states an amount its own quote does not contain;
+- a cited provision is not yet in force on the check date and the answer does not give
+  every pending start date (a claim may name the part it relies on with `applies_from`);
+- the answer uses a name the law does not use, or a known wrong name;
+- a label is outside the approved sets, a law-answers or comparison example has no quote,
+  or a refusal example has no plain refusal phrase or states a duty without a quote.
+
+The check date is `--as-of` or today. An example cannot set its own.
 
 Usage:
-  python3 scripts/training_examples/check_examples.py --law <law-import dir> <examples.jsonl>
+  python3 scripts/training_examples/check_examples.py --law <law-import dir> [--as-of YYYY-MM-DD] <examples.jsonl>
 """
 
 import argparse
@@ -26,34 +31,64 @@ KINDS = {"who", "why", "how", "what", "when", "where"}
 READERS = {"business", "learner", "public"}
 LANES = {"law_answers", "law_silent", "needs_lawyer", "comparison", "out_of_scope"}
 REFUSAL_LANES = {"law_silent", "needs_lawyer", "out_of_scope"}
+QUOTE_REQUIRED_LANES = {"law_answers", "comparison"}
 MIN_QUOTE_WORDS = 6
 
 ELISION = re.compile(r"…|\.\.\.|\[\s*\.\.\.\s*\]")
-SECTION_REF = re.compile(r"\bSection\s+(\d+)", re.I)
-RULE_REF = re.compile(r"\bRule\s+(\d+)", re.I)
-AMOUNT = re.compile(r"₹\s?([\d,]+(?:\.\d+)?)\s*(crore|lakh)", re.I)
-CAP_RUN = re.compile(r"\b(?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:of|and|for|to)?\s*(?:[A-Z][a-z]+|[A-Z]{2,}))+\b")
-REFUSAL = re.compile(
-    r"\b(do(es)? not|don't|doesn't|is not|isn't|no provision|not cover|silent|a lawyer|"
-    r"legal advice|outside (the )?(dpdp|scope)|cannot answer)\b",
+
+NUM = r"\d+[A-Za-z]?(?:\(\d+[A-Za-z]?\))*(?:\([a-z]{1,4}\))*"
+REF = re.compile(
+    r"(?<![\w.-])(?P<kind>sections?|ss?\.|secs?\.?|rules?|r\.)\s*"
+    r"(?P<list>" + NUM + r"(?:\s*(?:,|and|or|to|-|–)\s*" + NUM + r")*)",
     re.I,
 )
+ORDINAL = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7}
+SCHEDULE_REF = re.compile(r"\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule\b|\b(?:the|The) Schedule\b")
+
+WORD_NUM = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+    "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000,
+}
+_W = "|".join(sorted(WORD_NUM, key=len, reverse=True))
+NUM_WORDS = r"(?:" + _W + r")(?:(?:[\s-]+|\s+and\s+)(?:" + _W + r"))*"
+NUMBER = r"(?:\d[\d,]*(?:\.\d+)?|" + NUM_WORDS + r")"
+AMOUNT = re.compile(r"(?:₹|\bRs\.?|\bINR)?\s*\b(" + NUMBER + r")\s*(crore|lakh)\b", re.I)
+RUPEES = re.compile(r"(?:₹|\bRs\.?\s?|\bINR\s?)(\d[\d,]*)(?![\d,]*\s*(?:crore|lakh))", re.I)
+WORD_RUPEES = re.compile(r"\b(" + NUM_WORDS + r")\s+rupees\b", re.I)
+TIME = re.compile(r"(?<![\w-])(" + NUMBER + r")\s+(hours?|days?|weeks?|months?|years?)\b", re.I)
+
+REFUSAL = re.compile(
+    r"\b((the )?(DPDP )?(Act|Rules)( and( the)? Rules)? (does|do) not|there is (none|no)|"
+    r"(ask|speak to|check with|consult) a lawyer|a (question|matter) for a lawyer|"
+    r"a lawyer (needs|can tell|should)|I cannot answer|no one can tell you)",
+    re.I,
+)
+DUTY_WORDS = re.compile(r"\b(must|shall|have to|has to|need to|needs to|required to)\b", re.I)
+
+CAP_RUN = re.compile(r"\b(?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:of|and|for|to)?\s*(?:[A-Z][a-z]+|[A-Z]{2,}))+\b")
 LEADING = {"The", "A", "An", "This", "That", "These", "Your", "Our", "If", "In", "Under", "For",
            "When", "Yes", "No", "So", "But", "And", "Each", "Every", "Any", "From", "Until", "Once",
            "Tell", "Ask", "Check", "Give", "Keep", "Get", "Send", "Use", "Note", "Then", "Only",
-           "Before", "After", "Both", "Also", "Most", "Some", "Today", "From"}
+           "Before", "After", "Both", "Also", "Most", "Some", "Today", "Even", "Among", "Not",
+           "Delete", "Appeal", "Medical", "Such", "It", "Its", "What", "Whether", "Students"}
 ALLOWED_NAMES = {
     "SaralPrivacy", "Setu", "India", "Indian", "RBI", "SEBI", "IRDAI", "Aadhaar", "MeitY",
     "CERT-In", "GDPR", "WhatsApp", "UPSC", "DPDP Act", "DPDP Rules", "DPDPA", "Gazette",
-    "Data Protection Board", "Data Protection Board of India", "Board", "Act", "Rules",
+    "Data Protection Board", "Data Protection Board of India", "Board", "Act", "Rules", "Pune",
 }
-ALLOWED_WORDS = {w for name in ALLOWED_NAMES for w in name.split()}
-AMOUNT_WORDS = {"10,000": "ten thousand", "50": "fifty", "150": "one hundred and fifty",
-                "200": "two hundred", "250": "two hundred and fifty", "500": "five hundred"}
+KNOWN_WRONG_TERMS = {
+    "Data Protection Act", "Data Protection Rules", "Personal Data Protection Act",
+    "Personal Data Protection Bill", "Data Protection Authority", "Data Protection Commissioner",
+    "Indian Data Protection Rules", "Data Personal Breach Inquiry",
+}
+KNOWN_WRONG_WORDS = re.compile(r"\b(Commissioner|Ombudsman|Authority|Regulator)\b")
 
 
 def squash(text):
-    return re.sub(r"\s+", " ", text).strip()
+    return re.sub(r"\s+", " ", text or "").strip()
 
 
 def load_law(law_dir):
@@ -67,26 +102,58 @@ def load_law(law_dir):
     return law
 
 
-def _cited_numbers(cites, law, prefix):
-    return {str(law[c].get("number")) for c in cites if c in law and c.startswith(prefix)}
+def words_to_int(text):
+    total, current = 0, 0
+    for w in re.split(r"[\s-]+", text.lower().replace(",", "")):
+        if not w or w == "and":
+            continue
+        if w.isdigit():
+            current += int(w)
+        elif w == "hundred":
+            current = max(current, 1) * 100
+        elif w == "thousand":
+            total += max(current, 1) * 1000
+            current = 0
+        elif w in WORD_NUM:
+            current += WORD_NUM[w]
+        else:
+            return None
+    return total + current
 
 
-def _invented_terms(answer, law_blob):
-    found = []
-    for m in CAP_RUN.finditer(answer):
-        words = m.group(0).split()
-        while words and words[0] in LEADING:
-            words = words[1:]
-        if len(words) < 2:
+def to_number(token):
+    token = token.strip()
+    if re.fullmatch(r"\d[\d,]*(?:\.\d+)?", token):
+        return float(token.replace(",", ""))
+    v = words_to_int(token)
+    return float(v) if v is not None else None
+
+
+def amounts(text):
+    """(value, unit) pairs: crore and lakh kept as units, plain rupees as 'rupees'."""
+    out = set()
+    for m in AMOUNT.finditer(text):
+        v = to_number(m.group(1))
+        if v is not None:
+            out.add((v, m.group(2).lower()))
+    for m in RUPEES.finditer(text):
+        out.add((float(m.group(1).replace(",", "")), "rupees"))
+    for m in WORD_RUPEES.finditer(text):
+        if re.search(r"(crore|lakh)\s+rupees$", m.group(0), re.I):
             continue
-        term = " ".join(words)
-        singular = re.sub(r"ies$", "y", term) if term.endswith("ies") else re.sub(r"s$", "", term)
-        if term in ALLOWED_NAMES or term in law_blob or singular in law_blob:
-            continue
-        if all(w in ALLOWED_WORDS or w in ("of", "and", "for", "to") for w in words):
-            continue
-        found.append(term)
-    return found
+        v = to_number(m.group(1))
+        if v is not None:
+            out.add((v, "rupees"))
+    return out
+
+
+def time_limits(text):
+    out = set()
+    for m in TIME.finditer(text):
+        v = to_number(m.group(1))
+        if v is not None:
+            out.add((v, m.group(2).lower().rstrip("s")))
+    return out
 
 
 def _in_force(record):
@@ -104,9 +171,80 @@ def _human(iso):
     return f"{d.day} {d.strftime('%B')} {d.year}"
 
 
+def _expand(listing):
+    """'3, 5 to 16 and 22' -> ['3', '5', ..., '16', '22'] (sub-parts kept on singles)."""
+    out = []
+    for p in re.split(r"\s*(?:,|\band\b|\bor\b)\s*", listing):
+        rng = re.split(r"\s*(?:\bto\b|-|–)\s*", p)
+        if len(rng) == 2 and rng[0].isdigit() and rng[1].isdigit():
+            out += [str(i) for i in range(int(rng[0]), int(rng[1]) + 1)]
+        elif p:
+            out.append(p)
+    return out
+
+
+def _check_refs(answer, cites, law):
+    errs = []
+    by_kind = {"section": {}, "rule": {}}
+    for c in cites:
+        if c not in law:
+            continue
+        num = str(law[c].get("number") or "")
+        if c.startswith("act-s") and num:
+            by_kind["section"][num] = law[c]
+        elif c.startswith("rules-r") and num:
+            by_kind["rule"][num] = law[c]
+    for m in REF.finditer(answer):
+        kind = "rule" if m.group("kind").lower().startswith("r") else "section"
+        for item in _expand(m.group("list")):
+            base = re.match(r"\d+[A-Za-z]?", item).group(0)
+            if base.isdigit() and int(base) >= 1000:
+                continue  # a year, as in "Rules 2025"
+            rec = by_kind[kind].get(base)
+            if rec is None:
+                errs.append(f"answer refers to {kind} {item} without citing it")
+                continue
+            for sub in re.findall(r"\([0-9A-Za-z]+\)", item[len(base):]):
+                if sub not in rec["text"]:
+                    errs.append(f"answer refers to {kind} {item}, but {rec['citation']} has no {sub}")
+    for m in SCHEDULE_REF.finditer(answer):
+        if m.group(1):
+            n = ORDINAL[m.group(1).lower()]
+            if not any(c.startswith(f"rules-sch{n}") for c in cites):
+                errs.append(f"answer refers to the {m.group(1)} Schedule without citing it")
+        elif not any(c.startswith("act-sch") for c in cites):
+            errs.append("answer refers to the Schedule without citing it")
+    return errs
+
+
+def _invented_terms(answer, law_blob):
+    found = []
+    for m in CAP_RUN.finditer(answer):
+        words = m.group(0).split()
+        while words and words[0] in LEADING:
+            words = words[1:]
+        if len(words) < 2:
+            continue
+        term = " ".join(words)
+        if term in KNOWN_WRONG_TERMS:
+            found.append(term)
+            continue
+        singular = re.sub(r"ies$", "y", term) if term.endswith("ies") else re.sub(r"s$", "", term)
+        if term in ALLOWED_NAMES or term in law_blob or singular in law_blob:
+            continue
+        segments = [s for s in re.split(r"\s+(?:and|of|for|to)\s+", term) if s]
+        if len(segments) > 1 and all(s in ALLOWED_NAMES or s in law_blob for s in segments):
+            continue
+        found.append(term)
+    for m in KNOWN_WRONG_WORDS.finditer(answer):
+        found.append(m.group(1))
+    return found
+
+
 def check(example, law, as_of=None):
-    """as_of: ISO date the answer is read on; defaults to the example's as_of, then today."""
-    as_of = as_of or example.get("as_of") or datetime.date.today().isoformat()
+    """as_of: the ISO date the answer is read on; defaults to today. The example's own
+    `as_of` field is ignored, so an example cannot move its own check date."""
+    as_of = as_of or datetime.date.today().isoformat()
     errs = []
     for field, allowed in (("kind", KINDS), ("reader", READERS), ("lane", LANES)):
         if example.get(field) not in allowed:
@@ -116,7 +254,7 @@ def check(example, law, as_of=None):
     cites = [cl.get("cite") for cl in claims]
     quotes = []
     for i, cl in enumerate(claims, 1):
-        cite, quote = cl.get("cite"), squash(cl.get("quote") or "")
+        cite, quote = cl.get("cite"), squash(cl.get("quote"))
         if cite not in law:
             errs.append(f"claim {i}: unknown provision {cite!r}")
             continue
@@ -130,37 +268,52 @@ def check(example, law, as_of=None):
             errs.append(f"claim {i}: quote not found in {law[cite]['citation']}")
             continue
         quotes.append(quote)
+        for v, unit in sorted(amounts(cl.get("text", "")) - amounts(quote)):
+            errs.append(f"claim {i}: states {v:g} {unit} but its own quote does not")
 
-    if example.get("lane") == "law_answers" and not claims:
-        errs.append("law_answers needs at least one quoted claim")
-    if example.get("lane") in REFUSAL_LANES and not REFUSAL.search(example.get("answer", "")):
-        errs.append("refusal lane must say plainly that the law does not answer or a lawyer is needed")
-
+    lane = example.get("lane")
     answer = example.get("answer", "")
-    sections = _cited_numbers(cites, law, "act-s")
-    rules = _cited_numbers(cites, law, "rules-r")
-    for m in SECTION_REF.finditer(answer):
-        if m.group(1) not in sections:
-            errs.append(f"answer names Section {m.group(1)} without citing it")
-    for m in RULE_REF.finditer(answer):
-        if m.group(1) not in rules:
-            errs.append(f"answer names Rule {m.group(1)} without citing it")
-    joined = " ".join(quotes)
-    for m in AMOUNT.finditer(answer):
-        num = m.group(1)
-        words = AMOUNT_WORDS.get(num)
-        if num not in joined and not (words and words in joined):
-            errs.append(f"answer names ₹{num} {m.group(2)} but no quote contains it")
+    if lane in QUOTE_REQUIRED_LANES and not claims:
+        errs.append(f"{lane} needs at least one quoted claim")
+    if lane in REFUSAL_LANES:
+        if not REFUSAL.search(answer):
+            errs.append("refusal lane must say plainly that the law does not answer or a lawyer is needed")
+        if DUTY_WORDS.search(answer) and not claims:
+            errs.append("refusal answer states a duty ('must', 'shall' ...) with no quote behind it")
+
+    errs += _check_refs(answer, cites, law)
+
+    quote_amounts, claim_amounts, quote_times = set(), set(), set()
+    for q in quotes:
+        quote_amounts |= amounts(q)
+        quote_times |= time_limits(q)
+    for cl in claims:
+        claim_amounts |= amounts(cl.get("text", ""))
+    for v, unit in sorted(amounts(answer)):
+        if (v, unit) not in quote_amounts or (v, unit) not in claim_amounts:
+            errs.append(f"answer states {v:g} {unit} but no claim quotes it")
+    for v, unit in sorted(time_limits(answer)):
+        if (v, unit) not in quote_times:
+            errs.append(f"answer states {v:g} {unit}{'s' if v != 1 else ''} but no quote contains it")
 
     # A duty that has not started yet must be dated, or readers act on it too early.
-    for cite in dict.fromkeys(cites):
+    pending = {}
+    for i, cl in enumerate(claims, 1):
+        cite = cl.get("cite")
         if cite not in law:
             continue
         dates = _in_force(law[cite])
-        pending = [d for d in dates if d > as_of]
-        if pending and not any(_human(d) in answer for d in dates):
-            errs.append(f"{law[cite]['citation']} is not in force until {_human(max(pending))}; "
-                        "the answer must say when it applies")
+        if cl.get("applies_from"):
+            if cl["applies_from"] not in dates:
+                errs.append(f"claim {i}: applies_from {cl['applies_from']} is not a start date of {law[cite]['citation']}")
+                continue
+            dates = [cl["applies_from"]]
+        for d in dates:
+            if d > as_of:
+                pending.setdefault(d, law[cite]["citation"])
+    for d, citation in sorted(pending.items()):
+        if _human(d) not in answer:
+            errs.append(f"{citation} is not in force until {_human(d)}; the answer must say so")
 
     law_blob = " ".join(squash(r["text"]) + " " + r.get("title", "") for r in law.values())
     for term in _invented_terms(answer, law_blob):
