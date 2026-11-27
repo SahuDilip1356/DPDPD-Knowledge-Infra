@@ -1,0 +1,4 @@
+# Official sources in the law lane (spec specs/official-sources/spec.md).
+# One entry per document. Hashes are filled by `official_sources.py fetch`; never edit them by hand.
+# A changed document becomes a new entry; the old one is marked superseded.
+[]

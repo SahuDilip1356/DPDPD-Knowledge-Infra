@@ -4,7 +4,7 @@
 **Spec:** ./spec.md
 **Date:** 2026-10-03
 
-Dependency order: T1 → T2 → T3 → (T4, T5) → T6. T7 can start any time after T2.
+Dependency order: T1 → T2 → T3 → (T4, T5) → T6. T7 and T8 can start any time after T2.
 Live-store writes (T6) are run by the founder.
 
 ### T1 — Enforce the two lanes in tests
@@ -53,7 +53,13 @@ Live-store writes (T6) are run by the founder.
 - risk: tier1
 - notes: register the commencement notification(s) after confirming them from the
          gazette (assumption A1); sync-law reads dates only from registered text, never
-         typed in by hand
+         typed in by hand. Found 2026-11-25: G.S.R. 843(E) of 13 Nov 2025
+         (meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf) sets
+         three dates: 13 Nov 2025 for s.1(2), 2, 18-26, 35, 38-43, 44(1), 44(3); one year
+         later for s.6(9) and 27(1)(d); eighteen months later for the rest. A local copy and
+         a parsed record are in staging/law-import/ (from the DPDPA Daily Brief project);
+         fetch fresh from the official URL, do not copy. The issue is dated 13 Nov but was
+         uploaded on 14 Nov; record the printed date and note the difference
 - verify: cd deployments/dpdpa-wiki && node scripts/sync-law.mjs && npm run build && npx vitest run tests/law-data.test.js
 
 ### T5 — First batch of verified objects from official sources
@@ -77,6 +83,24 @@ Live-store writes (T6) are run by the founder.
 - notes: founder runs `official` then `audit`; prerequisite: OpenAI credits restored,
          and the store repair (`conform`, `quarantine`) done
 - verify: python3 src/competitive_intel/build_knowledge_objects.py audit
+
+### T8 — Apply the Removal of Difficulties Order to the Act text
+- status: todo
+- implements: AC1
+- depends_on: T2
+- files: sources/official.yaml, src/competitive_intel/ground_truth.py,
+         deployments/dpdpa-wiki/src/data/law/provisions.json,
+         deployments/dpdpa-wiki/tests/law-data.test.js
+- risk: tier1
+- notes: S.O. 5458(E), the DPDP (Removal of Difficulties) Order, 2026, dated 5-6 Oct 2026
+         (egazette.gov.in/WriteReadData/2026/276885.pdf). Per its text (checked from a local
+         copy only), s.9(1) reads "a child or of a person with disability" and
+         s.10(2)(c)(ii) reads "periodic data audit". The live site still shows the old
+         wording. Register the order, then apply both corrections in the ground-truth
+         script (law text is never hand-edited) with an amended_by note naming the order;
+         the affected Act KOs (S9, S10) and any answer quoting them get a new version
+         through `revise`, never an overwrite
+- verify: cd deployments/dpdpa-wiki && node scripts/sync-law.mjs && npx vitest run tests/law-data.test.js
 
 ### T7 — Weekly watch for new issuances
 - status: todo

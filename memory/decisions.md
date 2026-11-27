@@ -15,3 +15,9 @@ Treat **Core** as Trust Layer 1–2 Knowledge Objects (Act/Rules/Judgements) wit
 - **Hybrid** recommended in discussion: light Core skeleton + deep clusters
 
 **Rationale:** Aligns with Knowledge Constitution and Founding Memo (evidence-first, events over documents, infrastructure before apps).
+
+## 2026-11-25 — Retrieval for law, fine-tuning for voice only
+
+**Decision (Dilip):** DPDPA facts come only from retrieval over the verified law lane (the Act, the Rules and registered official sources, checked by the corpus contract). A model may be fine-tuned for tone and format only, and only on SaralPrivacy's own writing, such as the 208 daily briefings once the four flagged ones are fixed. No fine-tuning on law text, competitor pages, market data or machine-suggested labels.
+
+**Why:** the nine LoRA/QLoRA runs of 28–29 Sep 2026 trained on 33 generic sample chats, not DPDPA, and the larger models got worse on the check set. Weights cannot be updated when the law changes (S.O. 5458(E) of Oct 2026 already amended the Act's wording), and competitor text disagrees with the gazette. Retrieval picks up a change the day the verified text changes.
