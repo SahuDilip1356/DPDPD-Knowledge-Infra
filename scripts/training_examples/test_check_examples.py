@@ -381,7 +381,7 @@ class TestHouseStylePasses(unittest.TestCase):
         "From 13 May 2027, tell the Board (Section 8).",
         "Most duties start on 13 May 2027 (G.S.R. 843(E)).",
         "Read it in any language in the Eighth Schedule to the Constitution (Section 8).",
-        "Tell the Board in one place, as one of two steps (Section 8).",
+        "Tell the Board in one place, as one of the steps, with a government ID (Section 8).",
     ]
 
     def test_each_form_passes(self):
@@ -456,3 +456,16 @@ class TestRealLawFalsePasses(unittest.TestCase):
 
     def test_house_text_still_passes(self):
         self.good(self.r7("report within 72 hours (Rule 7)."))
+
+
+@unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")
+class TestRound3NumberWords(TestRealLawFalsePasses):
+    def test_leftover_number_words_fail(self):
+        for a in ("report within 72 hours (Rule 7), or forty-eight at the latest.",
+                  "report on day five (Rule 7).", "report within two nights (Rule 7).",
+                  "report within two weekends (Rule 7).", "report within XLVIII hours (Rule 7).",
+                  "fines run to tens of millions (Rule 7)."):
+            self.bad(self.r7(a))
+
+    def test_one_and_articles_still_pass(self):
+        self.good(self.r7("report within 72 hours; this is one of the duties (Rule 7)."))

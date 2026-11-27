@@ -27,7 +27,7 @@ reference only in these house forms:
 The checker removes those forms after checking them. If anything numeric or reference-like
 is left (a digit in any script, a currency sign, "Rs", "crores", "per cent", "a dozen",
 "half", "u/s", "§", "s. 8", "schedule" in another form, "72-hour", "a fortnight", "seven
-business days", "the fifth day"), the example fails, whatever the wording. A quote may not
+business days", "the fifth day", any number word but "one", a Roman numeral), the example fails, whatever the wording. A quote may not
 cut a number phrase ("two hours" out of "seventy-two hours"). The tests list every wording a reviewer has found, and they must keep failing.
 
 It also fails an example when:

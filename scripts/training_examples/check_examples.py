@@ -117,7 +117,7 @@ CANON = [
 ]
 COUNT = re.compile(r"\b(\d+) (?:crore|lakh) (?!rupees)[a-z]+")                     # 2 crore registered users
 RESIDUAL_BAD = [
-    (re.compile(r"[₹$€£§]|\bRs\b\.?|\bINR\b|\bUSD\b|\brupees?\b|\bcrores\b|\blakhs\b|\b(?:m|b)illion\b", re.I),
+    (re.compile(r"[₹$€£§]|\bRs\b\.?|\bINR\b|\bUSD\b|\brupees?\b|\bcrores\b|\blakhs\b|\b(?:m|b|tr)illions?\b", re.I),
      "a currency or amount not in the house form ₹N crore"),
     (re.compile(r"\bu/s\b|(?<![\w.])(?:ss?|r|secs?|art)\.?\s*\d|\b(?:section|rule)s?\s+\d|\bread with\b|\bthrough\s+\d", re.I),
      "a reference not in the house form (Section N) or (Rule N)"),
@@ -132,8 +132,13 @@ RESIDUAL_BAD = [
     (re.compile(r"\b(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
                 r"\w+teenth|\w+tieth)\s+(?:hours?|days?|weeks?|months?|years?)\b", re.I),
      "a deadline written as an ordinal"),
+    (re.compile(r"\b(?:" + "|".join(w for w in sorted(WORD_NUM, key=len, reverse=True) if w != "one") + r")\b", re.I),
+     "a number word outside the house forms (only 'one' is allowed in prose)"),
     (re.compile(r"\d"), "a number outside the house forms (dates, citations, ₹ amounts, time limits)"),
 ]
+
+
+ROMAN = re.compile(r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})")
 
 
 def _residual(answer, quote_values):
@@ -148,6 +153,10 @@ def _residual(answer, quote_values):
     for m in COUNT.finditer(text):
         if float(m.group(1)) in quote_values:
             text = text.replace(m.group(0), " ")
+    for m in re.finditer(r"\b[MDCLXVI]{2,}\b", text):
+        if ROMAN.fullmatch(m.group(0)):
+            errs.append(f"answer has {m.group(0)!r}: a Roman numeral")
+            break
     for pat, why in RESIDUAL_BAD:
         m = pat.search(text)
         if m:
