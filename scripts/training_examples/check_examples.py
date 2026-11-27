@@ -26,6 +26,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 
 KINDS = {"who", "why", "how", "what", "when", "where"}
 READERS = {"business", "learner", "public"}
@@ -93,14 +94,25 @@ KNOWN_WRONG_WORDS = re.compile(r"\b(Commissioner|Ombudsman|Authority|Regulator)\
 # validated by the checks above, then removed; anything numeric or reference-like left over
 # fails, whatever its wording.
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+DATE = re.compile(r"\b\d{1,2} (?:" + MONTHS + r") \d{4}\b")
+NOTIFICATION = re.compile(r"\b(?:G\.S\.R\.|S\.O\.) \d+\(E\)")
+
+
+def _iso(human):
+    try:
+        return datetime.datetime.strptime(human, "%d %B %Y").date().isoformat()
+    except ValueError:
+        return None
+
+
 CANON = [
-    re.compile(r"\b\d{1,2} (?:" + MONTHS + r") \d{4}\b"),                       # 13 May 2027
-    re.compile(r"\b(?:G\.S\.R\.|S\.O\.) \d+\(E\)"),                           # G.S.R. 843(E)
+    DATE,                                                                     # 13 May 2027
+    NOTIFICATION,                                                             # G.S.R. 843(E)
     re.compile(r"\b(?:Section|Rule)s? \d+[A-Z]?(?:\(\d+[A-Za-z]?\))*(?:\([a-z]{1,4}\))?"
                r"(?:(?:, | and | to )\d+[A-Z]?(?:\(\d+[A-Za-z]?\))*)*(?![\w(])"),  # Section 8(6), Sections 11 to 14
     re.compile(r"\b[Tt]he Schedule\b|\b(?:First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule"
                r"(?:, Part [AB])?\b|\bEighth Schedule to the Constitution\b"),
-    re.compile(r"₹\d{1,3}(?:,\d{2,3})*(?: (?:crore|lakh)\b(?!s))?(?![\d,])"),      # ₹250 crore, ₹10,000
+    re.compile(r"₹\d{1,3}(?:,\d{2,3})*(?!,?\d)(?: (?:crore|lakh)\b(?!s))?"),       # ₹250 crore, ₹10,000
     re.compile(r"\b(?:\d+|" + NUM_WORDS + r") (?:hours?|days?|weeks?|months?|years?)\b", re.I),  # 72 hours
 ]
 COUNT = re.compile(r"\b(\d+) (?:crore|lakh) (?!rupees)[a-z]+")                     # 2 crore registered users
@@ -112,20 +124,30 @@ RESIDUAL_BAD = [
     (re.compile(r"\bschedules?\b", re.I), "a schedule not named in the house form"),
     (re.compile(r"\b(?:fortnight|hrs?|mins?|minutes?|working days?|business days?)\b", re.I),
      "a time limit not in the house form N hours/days/months/years"),
-    (re.compile(r"\b(?:" + NUM_WORDS + r")\s+(?:\w+\s+)?(?:hours?|days?|weeks?|months?|years?)\b", re.I),
+    (re.compile(r"\b(?:" + NUM_WORDS + r")\b(?:\W+\w+){0,3}?\W+(?:hours?|days?|weeks?|months?|years?)\b", re.I),
      "a time limit not in the house form"),
+    (re.compile(r"%|\bper ?cent\b|\bpercent\b", re.I), "a percentage"),
+    (re.compile(r"\b(?:dozens?|couple|half|quarters?|score|trillions?|crore|lakh)\b", re.I),
+     "an amount or count word outside the house forms"),
+    (re.compile(r"\b(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
+                r"\w+teenth|\w+tieth)\s+(?:hours?|days?|weeks?|months?|years?)\b", re.I),
+     "a deadline written as an ordinal"),
     (re.compile(r"\d"), "a number outside the house forms (dates, citations, ₹ amounts, time limits)"),
 ]
 
 
 def _residual(answer, quote_values):
+    errs = []
+    for ch in answer:
+        if unicodedata.category(ch).startswith("N") and not ("0" <= ch <= "9"):
+            errs.append(f"answer has {ch!r}: a non-ASCII digit or numeral")
+            break
     text = answer
     for pat in CANON:
         text = pat.sub(" ", text)
     for m in COUNT.finditer(text):
         if float(m.group(1)) in quote_values:
             text = text.replace(m.group(0), " ")
-    errs = []
     for pat, why in RESIDUAL_BAD:
         m = pat.search(text)
         if m:
@@ -145,13 +167,31 @@ def _quote_values(quotes):
     return vals
 
 
+NUMBER_WORD_SET = set(WORD_NUM) | {"and", "hundred", "thousand", "lakh", "crore"}
+
+
+def _joins(ch):
+    return ch.isalnum() or ch in "-'’"
+
+
 def _on_word_boundaries(quote, text):
+    """True if some occurrence starts and ends on whole words and does not cut a number
+    phrase ("two hours" out of "seventy-two hours", "fifty crore" out of "two hundred and fifty")."""
     start = text.find(quote)
     while start != -1:
         end = start + len(quote)
         before = text[start - 1] if start else " "
         after = text[end] if end < len(text) else " "
-        if not before.isalnum() and not after.isalnum():
+        ok = not _joins(before) and not _joins(after)
+        if ok:
+            q_words = re.findall(r"[A-Za-z]+", quote.lower())
+            prev = re.findall(r"[A-Za-z]+", text[:start].lower())[-1:]
+            nxt = re.findall(r"[A-Za-z]+", text[end:].lower())[:1]
+            if q_words and q_words[0] in WORD_NUM and prev and prev[0] in NUMBER_WORD_SET:
+                ok = False
+            if q_words and q_words[-1] in NUMBER_WORD_SET and nxt and nxt[0] in NUMBER_WORD_SET:
+                ok = False
+        if ok:
             return True
         start = text.find(quote, start + 1)
     return False
@@ -161,7 +201,20 @@ def squash(text):
     return re.sub(r"\s+", " ", text or "").strip()
 
 
+KNOWN_NOTIFICATIONS = {}   # citation -> date, loaded from dpdp-notifications.jsonl
+
+
 def load_law(law_dir):
+    KNOWN_NOTIFICATIONS.clear()
+    notes = os.path.join(law_dir, "dpdp-notifications.jsonl")
+    if os.path.exists(notes):
+        with open(notes) as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    KNOWN_NOTIFICATIONS[r.get("citation")] = r.get("date") or r.get("published")
+        # The Rules themselves are G.S.R. 846(E) of 13 November 2025 (law-import README, sources table).
+        KNOWN_NOTIFICATIONS.setdefault("G.S.R. 846(E)", "2025-11-13")
     law = {}
     for name in ("dpdp-act-2023.jsonl", "dpdp-rules-2025.jsonl"):
         with open(os.path.join(law_dir, name)) as f:
@@ -314,9 +367,9 @@ def _check_refs(answer, cites, law):
             if rec is None:
                 errs.append(f"answer refers to {kind} {item} without citing it")
                 continue
-            for sub in re.findall(r"\([0-9A-Za-z]+\)", item[len(base):]):
-                if sub not in rec["text"]:
-                    errs.append(f"answer refers to {kind} {item}, but {rec['citation']} has no {sub}")
+            subs = "".join(re.findall(r"\([0-9A-Za-z]+\)", item[len(base):]))
+            if subs and _part_text(rec, f"{kind} {base}{subs}") is None:
+                errs.append(f"answer refers to {kind} {base}{subs}, but {rec['citation']} has no such part")
     for m in SCHEDULE_REF.finditer(answer):
         if m.group(1):
             n = ORDINAL[m.group(1).lower()]
@@ -440,6 +493,19 @@ def check(example, law, as_of=None):
     for d, citation in sorted(pending.items()):
         if _human(d) not in answer:
             errs.append(f"{citation} is not in force until {_human(d)}; the answer must say so")
+
+    for m in NOTIFICATION.finditer(answer):
+        if m.group(0) not in KNOWN_NOTIFICATIONS:
+            errs.append(f"answer names {m.group(0)}, which is not a known notification")
+    # A date must be a real start date somewhere in the Act or Rules, or a known gazette date.
+    # (Which duty it belongs to is left to the legal read; the pending-date check above makes
+    # sure each cited provision's own start date is present.)
+    allowed_dates = {d for r in law.values() for d in _in_force(r)}
+    allowed_dates |= {d for d in KNOWN_NOTIFICATIONS.values() if d}
+    for m in DATE.finditer(answer):
+        iso = _iso(m.group(0))
+        if iso not in allowed_dates:
+            errs.append(f"answer gives {m.group(0)}, which is not a start date of a cited provision or a known gazette date")
 
     errs += _residual(answer, _quote_values(quotes))
 

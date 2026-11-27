@@ -17,17 +17,18 @@ reference only in these house forms:
 
 | Form | Example | Also checked |
 |---|---|---|
-| Date | 13 May 2027 | every pending start date of a cited provision must appear |
-| Notification | G.S.R. 843(E) | |
-| Citation | (Section 8(6)), (Rule 7), (Sections 11 to 14) | each number is cited; each sub-section exists in the cited text |
+| Date | 13 May 2027 | must be a real start date in the Act or Rules, or a known gazette date; every pending start date of a cited provision must appear |
+| Notification | G.S.R. 843(E) | must be listed in `dpdp-notifications.jsonl` (or be the Rules' own G.S.R. 846(E)) |
+| Citation | (Section 8(6)), (Rule 7(2)(b)), (Sections 11 to 14) | each number is cited; each sub-section and clause exists in that part of the cited text |
 | Schedule | (The Schedule), Fourth Schedule, Part A | the schedule is cited |
 | Amount | ₹250 crore, ₹10,000 | the value and unit are in that claim's own quote |
 | Time limit | 72 hours, seventy-two hours, one year | the value and unit are in a quote |
 
 The checker removes those forms after checking them. If anything numeric or reference-like
-is left (a digit, a currency sign, "Rs", "crores", "u/s", "§", "s. 8", "schedule" in another
-form, "72-hour", "a fortnight", "seven business days"), the example fails, whatever the
-wording. The tests list every wording a reviewer has found, and they must keep failing.
+is left (a digit in any script, a currency sign, "Rs", "crores", "per cent", "a dozen",
+"half", "u/s", "§", "s. 8", "schedule" in another form, "72-hour", "a fortnight", "seven
+business days", "the fifth day"), the example fails, whatever the wording. A quote may not
+cut a number phrase ("two hours" out of "seventy-two hours"). The tests list every wording a reviewer has found, and they must keep failing.
 
 It also fails an example when:
 - a quote is not one unbroken run of at least 6 words, in the same case, from the cited

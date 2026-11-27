@@ -153,7 +153,8 @@ def law_with_dates():
                      "in_force": [{"provision": "6(1)-(8)", "from": "2027-05-13"},
                                   {"provision": "section 6(9)", "from": "2026-11-13"}]}
     law["rules-r7"] = {"id": "rules-r7", "citation": "Rule 7", "number": "7",
-                       "text": "(2)(b) within seventy-two hours of becoming aware of the breach, or within such longer period"}
+                       "text": "(2)(b) within seventy-two hours of becoming aware of the breach, or within such longer period",
+                       "in_force": [{"provision": "rule 7", "from": "2027-05-13"}]}
     return law
 
 
@@ -329,6 +330,7 @@ LAW_FC["rules-r7"] = {"id": "rules-r7", "citation": "Rule 7", "number": "7",
                       "text": "(2) (b) within seventy-two hours of becoming aware of the breach, or within such longer period"}
 LAW_FC["act-schedule"] = LAW_FC.pop("act-sch")
 LAW_FC["act-schedule"]["id"] = "act-schedule"
+LAW_FC["act-s8"]["in_force"] = [{"provision": "section 8", "from": "2027-05-13"}]
 R7 = {"text": "x", "cite": "rules-r7", "quote": "within seventy-two hours of becoming aware of the breach"}
 S8 = {"text": "x", "cite": "act-s8", "quote": GOOD_QUOTE}
 SCH = {"text": "Up to ₹250 crore.", "cite": "act-schedule", "quote": "May extend to two hundred and fifty crore rupees"}
@@ -375,6 +377,7 @@ class TestHouseStylePasses(unittest.TestCase):
         "The full report is due within 72 hours (Rule 7).",
         "The full report is due within seventy-two hours (Rule 7).",
         "The cap is ₹250 crore (The Schedule).",
+        "The cap is ₹250 crore, for failing safeguards (The Schedule).",
         "From 13 May 2027, tell the Board (Section 8).",
         "Most duties start on 13 May 2027 (G.S.R. 843(E)).",
         "Read it in any language in the Eighth Schedule to the Constitution (Section 8).",
@@ -382,6 +385,7 @@ class TestHouseStylePasses(unittest.TestCase):
     ]
 
     def test_each_form_passes(self):
+        c.KNOWN_NOTIFICATIONS["G.S.R. 843(E)"] = "2025-11-13"
         for a in self.GOOD:
             self.assertEqual(c.check(fc(a), LAW_FC, as_of="2030-01-01"), [], a)
 
@@ -392,3 +396,63 @@ class TestQuoteBoundaries(unittest.TestCase):
         self.assertTrue(any("word" in e for e in c.check(fc("Tell the Board (Section 8).", [mid]), LAW_FC, as_of="2030-01-01")))
         end = {"text": "x", "cite": "act-s8", "quote": "the Data Fiduciary shall give the Board and each affec"}
         self.assertTrue(any("word" in e for e in c.check(fc("Tell the Board (Section 8).", [end]), LAW_FC, as_of="2030-01-01")))
+
+
+# ---- Fail-closed round 2: false passes found by the review of 2b542ff ----
+REAL_LAW_DIR = "/Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/staging/law-import"
+
+
+@unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")
+class TestRealLawFalsePasses(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.law = c.load_law(REAL_LAW_DIR)
+
+    def r7(self, answer, quote="within seventy-two hours of becoming aware of the breach", extra=None):
+        claims = [{"text": "x", "cite": "rules-r7", "quote": quote}] + (extra or [])
+        return ex(answer="From 13 May 2027, " + answer, claims=claims,
+                  provisions=sorted({x["cite"] for x in claims}))
+
+    def bad(self, e):
+        self.assertTrue(c.check(e, self.law, as_of="2026-11-27"), e["answer"])
+
+    def good(self, e):
+        self.assertEqual(c.check(e, self.law, as_of="2026-11-27"), [], e["answer"])
+
+    def test_quote_cut_inside_hyphenated_number(self):
+        self.bad(self.r7("report within 2 hours (Rule 7).", quote="two hours of becoming aware of the breach"))
+
+    def test_quote_keeping_only_the_tail_of_a_number(self):
+        sch = {"text": "Up to ₹50 crore.", "cite": "act-schedule",
+               "quote": "fifty crore rupees. 2. Breach in observing the obligation"}
+        self.bad(self.r7("security failures cost up to ₹50 crore (The Schedule) (Rule 7).", extra=[sch]))
+
+    def test_dates_must_be_real_start_or_gazette_dates(self):
+        self.bad(self.r7("the Board has enforced it since 1 January 2024 (Rule 7)."))
+        self.bad(ex(answer="These Rules came into force on 13 November 2024 (Rule 1).",
+                    claims=[{"text": "x", "cite": "rules-r1",
+                             "quote": "Rules 1, 2 and 17 to 21 shall come into force on the date of their publication"}],
+                    provisions=["rules-r1"]))
+        self.good(ex(answer="These Rules came into force on 13 November 2025 (Rule 1).",
+                     claims=[{"text": "x", "cite": "rules-r1",
+                              "quote": "Rules 1, 2 and 17 to 21 shall come into force on the date of their publication"}],
+                     provisions=["rules-r1"]))
+
+    def test_unknown_notification_number_fails(self):
+        self.bad(self.r7("report within 72 hours (Rule 7, G.S.R. 999(E))."))
+        self.good(self.r7("report within 72 hours (Rule 7, G.S.R. 846(E))."))
+
+    def test_number_words_and_symbols(self):
+        for a in ("pay four per cent of turnover (Rule 7).", "pay 4% of turnover (Rule 7).",
+                  "pay a crore (Rule 7).", "pay one and a half crore (Rule 7).", "pay a trillion (Rule 7).",
+                  "report by the fifth day (Rule 7).", "report within a dozen days (Rule 7).",
+                  "report within a couple of days (Rule 7).", "report within five full calendar days (Rule 7).",
+                  "report within ⁴⁸ hours (Rule 7).", "report within ７２ hours (Rule 7)."):
+            self.bad(self.r7(a))
+
+    def test_clause_must_be_in_the_named_subsection(self):
+        self.bad(self.r7("report the contact person (Rule 7(2)(e))."))
+        self.good(self.r7("report within 72 hours (Rule 7(2)(b))."))
+
+    def test_house_text_still_passes(self):
+        self.good(self.r7("report within 72 hours (Rule 7)."))
