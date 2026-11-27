@@ -17,8 +17,11 @@ is a compatibility entry point that builds that directory.
 | `evals/` | Eval runner, golden sets, baselines | CI |
 | `harvest/` | Competitor harvest seeds and classifiers (market lane) | — |
 | `specs/` | Intent → spec → plan chains, checked by `scripts/validate_chain.py` | CI |
-| `docs/` | Foundations, architecture, runbooks, plans, design — see [docs/README.md](docs/README.md) | — |
-| `memory/` | Project state and decisions; resume from `memory/STATE.md` | — |
+| `context/` | Where the project stands ([STATE.md](context/STATE.md)), founding memo, knowledge constitution | — |
+| `decisions/` | Decision log ([log.md](decisions/log.md)) | — |
+| `references/` | Architecture, runbooks, design, competitive-intel method — see [references/README.md](references/README.md) | — |
+| `archives/` | Old plans and session checkpoints, kept for their reasoning | — |
+| `connections.md` | Every outside system the project reaches (no secret values) | — |
 | `staging/` | Local working data, gitignored (crawls, market-map pack, staged objects) | — |
 
 ---
@@ -122,7 +125,7 @@ python3 scripts/ingest_document.py "https://egazette.gov.in/notif.pdf" --urn "ur
 
 The backend protects every `/admin/*` endpoint with the transitional
 `X-Admin-Key` control. The actions and factory screens still require the role-based,
-server-enforced workflow described in [`docs/plans/COMPREHENSIVE_BUILD_SPEC.md`](docs/plans/COMPREHENSIVE_BUILD_SPEC.md); their current
+server-enforced workflow described in [`archives/plans/COMPREHENSIVE_BUILD_SPEC.md`](archives/plans/COMPREHENSIVE_BUILD_SPEC.md); their current
 client-side login state is not an authorization boundary.
 
 ### Accessing the Admin Audit Panel (`/workspace/admin`)

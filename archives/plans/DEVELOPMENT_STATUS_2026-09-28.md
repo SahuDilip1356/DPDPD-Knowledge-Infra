@@ -70,7 +70,7 @@ The specification's 6–8 week estimate assumes two engineers and a part-time re
 
 - Latest commit visible in this checkout: `a3dab16`, 29 August 2026, public-route prerendering.
 - Before adding this report: 48 changed tracked paths and 48 untracked Git status entries; directory entries may contain multiple files. Much of the September implementation is local uncommitted work. Commit history alone understates progress.
-- `memory/STATE.md` is dated 1 August and still points to the old `frontend/` layout. Current frontend is `deployments/dpdpa-wiki/`.
+- `memory/STATE.md` (now `context/STATE.md`) is dated 1 August and still points to the old `frontend/` layout. Current frontend is `deployments/dpdpa-wiki/`.
 - `PLAN.md` predates completed homepage/guide/prerender work. Its live service counts and deployment assertions are historical.
 - `COMPREHENSIVE_BUILD_SPEC.md` is a proposed baseline dated 8 September; its original gap list predates several hardening fixes. `M1_BASELINE.md` records an earlier passing run, not today's result.
 - September session captures mostly contain diff statistics, making them weak evidence of accepted outcomes.

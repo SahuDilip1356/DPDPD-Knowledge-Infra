@@ -29,9 +29,11 @@ Last reviewed: 2026-09-08
 
 ### LLM provider chain
 
-At startup the system selects the first configured provider in this order:
+At startup the system selects the first configured provider for the reasoning model in this order:
 
-**`GEMINI_API_KEY` → `OPENAI_API_KEY` → `OPENROUTER_API_KEY`**
+**GPT-OSS (`REASONING_PROVIDER=gpt-oss`, or `GPT_OSS_BASE_URL` / `GPT_OSS_MODEL` set) → `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) → `OPENAI_API_KEY` → `OPENROUTER_API_KEY`**
+
+GPT-OSS is never used for embeddings or vision OCR (`deployments/dpdpa-backend/src/reasoning/model_client.py`).
 
 You currently have OpenAI, so that is what runs. OpenRouter is selected when no
 OpenAI key is configured. Runtime failover after a provider request fails is not
@@ -211,6 +213,6 @@ not require placing the key in or rebuilding the frontend bundle.
 
 - Git — `.gitignore` now blocks `.env`, `.env.local`, `.env.backup-*` and every
   other variant, while still tracking `.env.example`
-- `memory/`, `CLAUDE.md`, `.agent/` — your own standing rule
+- `context/`, `decisions/`, `CLAUDE.md`, `.agent/` — your own standing rule
 - Any `.md` file, including this one
 - Chat messages, screenshots, or issue trackers
