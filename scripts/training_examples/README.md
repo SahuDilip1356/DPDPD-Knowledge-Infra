@@ -36,7 +36,7 @@ it, and goes to a person.
 - whether a plain-English sentence means what the law means;
 - an amount or limit that is quoted correctly but described as being for the wrong duty
   (a ₹250 crore quote presented as the fine for not reporting a breach);
-- whether a start date sits next to the duty it belongs to, not just somewhere in the answer;
+- whether a start date sits next to the duty it belongs to, not only somewhere in the answer;
 - clause letters are checked only for presence in the whole provision ("8(1)(a)" passes if
   "(a)" appears anywhere in section 8);
 - references written in words ("section nine") and lowercase invented phrases.
