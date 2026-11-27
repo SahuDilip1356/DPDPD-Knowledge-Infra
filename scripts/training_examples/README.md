@@ -2,7 +2,8 @@
 
 Each training example is a question, the exact provisions, and a cited answer in
 SaralPrivacy's voice. Batches live in gitignored `staging/training-examples/` until
-Dilip approves them.
+Dilip approves them. Review sheets are written through `scripts/safe_output.py`, which
+never writes through a symlink or hard link planted at the sheet's name.
 
 ```bash
 L="<main checkout>/staging/law-import"

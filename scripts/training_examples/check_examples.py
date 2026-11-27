@@ -282,10 +282,19 @@ def _invented_terms(answer, law_blob):
     return found
 
 
+def valid_date(text):
+    """Return text if it is a real YYYY-MM-DD date; otherwise refuse. A malformed date
+    would compare wrongly as a string and silently switch the start-date check off."""
+    if not isinstance(text, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        sys.exit(f"Refusing: --as-of must be YYYY-MM-DD, got {text!r}.")
+    datetime.date.fromisoformat(text)
+    return text
+
+
 def check(example, law, as_of=None):
     """as_of: the ISO date the answer is read on; defaults to today. The example's own
     `as_of` field is ignored, so an example cannot move its own check date."""
-    as_of = as_of or datetime.date.today().isoformat()
+    as_of = valid_date(datetime.date.today().isoformat() if as_of is None else as_of)
     errs = []
     for field, allowed in (("kind", KINDS), ("reader", READERS), ("lane", LANES)):
         if example.get(field) not in allowed:
@@ -372,6 +381,8 @@ def main():
     ap.add_argument("--as-of", default=None, help="ISO date the answers are read on (default today)")
     ap.add_argument("examples")
     a = ap.parse_args()
+    if a.as_of is not None:
+        valid_date(a.as_of)
     law = load_law(a.law)
     bad = 0
     with open(a.examples) as f:

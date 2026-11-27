@@ -11,7 +11,6 @@ Usage:
 import argparse
 import json
 import os
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -47,28 +46,13 @@ def render(examples, law):
     return "\n".join(out)
 
 
-OUT_DIR = os.path.join(REPO_ROOT, "staging", "training-examples")
+OUT_REL = ("staging", "training-examples")
+sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
+import safe_output  # noqa: E402
 
 
-def sheet_path(batch):
-    return os.path.splitext(os.path.abspath(batch))[0] + "_review.md"
-
-
-def check_output(path):
-    """Refuse unless the sheet is a plain file directly inside staging/training-examples/."""
-    allowed = os.path.realpath(OUT_DIR)
-    if os.path.commonpath([allowed, os.path.realpath(REPO_ROOT)]) != os.path.realpath(REPO_ROOT):
-        sys.exit(f"Refusing to write: {OUT_DIR} resolves outside the repository.")
-    if os.path.islink(path):
-        sys.exit(f"Refusing to write {path}: it is a symlink.")
-    if os.path.dirname(os.path.realpath(path)) != allowed:
-        sys.exit(f"Refusing to write {path}: review sheets go directly in staging/training-examples/.")
-    try:
-        res = subprocess.run(["git", "-C", REPO_ROOT, "check-ignore", "-q", os.path.realpath(path)])
-    except FileNotFoundError:
-        sys.exit("Refusing to write: git is not available to confirm the path is gitignored.")
-    if res.returncode != 0:
-        sys.exit(f"Refusing to write {path}: it is not gitignored.")
+def sheet_name(batch):
+    return os.path.splitext(os.path.basename(batch))[0] + "_review.md"
 
 
 def main():
@@ -76,14 +60,13 @@ def main():
     ap.add_argument("--law", required=True)
     ap.add_argument("batch")
     a = ap.parse_args()
-    out = sheet_path(a.batch)
-    check_output(out)
+    batch_dir = os.path.realpath(os.path.dirname(os.path.abspath(a.batch)))
+    if batch_dir != os.path.realpath(os.path.join(REPO_ROOT, *OUT_REL)):
+        sys.exit("Refusing: the batch must sit directly in staging/training-examples/.")
     law = c.load_law(a.law)
     with open(a.batch) as f:
         examples = [json.loads(line) for line in f if line.strip()]
-    fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o644)
-    with os.fdopen(fd, "w") as f:
-        f.write(render(examples, law))
+    out = safe_output.write_files(REPO_ROOT, OUT_REL, {sheet_name(a.batch): render(examples, law)})[0]
     print(out)
 
 

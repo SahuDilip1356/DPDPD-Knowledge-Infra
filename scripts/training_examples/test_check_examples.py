@@ -302,3 +302,17 @@ class TestRefusalPhrases(unittest.TestCase):
     def test_vague_text_still_fails(self):
         e = ex(lane="needs_lawyer", claims=[], provisions=[], answer="It depends on many things.")
         self.assertTrue(c.check(e, LAW, as_of="2030-01-01"))
+
+
+class TestAsOfValidation(unittest.TestCase):
+    def test_bad_dates_are_refused(self):
+        for bad in ("27-11-2026", "2026/11/27", "tomorrow", "2026-13-01", ""):
+            with self.assertRaises((SystemExit, ValueError), msg=bad):
+                c.check(ex(), LAW, as_of=bad)
+
+    def test_cli_refuses_bad_date(self):
+        import subprocess
+        res = subprocess.run([sys.executable, c.__file__, "--law", ".", "--as-of", "27-11-2026", "x.jsonl"],
+                             capture_output=True, text=True)
+        self.assertNotEqual(res.returncode, 0)
+        self.assertIn("YYYY-MM-DD", res.stderr + res.stdout)
