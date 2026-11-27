@@ -190,8 +190,20 @@ def graph_rows(graph):
     return out
 
 
-def build(graph, street, target=1000, topic_floor=15):
-    """Every kept street question, then graph questions: a floor per topic, then by demand."""
+def written_row(w):
+    """SaralPrivacy's own question: labels were set by hand, so they are kept as written."""
+    return {
+        "id": w["id"], "question": w["question"].strip(), "kind": w["kind"], "reader": w["reader"],
+        "lane": w["lane"], "topic": "Written: " + (w["provisions"][0] if w["provisions"] else "general"),
+        "provision_hints": list(w["provisions"]), "source": "written", "demand": 0,
+        "first_person": bool(FIRST_PERSON.search(w["question"])),
+        "label_source": "written", "review": "pending",
+    }
+
+
+def build(graph, street, target=1000, topic_floor=15, written=()):
+    """Our written questions first (all kept), then up to `target` market questions:
+    every kept street question, then graph questions: a floor per topic, then by demand."""
     seen, picked = set(), []
 
     def add(r):
@@ -201,6 +213,10 @@ def build(graph, street, target=1000, topic_floor=15):
         seen.add(k)
         picked.append(r)
         return True
+
+    for w in written:
+        add(written_row(w))
+    target += len(picked)
 
     for r in sorted(street_rows(street), key=lambda r: -r["demand"]):
         if len(picked) < target:
@@ -259,7 +275,8 @@ def main():
         graph = [json.loads(line) for line in f if line.strip()]
     with open(a.street, newline="") as f:
         street = list(csv.DictReader(f))
-    rows = build(graph, street, a.target, a.topic_floor)
+    import written_questions
+    rows = build(graph, street, a.target, a.topic_floor, written=written_questions.rows())
     s = summary(rows)
 
     review = io.StringIO()
