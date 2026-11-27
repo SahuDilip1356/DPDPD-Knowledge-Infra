@@ -79,6 +79,7 @@ ALLOWED_NAMES = {
     "SaralPrivacy", "Setu", "India", "Indian", "RBI", "SEBI", "IRDAI", "Aadhaar", "MeitY",
     "CERT-In", "GDPR", "WhatsApp", "UPSC", "DPDP Act", "DPDP Rules", "DPDPA", "Gazette",
     "Data Protection Board", "Data Protection Board of India", "Board", "Act", "Rules", "Pune",
+    "Eighth Schedule",
 }
 KNOWN_WRONG_TERMS = {
     "Data Protection Act", "Data Protection Rules", "Personal Data Protection Act",
@@ -86,6 +87,74 @@ KNOWN_WRONG_TERMS = {
     "Indian Data Protection Rules", "Data Personal Breach Inquiry",
 }
 KNOWN_WRONG_WORDS = re.compile(r"\b(Commissioner|Ombudsman|Authority|Regulator)\b")
+
+# ---- Fail-closed residual check ----
+# Only these exact house forms may carry a number, a currency or a reference. Each is
+# validated by the checks above, then removed; anything numeric or reference-like left over
+# fails, whatever its wording.
+MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+CANON = [
+    re.compile(r"\b\d{1,2} (?:" + MONTHS + r") \d{4}\b"),                       # 13 May 2027
+    re.compile(r"\b(?:G\.S\.R\.|S\.O\.) \d+\(E\)"),                           # G.S.R. 843(E)
+    re.compile(r"\b(?:Section|Rule)s? \d+[A-Z]?(?:\(\d+[A-Za-z]?\))*(?:\([a-z]{1,4}\))?"
+               r"(?:(?:, | and | to )\d+[A-Z]?(?:\(\d+[A-Za-z]?\))*)*(?![\w(])"),  # Section 8(6), Sections 11 to 14
+    re.compile(r"\b[Tt]he Schedule\b|\b(?:First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule"
+               r"(?:, Part [AB])?\b|\bEighth Schedule to the Constitution\b"),
+    re.compile(r"₹\d{1,3}(?:,\d{2,3})*(?: (?:crore|lakh)\b(?!s))?(?![\d,])"),      # ₹250 crore, ₹10,000
+    re.compile(r"\b(?:\d+|" + NUM_WORDS + r") (?:hours?|days?|weeks?|months?|years?)\b", re.I),  # 72 hours
+]
+COUNT = re.compile(r"\b(\d+) (?:crore|lakh) (?!rupees)[a-z]+")                     # 2 crore registered users
+RESIDUAL_BAD = [
+    (re.compile(r"[₹$€£§]|\bRs\b\.?|\bINR\b|\bUSD\b|\brupees?\b|\bcrores\b|\blakhs\b|\b(?:m|b)illion\b", re.I),
+     "a currency or amount not in the house form ₹N crore"),
+    (re.compile(r"\bu/s\b|(?<![\w.])(?:ss?|r|secs?|art)\.?\s*\d|\b(?:section|rule)s?\s+\d|\bread with\b|\bthrough\s+\d", re.I),
+     "a reference not in the house form (Section N) or (Rule N)"),
+    (re.compile(r"\bschedules?\b", re.I), "a schedule not named in the house form"),
+    (re.compile(r"\b(?:fortnight|hrs?|mins?|minutes?|working days?|business days?)\b", re.I),
+     "a time limit not in the house form N hours/days/months/years"),
+    (re.compile(r"\b(?:" + NUM_WORDS + r")\s+(?:\w+\s+)?(?:hours?|days?|weeks?|months?|years?)\b", re.I),
+     "a time limit not in the house form"),
+    (re.compile(r"\d"), "a number outside the house forms (dates, citations, ₹ amounts, time limits)"),
+]
+
+
+def _residual(answer, quote_values):
+    text = answer
+    for pat in CANON:
+        text = pat.sub(" ", text)
+    for m in COUNT.finditer(text):
+        if float(m.group(1)) in quote_values:
+            text = text.replace(m.group(0), " ")
+    errs = []
+    for pat, why in RESIDUAL_BAD:
+        m = pat.search(text)
+        if m:
+            errs.append(f"answer has {m.group(0)!r}: {why}")
+    return errs
+
+
+def _quote_values(quotes):
+    vals = set()
+    for q in quotes:
+        for m in re.finditer(r"\d[\d,]*", q):
+            vals.add(float(m.group(0).replace(",", "")))
+        for m in re.finditer(NUM_WORDS, q, re.I):
+            v = to_number(m.group(0))
+            if v is not None:
+                vals.add(v)
+    return vals
+
+
+def _on_word_boundaries(quote, text):
+    start = text.find(quote)
+    while start != -1:
+        end = start + len(quote)
+        before = text[start - 1] if start else " "
+        after = text[end] if end < len(text) else " "
+        if not before.isalnum() and not after.isalnum():
+            return True
+        start = text.find(quote, start + 1)
+    return False
 
 
 def squash(text):
@@ -317,6 +386,9 @@ def check(example, law, as_of=None):
         if quote not in squash(law[cite]["text"]):
             errs.append(f"claim {i}: quote not found in {law[cite]['citation']}")
             continue
+        if not _on_word_boundaries(quote, squash(law[cite]["text"])):
+            errs.append(f"claim {i}: quote starts or ends mid-word in {law[cite]['citation']}")
+            continue
         quotes.append(quote)
         for v, unit in sorted(amounts(cl.get("text", "")) - amounts(quote)):
             errs.append(f"claim {i}: states {v:g} {unit} but its own quote does not")
@@ -368,6 +440,8 @@ def check(example, law, as_of=None):
     for d, citation in sorted(pending.items()):
         if _human(d) not in answer:
             errs.append(f"{citation} is not in force until {_human(d)}; the answer must say so")
+
+    errs += _residual(answer, _quote_values(quotes))
 
     law_blob = " ".join(squash(r["text"]) + " " + r.get("title", "") for r in law.values())
     for term in _invented_terms(answer, law_blob):

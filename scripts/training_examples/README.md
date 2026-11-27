@@ -12,25 +12,31 @@ python3 scripts/training_examples/make_review_sheet.py --law "$L" staging/traini
 python3 -m unittest scripts/training_examples/test_check_examples.py -v
 ```
 
-The checker fails an example when:
+The checker fails closed. An answer may carry a number, an amount, a time limit or a
+reference only in these house forms:
+
+| Form | Example | Also checked |
+|---|---|---|
+| Date | 13 May 2027 | every pending start date of a cited provision must appear |
+| Notification | G.S.R. 843(E) | |
+| Citation | (Section 8(6)), (Rule 7), (Sections 11 to 14) | each number is cited; each sub-section exists in the cited text |
+| Schedule | (The Schedule), Fourth Schedule, Part A | the schedule is cited |
+| Amount | ₹250 crore, ₹10,000 | the value and unit are in that claim's own quote |
+| Time limit | 72 hours, seventy-two hours, one year | the value and unit are in a quote |
+
+The checker removes those forms after checking them. If anything numeric or reference-like
+is left (a digit, a currency sign, "Rs", "crores", "u/s", "§", "s. 8", "schedule" in another
+form, "72-hour", "a fortnight", "seven business days"), the example fails, whatever the
+wording. The tests list every wording a reviewer has found, and they must keep failing.
+
+It also fails an example when:
 - a quote is not one unbroken run of at least 6 words, in the same case, from the cited
-  provision (whitespace is ignored; "…" is not allowed);
-- the answer refers to a section, rule or schedule it does not cite, in any form ("s. 9",
-  "Sections 8 and 9", "Rules 3 to 16", "Fourth Schedule"), or to a sub-section the cited
-  text does not have;
-- the answer states a rupee amount (₹, Rs, INR or bare) or a time limit that no quote
-  contains, or a claim states an amount its own quote does not contain;
-- a cited provision is not in force on the check date (`--as-of`, or today) and the answer
-  does not give every pending start date. A claim that relies only on a part already in
-  force names it with `applies_from`;
-- the answer uses a capitalised name the Act and Rules never use, or a known wrong name
-  such as "Data Protection Act" or "Commissioner";
+  provision, starting and ending on whole words (no "…");
+- the answer uses a capitalised name the Act and Rules never use, or a known wrong name;
+- the check date is not a real YYYY-MM-DD date (`--as-of`, or today);
+- a claim's `applies_from` does not match the sub-section its quote comes from;
 - a label is outside the approved sets, a law-answers or comparison example has no quote,
   or a refusal example has no plain refusal phrase, or states a duty with no quote.
-
-`applies_from` is accepted only when the quote sits inside the sub-section that date
-covers in the law file's in-force list. A claim on a range ("section 6(1)-(8)") cannot use
-it, and goes to a person.
 
 ## What it cannot catch (left to the legal read and Dilip)
 

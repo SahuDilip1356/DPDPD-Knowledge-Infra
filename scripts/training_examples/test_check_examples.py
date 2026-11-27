@@ -282,10 +282,12 @@ class TestRound3(unittest.TestCase):
         law = law_with_dates()
         base = dict(provisions=["rules-r7"], claims=[{"text": "x", "cite": "rules-r7",
                     "quote": "within seventy-two hours of becoming aware of the breach"}])
-        self.assertEqual(c.check(ex(answer="Send the 72-hour report (Rule 7).", **base), law, as_of="2030-01-01"), [])
+        # Fail-closed design: "72-hour" is not a house form, so it fails even when 72 is quoted.
+        self.assertTrue(c.check(ex(answer="Send the 72-hour report (Rule 7).", **base), law, as_of="2030-01-01"))
+        self.assertEqual(c.check(ex(answer="Send the report within 72 hours (Rule 7).", **base), law, as_of="2030-01-01"), [])
         self.assertTrue(c.check(ex(answer="Send the 48-hour report (Rule 7).", **base), law, as_of="2030-01-01"))
         self.assertTrue(c.check(ex(answer="Report within a week (Rule 7).", **base), law, as_of="2030-01-01"))
-        self.assertEqual(c.check(ex(answer="A 16-year-old is a child (Rule 7).", **base), law, as_of="2030-01-01"), [])
+        self.assertTrue(c.check(ex(answer="A 16-year-old is a child (Rule 7).", **base), law, as_of="2030-01-01"))
 
     def test_space_before_subsection(self):
         self.assertTrue(c.check(ex(answer="Tell the Board (Section 8 (15))."), LAW, as_of="2030-01-01"))
@@ -316,3 +318,77 @@ class TestAsOfValidation(unittest.TestCase):
                              capture_output=True, text=True)
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("YYYY-MM-DD", res.stderr + res.stdout)
+
+
+# ---- Fail-closed design (Dilip approved 2026-11-27) ----
+# Every wording a reviewer found must fail; every house-style form must pass. Narrowing the
+# canonical patterns breaks TestHouseStylePasses; widening the residual check breaks
+# TestEveryBypassFails. Both are the mutation guard the PR #17 review asked for.
+LAW_FC = {k: dict(v) for k, v in LAW.items()}
+LAW_FC["rules-r7"] = {"id": "rules-r7", "citation": "Rule 7", "number": "7",
+                      "text": "(2) (b) within seventy-two hours of becoming aware of the breach, or within such longer period"}
+LAW_FC["act-schedule"] = LAW_FC.pop("act-sch")
+LAW_FC["act-schedule"]["id"] = "act-schedule"
+R7 = {"text": "x", "cite": "rules-r7", "quote": "within seventy-two hours of becoming aware of the breach"}
+S8 = {"text": "x", "cite": "act-s8", "quote": GOOD_QUOTE}
+SCH = {"text": "Up to ₹250 crore.", "cite": "act-schedule", "quote": "May extend to two hundred and fifty crore rupees"}
+
+
+def fc(answer, claims=None):
+    claims = claims or [S8, R7, SCH]
+    return ex(answer=answer, claims=claims, provisions=sorted({x["cite"] for x in claims}))
+
+
+class TestEveryBypassFails(unittest.TestCase):
+    BYPASSES = [
+        # amounts
+        "The fine is ₹300 crores (Section 8).", "The fine is Rs. 300 crores (Section 8).",
+        "The fine is ₹5 lakhs (Section 8).", "A 300-crore fine applies (Section 8).",
+        "The fine is 10,000 rupees (Section 8).", "The fine is $30 million (Section 8).",
+        "The fine is INR 250 crore (Section 8).", "The fine is 250 crore (Section 8).",
+        # time limits
+        "Report within 72 hrs (Rule 7).", "Report within 72h (Rule 7).",
+        "Report within 30 working days (Rule 7).", "Report within seven business days (Rule 7).",
+        "Report within 90 minutes (Rule 7).", "Report within a fortnight (Rule 7).",
+        "Send the 72-hour report (Rule 7).",
+        # references
+        "Tell the Board u/s 8.", "Tell the Board under s 8.", "Report under r 7 (Section 8).",
+        "Tell the Board under §8.", "Read Section 8 read with 7.", "See Sections 8 through 12.",
+        "See Sections 8—12.", "See Sections 8–12.", "Tell the Board (Sec. 8).",
+        # schedules
+        "See the fourth schedule (Section 8).", "See Schedule I (Section 8).",
+        "See the schedules (Section 8).",
+        # stray numbers and partial dates
+        "It was uploaded on 14 November (Section 8).", "The Act has 44 sections (Section 8).",
+        "It is the 45th section (Section 8).",
+    ]
+
+    def test_each_bypass_fails(self):
+        for a in self.BYPASSES:
+            self.assertTrue(c.check(fc(a), LAW_FC, as_of="2030-01-01"), a)
+
+
+class TestHouseStylePasses(unittest.TestCase):
+    GOOD = [
+        "Tell the Board and every affected person (Section 8).",
+        "Tell the Board (Section 8(6)).",
+        "The full report is due within 72 hours (Rule 7).",
+        "The full report is due within seventy-two hours (Rule 7).",
+        "The cap is ₹250 crore (The Schedule).",
+        "From 13 May 2027, tell the Board (Section 8).",
+        "Most duties start on 13 May 2027 (G.S.R. 843(E)).",
+        "Read it in any language in the Eighth Schedule to the Constitution (Section 8).",
+        "Tell the Board in one place, as one of two steps (Section 8).",
+    ]
+
+    def test_each_form_passes(self):
+        for a in self.GOOD:
+            self.assertEqual(c.check(fc(a), LAW_FC, as_of="2030-01-01"), [], a)
+
+
+class TestQuoteBoundaries(unittest.TestCase):
+    def test_quote_must_start_and_end_on_word_boundaries(self):
+        mid = {"text": "x", "cite": "act-s8", "quote": "he Data Fiduciary shall give the Board and each affected"}
+        self.assertTrue(any("word" in e for e in c.check(fc("Tell the Board (Section 8).", [mid]), LAW_FC, as_of="2030-01-01")))
+        end = {"text": "x", "cite": "act-s8", "quote": "the Data Fiduciary shall give the Board and each affec"}
+        self.assertTrue(any("word" in e for e in c.check(fc("Tell the Board (Section 8).", [end]), LAW_FC, as_of="2030-01-01")))
