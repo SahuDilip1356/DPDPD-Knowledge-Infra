@@ -35,7 +35,8 @@ legal claims on those sites are wrong.
 Each question gets three labels:
 - **Kind:** who (who must comply, who is a Data Fiduciary), why (why a duty exists), how
   (how to give notice, how to report a breach), what (what counts as personal data),
-  where (where data may be sent, where to complain).
+  when (when a duty starts), where (where data may be sent, where to complain). Dilip
+  approved these six on 2026-11-27.
 - **Reader:** business, learner or public.
 - **Lane:** law answers it; law is silent; needs a lawyer (a company's own facts).
 
