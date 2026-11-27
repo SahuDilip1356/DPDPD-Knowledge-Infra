@@ -44,6 +44,14 @@ def law_ids(law_dir):
     return ids
 
 
+def citable_ids(law_dir):
+    """Provisions plus notifications: a question may be anchored to either."""
+    ids = law_ids(law_dir)
+    with open(os.path.join(law_dir, "dpdp-notifications.jsonl")) as f:
+        ids += [json.loads(line)["id"] for line in f if line.strip()]
+    return ids
+
+
 def hint_to_id(hint):
     m = re.fullmatch(r"([SR])(\d+)", hint or "")
     if not m:

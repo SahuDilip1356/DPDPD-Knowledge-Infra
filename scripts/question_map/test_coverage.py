@@ -47,9 +47,19 @@ class TestCoverageAgainstTheLaw(unittest.TestCase):
         cls.law_ids = cov.law_ids(LAW_DIR)
 
     def test_every_cited_provision_exists(self):
+        citable = cov.citable_ids(LAW_DIR)
         for r in wq.rows():
             for p in r["provisions"]:
-                self.assertIn(p, self.law_ids, (r["id"], p))
+                self.assertIn(p, citable, (r["id"], p))
+
+    def test_review_corrections_applied(self):
+        d = {r["id"]: r for r in wq.rows()}
+        self.assertNotIn("W-silent-48-p", d)          # s9(5) covers it
+        self.assertEqual(d["W-trick-31"]["lane"], "law_answers")
+        self.assertEqual(d["W-rules-sch4-b-03"]["provisions"][0], "rules-sch4-a")
+        self.assertIn("gsr-845e-2025", d["W-act-s19-02"]["provisions"])
+        corrections = [r for r in wq.rows() if r["lane"] == "out_of_scope" and r["provisions"]]
+        self.assertGreaterEqual(len(corrections), 25)
 
     def test_written_questions_cover_every_provision_and_lane(self):
         report = cov.report(wq.rows(), [], self.law_ids)

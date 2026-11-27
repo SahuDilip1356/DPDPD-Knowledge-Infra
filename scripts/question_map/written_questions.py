@@ -54,6 +54,7 @@ BY_PROVISION = {
         ("who", "public", "Who is a Consent Manager and why would I use one?"),
         ("when", "business", "When must we stop processing after a customer withdraws consent?"),
         ("what", "learner", "What happens to a part of consent that breaks the law?"),
+        ("what", "business", "Do the DPDP Act and Rules stop dark patterns in consent screens?", ["act-s6", "rules-r3"]),
     ],
     "act-s7": [
         ("what", "business", "What are the 'certain legitimate uses' under the DPDP Act?"),
@@ -85,6 +86,7 @@ BY_PROVISION = {
         ("why", "public", "Why does the DPDP Act ban tracking and behavioural monitoring of children?"),
         ("when", "business", "When can a business be exempt from the parental consent rule?"),
         ("what", "learner", "What does 'detrimental effect on the well-being of a child' mean for a business?"),
+        ("what", "business", "Is there an age above which a business needs no parental consent for a teenager?", ["act-s9", "rules-r12", "rules-sch4-a", "rules-sch4-b"]),
     ],
     "act-s10": [
         ("who", "business", "Who decides whether a company is a Significant Data Fiduciary?"),
@@ -270,6 +272,7 @@ BY_PROVISION = {
         ("what", "learner", "Which other Acts does the DPDP Act amend?"),
         ("what", "business", "Does the DPDP Act change the IT Act's rules on compensation for data protection?"),
         ("what", "public", "Does the DPDP Act change the Right to Information Act?"),
+        ("what", "public", "Does the DPDP Act give compensation to people whose data leaks?", ["act-s34", "act-s44"]),
     ],
     "act-schedule": [
         ("what", "business", "What is the maximum penalty for failing to protect personal data?"),
@@ -329,6 +332,7 @@ BY_PROVISION = {
         ("what", "business", "Do we have to warn a user before erasing their data?"),
         ("who", "business", "Which businesses have fixed erasure periods under the Rules?"),
         ("why", "learner", "Why do the Rules require logs to be kept for at least one year?"),
+        ("when", "business", "Is there a fixed number of days to delete data after a customer leaves?", ["rules-r8", "rules-sch3", "act-s8"]),
     ],
     "rules-r9": [
         ("where", "business", "Where must we publish the contact for data questions?"),
@@ -465,8 +469,8 @@ SILENT = [
     ("what", "a right to data portability", ["act-s11"]),
     ("what", "a right to object to automated decisions", ["act-s8"]),
     ("what", "compensation for the person whose data leaked", ["act-s34"]),
-    ("what", "rules on cookies and cookie banners", ["act-s6"]),
-    ("when", "an expiry date for consent", ["act-s6"]),
+    ("what", "cookies and cookie banners", ["act-s6"]),
+    ("when", "an expiry date for consent", ["act-s6", "rules-r8", "rules-sch3"]),
     ("what", "registration of company databases with the government", ["act-s6"]),
     ("what", "a required certification for Data Protection Officers", ["act-s10"]),
     ("what", "the term 'privacy policy'", ["act-s5"]),
@@ -475,46 +479,54 @@ SILENT = [
     ("what", "the word 'anonymised'", ["act-s2"]),
     ("who", "a local representative for foreign companies", ["act-s10"]),
     ("what", "a reward for reporting violations", ["act-s34"]),
-    ("where", "a portal for filing yearly compliance returns", ["act-s8"]),
+    ("where", "a portal for filing yearly compliance returns", ["act-s8", "rules-r13"]),
     ("who", "a Chief Privacy Officer", ["act-s10"]),
     ("when", "a fixed number of days to delete data after a customer leaves", ["act-s8"]),
     ("what", "Board approval of privacy notices", ["act-s5"]),
-    ("what", "a minimum company size before the law applies", ["act-s3"]),
+    ("what", "a minimum company size before the law applies", ["act-s3", "act-s17"]),
     ("what", "a list of approved compliance software", ["act-s8"]),
     ("what", "a template for the consent notice", ["rules-r3"]),
-    ("what", "rules specific to WhatsApp groups", ["act-s3"]),
-    ("what", "rules on employee monitoring software", ["act-s7"]),
+    ("what", "WhatsApp groups", ["act-s3"]),
+    ("what", "employee monitoring software", ["act-s7"]),
     ("when", "a deadline to tell customers about a breach in hours", ["rules-r7"]),
     ("what", "fines for individuals who leak their employer's data", ["act-s33"]),
     ("what", "a requirement to appoint a DPO for every company", ["act-s10"]),
     ("what", "a duty to encrypt all data", ["rules-r6"]),
-    ("what", "rules on biometric attendance systems", ["act-s2"]),
-    ("what", "rules on AI model training", ["act-s4"]),
+    ("what", "biometric attendance systems", ["act-s2"]),
+    ("what", "AI model training", ["act-s4"]),
     ("what", "a right to be forgotten by name", ["act-s12"]),
     ("what", "a fixed fee for making a rights request", ["rules-r14"]),
-    ("what", "criminal imprisonment for data breaches", ["act-s33"]),
+    ("what", "criminal imprisonment for data breaches", ["act-s33", "act-schedule"]),
     ("what", "a cap on how many times consent can be asked", ["act-s6"]),
-    ("what", "rules on email marketing", ["act-s6"]),
-    ("what", "rules on credit scores", ["act-s8"]),
-    ("what", "data protection rules for dead people's data beyond nomination", ["act-s14"]),
+    ("what", "email marketing", ["act-s6"]),
+    ("what", "credit scores", ["act-s8"]),
+    ("what", "the data of people who have died, beyond nomination", ["act-s14"]),
     ("what", "a requirement to hold data in India for ordinary businesses", ["act-s16"]),
     ("what", "an official DPDP compliance checklist", ["act-s8"]),
-    ("what", "rules on data brokers by name", ["act-s4"]),
+    ("what", "data brokers", ["act-s4"]),
     ("what", "a requirement to buy cyber insurance", ["rules-r6"]),
-    ("what", "rules on location tracking by apps", ["act-s6"]),
+    ("what", "location tracking by apps", ["act-s6", "rules-sch4-b"]),
     ("what", "mandatory privacy training for staff", ["rules-r6"]),
     ("what", "a rule on how many years audit reports must be kept", ["rules-r13"]),
-    ("what", "an amnesty period with no penalties after the start date", ["act-s33"]),
-    ("what", "rules on genetic data", ["act-s2"]),
-    ("what", "a requirement for data protection impact assessments by ordinary businesses", ["act-s10"]),
+    ("what", "an amnesty period with no penalties after the start date", ["act-s33", "act-s17", "gsr-843e-2025"]),
+    ("what", "genetic data", ["act-s2"]),
+    ("what", "a requirement for data protection impact assessments by ordinary businesses", ["act-s10", "rules-r13"]),
     ("what", "rules on children's age above which parental consent is not needed in general", ["act-s9"]),
     ("what", "a requirement to publish a list of all vendors", ["act-s8"]),
-    ("what", "rules on deleting backups", ["rules-r6"]),
+    ("what", "deleting backups", ["rules-r6"]),
+    # appended 2026-11-27 after the label review retired topics 05, 18, 27, 28, 38, 48
+    ("what", "dark patterns in consent screens", ["act-s6"]),
+    ("what", "facial recognition", ["act-s2"]),
+    ("what", "drone footage", ["act-s2", "act-s3"]),
+    ("what", "smart home devices", ["act-s3"]),
+    ("what", "screen-time limits for children", ["act-s9"]),
+    ("what", "a privacy-by-design certificate", ["act-s8"]),
+    ("what", "loyalty points programmes", ["act-s6"]),   # appended after 51 was retired
 ]
 SILENT_FORMS = {
-    "public": "Does the DPDP Act say anything about {t}?",
-    "business": "Do the DPDP Act and Rules require or set {t}?",
-    "learner": "Is there any provision in the DPDP Act or Rules on {t}?",
+    "public": "Do the DPDP Act or Rules say anything about {t}?",
+    "business": "Is there anything in the DPDP Act or Rules on {t}?",
+    "learner": "Which provision of the DPDP Act or Rules covers {t}, if any?",
 }
 
 # Situations that need a lawyer: the answer turns on one organisation's own facts.
@@ -565,26 +577,78 @@ OUT_OF_SCOPE = [
     "Is there a DPDP Commissioner I can write to?", "Can WhatsApp read my messages under the DPDP Act?",
     "What is the DPDP rule for cookies in the EU?", "Do DPDP fines double for repeat offences automatically?",
     "Is a 72-hour rule written in Section 8?", "Does the DPDP Act require consent from adults' parents?",
+    # appended 2026-11-27 after W-trick-31 and W-trick-38 were relabelled
+    "Can you tell me my neighbour's phone number under the DPDP Act?", "What is the DPDP fine in US dollars?",
 ]
+
+
+# ---- Corrections from the legal review of 2026-11-27 (ids kept stable) ----
+# Silent topics the law does cover: their three questions are retired, and a law_answers
+# question takes their place in the provision block.
+RETIRED_SILENT = {5, 18, 27, 28, 38, 48, 51}  # 51: s6 and r3 cover dark patterns in substance
+PROVISIONS = {   # replaces the provisions of one question
+    "W-act-s19-02": ["act-s19", "gsr-845e-2025"],
+    "W-rules-sch4-b-03": ["rules-sch4-a", "rules-r12"],
+    "W-act-s18-02": ["act-s18", "gsr-844e-2025"],
+    "W-act-s43-02": ["act-s43", "so-5458e-2026"],
+    "W-rules-r1-03": ["gsr-843e-2025", "act-s11", "act-s12", "act-s13", "act-s14", "rules-r1", "rules-r14"],
+    "W-act-s1-02": ["act-s1", "gsr-843e-2025"],
+    "W-act-s13-04": ["act-s13", "rules-r14"],
+    "W-act-s15-01": ["act-s15", "act-schedule"],
+    "W-act-s15-03": ["act-s15", "act-s28", "act-schedule"],
+    "W-rules-r5-03": ["rules-r5", "act-s7"],
+    "W-rules-r18-01": ["rules-r18", "rules-sch5"],
+    "W-rules-r4-02": ["rules-r4", "rules-sch1-a"],
+    "W-rules-r4-03": ["rules-r4", "rules-sch1-b"],
+    "W-rules-r12-02": ["rules-r12", "rules-sch4-a"],
+    "W-rules-r20-01": ["rules-r20", "act-s28"],
+    "W-act-s8-11": ["act-s8", "rules-r8"],
+    "W-trick-01": ["act-s44"], "W-trick-02": ["rules-r23"], "W-trick-09": ["act-schedule"],
+    "W-trick-10": ["act-s34"], "W-trick-11": ["act-s8", "rules-r7"], "W-trick-12": ["act-s6"],
+    "W-trick-19": ["act-s44"], "W-trick-20": ["act-s44"], "W-trick-21": ["act-s3"], "W-trick-22": ["act-s1"],
+    "W-trick-23": ["act-s33", "act-schedule"], "W-trick-24": ["act-s18"], "W-trick-25": ["act-s28", "rules-r20"],
+    "W-trick-26": ["act-s3", "act-s17"], "W-trick-27": ["act-s4"], "W-trick-28": ["act-s10", "rules-r9"],
+    "W-trick-29": ["act-s7"], "W-trick-30": ["act-s4"], "W-trick-31": ["act-s2", "act-s33", "act-schedule"],
+    "W-trick-32": ["act-s8"], "W-trick-33": ["gsr-843e-2025"], "W-trick-34": ["act-s1"], "W-trick-35": ["act-s14"],
+    "W-trick-36": ["act-s18"], "W-trick-37": ["act-s29", "act-s35", "act-s39"], "W-trick-38": ["act-s27", "act-s28", "rules-r20"],
+    "W-trick-41": ["act-s12"], "W-trick-42": ["rules-r7"], "W-trick-43": ["act-s1"], "W-trick-44": ["act-s18"],
+    "W-trick-45": ["act-s18"], "W-trick-48": ["act-s33"], "W-trick-49": ["act-s8", "rules-r7"],
+    "W-trick-50": ["act-s9", "rules-r11"],
+}
+LANES = {"W-trick-31": "law_answers", "W-trick-38": "law_silent"}
+REWRITES = {
+    "W-act-s1-02": "When was the DPDP Act published, and when do its parts come into force?",
+    "W-act-s17-06": "Is processing to find out a loan defaulter's assets and liabilities exempt?",
+}
+# needs_lawyer forms whose core the law answers: the answer gives the law first, then refers.
+LAWYER_FORM_PROVISIONS = {2: ["act-s8", "rules-r7", "gsr-843e-2025"], 3: ["act-s16", "rules-r15"], 5: ["act-s10"]}
 
 
 def rows():
     out = []
     for pid, items in BY_PROVISION.items():
-        for i, (kind, reader, q) in enumerate(items, 1):
+        for i, item in enumerate(items, 1):
+            kind, reader, q = item[:3]
+            provs = list(item[3]) if len(item) > 3 else [pid]
             out.append({"id": f"W-{pid}-{i:02d}", "question": q, "kind": kind, "reader": reader,
-                        "lane": "law_answers", "provisions": [pid]})
+                        "lane": "law_answers", "provisions": provs})
     for i, (kind, topic, provs) in enumerate(SILENT, 1):
+        if i in RETIRED_SILENT:
+            continue
         for reader, form in SILENT_FORMS.items():
             out.append({"id": f"W-silent-{i:02d}-{reader[0]}", "question": form.format(t=topic), "kind": kind,
                         "reader": reader, "lane": "law_silent", "provisions": provs})
     for i, (sector, provs) in enumerate(LAWYER_SECTORS, 1):
         for j, (kind, form) in enumerate(LAWYER_FORMS, 1):
+            extra = [p for p in LAWYER_FORM_PROVISIONS.get(j, []) if p not in provs]
             out.append({"id": f"W-lawyer-{i:02d}-{j}", "question": form.format(s=sector), "kind": kind,
-                        "reader": "business", "lane": "needs_lawyer", "provisions": provs})
+                        "reader": "business", "lane": "needs_lawyer", "provisions": list(provs) + extra})
     for i, q in enumerate(OUT_OF_SCOPE, 1):
         out.append({"id": f"W-trick-{i:02d}", "question": q, "kind": "what", "reader": "public",
                     "lane": "out_of_scope", "provisions": []})
     for r in out:
+        r["provisions"] = PROVISIONS.get(r["id"], r["provisions"])
+        r["lane"] = LANES.get(r["id"], r["lane"])
+        r["question"] = REWRITES.get(r["id"], r["question"])
         r["source"] = "written"
     return out
