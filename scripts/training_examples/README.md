@@ -27,5 +27,19 @@ The checker fails an example when:
 - a label is outside the approved sets, a law-answers or comparison example has no quote,
   or a refusal example has no plain refusal phrase, or states a duty with no quote.
 
-The checker cannot tell whether a plain-English sentence means what the law means. That
-needs a separate legal read and Dilip's approval.
+`applies_from` is accepted only when the quote sits inside the sub-section that date
+covers in the law file's in-force list. A claim on a range ("section 6(1)-(8)") cannot use
+it, and goes to a person.
+
+## What it cannot catch (left to the legal read and Dilip)
+
+- whether a plain-English sentence means what the law means;
+- an amount or limit that is quoted correctly but described as being for the wrong duty
+  (a ₹250 crore quote presented as the fine for not reporting a breach);
+- whether a start date sits next to the duty it belongs to, not just somewhere in the answer;
+- clause letters are checked only for presence in the whole provision ("8(1)(a)" passes if
+  "(a)" appears anywhere in section 8);
+- references written in words ("section nine") and lowercase invented phrases.
+
+It can also fail correct text, such as "Unique Identification Authority". Those false
+fails are safe; reword or add the name to the allowlist.

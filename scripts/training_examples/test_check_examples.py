@@ -151,7 +151,7 @@ def law_with_dates():
     law["act-s6"] = {"id": "act-s6", "citation": "Section 6", "number": "6",
                      "text": "(9) Every Consent Manager shall be registered with the Board in such manner",
                      "in_force": [{"provision": "6(1)-(8)", "from": "2027-05-13"},
-                                  {"provision": "6(9)", "from": "2026-11-13"}]}
+                                  {"provision": "section 6(9)", "from": "2026-11-13"}]}
     law["rules-r7"] = {"id": "rules-r7", "citation": "Rule 7", "number": "7",
                        "text": "(2)(b) within seventy-two hours of becoming aware of the breach, or within such longer period"}
     return law
@@ -255,3 +255,37 @@ class TestRefusalAndTerms(unittest.TestCase):
                   "The Indian Data Protection Rules require it (Section 8).",
                   "The Commissioner decides (Section 8)."):
             self.assertTrue(c.check(ex(answer=a), LAW, as_of="2030-01-01"), a)
+
+
+# ---- Round 3: holes left after 3b5e5f3 ----
+class TestRound3(unittest.TestCase):
+    def law44(self):
+        law = law_with_dates()
+        law["act-s44"] = {"id": "act-s44", "citation": "Section 44", "number": "44",
+                          "text": "44. (1) Section 43A of the said Act shall be omitted from the date notified.\n"
+                                  "(2) In section 8 of the Right to Information Act, clause (j) shall be substituted by this text.",
+                          "in_force": [{"provision": "section 44(1)", "from": "2025-11-13"},
+                                       {"provision": "section 44(2)", "from": "2027-05-13"}]}
+        return law
+
+    def test_applies_from_must_match_the_part_the_quote_is_in(self):
+        bad = ex(provisions=["act-s44"], answer="Since 13 November 2025 (Section 44).",
+                 claims=[{"text": "x", "cite": "act-s44", "applies_from": "2025-11-13",
+                          "quote": "In section 8 of the Right to Information Act, clause (j)"}])
+        self.assertTrue(any("applies_from" in e for e in c.check(bad, self.law44(), as_of="2026-11-27")))
+        ok = ex(provisions=["act-s44"], answer="Since 13 November 2025 (Section 44).",
+                claims=[{"text": "x", "cite": "act-s44", "applies_from": "2025-11-13",
+                         "quote": "Section 43A of the said Act shall be omitted"}])
+        self.assertEqual(c.check(ok, self.law44(), as_of="2026-11-27"), [])
+
+    def test_hyphenated_and_article_time_limits(self):
+        law = law_with_dates()
+        base = dict(provisions=["rules-r7"], claims=[{"text": "x", "cite": "rules-r7",
+                    "quote": "within seventy-two hours of becoming aware of the breach"}])
+        self.assertEqual(c.check(ex(answer="Send the 72-hour report (Rule 7).", **base), law, as_of="2030-01-01"), [])
+        self.assertTrue(c.check(ex(answer="Send the 48-hour report (Rule 7).", **base), law, as_of="2030-01-01"))
+        self.assertTrue(c.check(ex(answer="Report within a week (Rule 7).", **base), law, as_of="2030-01-01"))
+        self.assertEqual(c.check(ex(answer="A 16-year-old is a child (Rule 7).", **base), law, as_of="2030-01-01"), [])
+
+    def test_space_before_subsection(self):
+        self.assertTrue(c.check(ex(answer="Tell the Board (Section 8 (15))."), LAW, as_of="2030-01-01"))

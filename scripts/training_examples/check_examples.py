@@ -36,7 +36,7 @@ MIN_QUOTE_WORDS = 6
 
 ELISION = re.compile(r"…|\.\.\.|\[\s*\.\.\.\s*\]")
 
-NUM = r"\d+[A-Za-z]?(?:\(\d+[A-Za-z]?\))*(?:\([a-z]{1,4}\))*"
+NUM = r"\d+[A-Za-z]?(?: ?\(\d+[A-Za-z]?\))*(?: ?\([a-z]{1,4}\))*"
 REF = re.compile(
     r"(?<![\w.-])(?P<kind>sections?|ss?\.|secs?\.?|rules?|r\.)\s*"
     r"(?P<list>" + NUM + r"(?:\s*(?:,|and|or|to|-|–)\s*" + NUM + r")*)",
@@ -55,10 +55,11 @@ WORD_NUM = {
 _W = "|".join(sorted(WORD_NUM, key=len, reverse=True))
 NUM_WORDS = r"(?:" + _W + r")(?:(?:[\s-]+|\s+and\s+)(?:" + _W + r"))*"
 NUMBER = r"(?:\d[\d,]*(?:\.\d+)?|" + NUM_WORDS + r")"
+TIME_NUMBER = r"(?:\d[\d,]*|" + NUM_WORDS + r"|an?)"
 AMOUNT = re.compile(r"(?:₹|\bRs\.?|\bINR)?\s*\b(" + NUMBER + r")\s*(crore|lakh)\b", re.I)
 RUPEES = re.compile(r"(?:₹|\bRs\.?\s?|\bINR\s?)(\d[\d,]*)(?![\d,]*\s*(?:crore|lakh))", re.I)
 WORD_RUPEES = re.compile(r"\b(" + NUM_WORDS + r")\s+rupees\b", re.I)
-TIME = re.compile(r"(?<![\w-])(" + NUMBER + r")\s+(hours?|days?|weeks?|months?|years?)\b", re.I)
+TIME = re.compile(r"(?<![\w-])(" + TIME_NUMBER + r")[\s-]+(hours?|days?|weeks?|months?|years?)\b(?!-old)", re.I)
 
 REFUSAL = re.compile(
     r"\b((the )?(DPDP )?(Act|Rules)( and( the)? Rules)? (does|do) not|there is (none|no)|"
@@ -123,6 +124,8 @@ def words_to_int(text):
 
 def to_number(token):
     token = token.strip()
+    if token.lower() in ("a", "an"):
+        return 1.0
     if re.fullmatch(r"\d[\d,]*(?:\.\d+)?", token):
         return float(token.replace(",", ""))
     v = words_to_int(token)
@@ -156,14 +159,52 @@ def time_limits(text):
     return out
 
 
-def _in_force(record):
+def _in_force_entries(record):
     v = record.get("in_force") or []
     if isinstance(v, str):
         try:
             v = ast.literal_eval(v)
         except (ValueError, SyntaxError):
             return []
-    return [x.get("from") for x in v if isinstance(x, dict) and x.get("from")]
+    return [x for x in v if isinstance(x, dict) and x.get("from")]
+
+
+def _in_force(record):
+    return [x["from"] for x in _in_force_entries(record)]
+
+
+def _part_text(record, label):
+    """The text of the sub-section (and clause) an in-force label names, e.g. 'section 44(1)'.
+    Returns None when the label is a range or cannot be located: such claims go to a person."""
+    m = re.match(r"\s*(?:section|rule)\s+\d+[A-Za-z]?((?:\(\w+\))+)\s*$", label or "", re.I)
+    if not m:
+        return None
+    subs = re.findall(r"\((\w+)\)", m.group(1))
+    lines = (record.get("text") or "").split("\n")
+
+    def segment(lines, marker, numeric):
+        start = None
+        for i, line in enumerate(lines):
+            t = re.sub(r"^\s*\d+[A-Za-z]?\.\s*", "", line) if start is None else line
+            if t.lstrip().startswith(f"({marker})"):
+                start = i
+                break
+        if start is None:
+            return None
+        out = [lines[start]]
+        stop = r"^\s*\(\d+\)" if numeric else r"^\s*\((?:[a-z]{1,4}|\d+)\)"
+        for line in lines[start + 1:]:
+            if re.match(stop, line):
+                break
+            out.append(line)
+        return out
+
+    seg = lines
+    for k, sub in enumerate(subs):
+        seg = segment(seg, sub, sub.isdigit())
+        if seg is None:
+            return None
+    return squash(" ".join(seg))
 
 
 def _human(iso):
@@ -304,8 +345,12 @@ def check(example, law, as_of=None):
             continue
         dates = _in_force(law[cite])
         if cl.get("applies_from"):
-            if cl["applies_from"] not in dates:
-                errs.append(f"claim {i}: applies_from {cl['applies_from']} is not a start date of {law[cite]['citation']}")
+            # The date must belong to the very part of the provision the quote comes from.
+            labels = [x.get("provision") for x in _in_force_entries(law[cite]) if x.get("from") == cl["applies_from"]]
+            parts = [_part_text(law[cite], lb) for lb in labels]
+            if not any(p and squash(cl.get("quote")) in p for p in parts):
+                errs.append(f"claim {i}: applies_from {cl['applies_from']} does not cover the part of "
+                            f"{law[cite]['citation']} the quote is from")
                 continue
             dates = [cl["applies_from"]]
         for d in dates:
