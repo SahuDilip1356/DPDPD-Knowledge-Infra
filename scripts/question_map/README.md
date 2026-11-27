@@ -3,14 +3,16 @@
 Builds about 1,000 DPDPA questions, labelled for training-example drafting. The output
 is market-lane data, so all three outputs (`<name>.jsonl`, `<name>_summary.json`,
 `<name>_review.csv`) are written only directly inside gitignored `staging/question-map/`.
-The script resolves every path, refuses symlinks and any other folder (gitignored or not),
-and checks all three before writing any.
+`--name` takes a plain file name only. Writing goes through `scripts/safe_output.py`,
+which walks to the folder without following symlinks, writes each file to a new temp file,
+and renames it into place, so a symlink or hard link planted at an output name is replaced,
+never written through.
 
 ```bash
 python3 scripts/question_map/build_question_map.py \
   --graph "<main checkout>/staging/competitive_intel/questions/unified_questions.jsonl" \
   --street "<JV Creatives>/Research/Content-Intelligence/clusters/20261002-001__DPDPA-Train-Classes/classified-street.csv"
-python3 -m unittest scripts/question_map/test_build_question_map.py -v
+python3 -m unittest scripts/question_map/test_build_question_map.py scripts/test_safe_output.py -v
 ```
 
 Kept from each source: the question wording only. Dropped: answers, variants, competitor

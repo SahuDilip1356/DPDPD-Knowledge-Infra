@@ -171,74 +171,45 @@ class TestRegressionsFromReview(unittest.TestCase):
         self.assertEqual([r["lane"] for r in rows], ["out_of_scope"])
 
 
-class TestOutputConfinement(unittest.TestCase):
-    """Review of 495fc11: the guard must confine every output to staging/question-map/."""
+class TestOutputs(unittest.TestCase):
+    """Outputs go through scripts/safe_output.py (its own tests cover links and swaps)."""
 
-    def setUp(self):
-        self.dir = os.path.join(b.REPO_ROOT, "staging", "question-map")
-        os.makedirs(self.dir, exist_ok=True)
-        self.made = []
-
-    def tearDown(self):
-        for p in self.made:
-            if os.path.islink(p) or os.path.exists(p):
-                os.remove(p)
-
-    def test_refuses_other_gitignored_paths(self):
-        for rel in (".env", "deployments/dpdpa-backend/.env", "staging/competitive_intel/x.jsonl",
-                    "deployments/dpdpa-wiki/dist/x.jsonl", ".agent/x.jsonl"):
-            with self.assertRaises(SystemExit, msg=rel):
-                b.check_outputs([os.path.join(b.REPO_ROOT, rel)])
-
-    def test_refuses_symlinked_output(self):
-        link = os.path.join(self.dir, "zz_test_link.csv")
-        os.symlink(os.path.join(b.REPO_ROOT, "scripts", "question_map", "README.md"), link)
-        self.made.append(link)
-        with self.assertRaises(SystemExit):
-            b.check_outputs([link])
-
-    def test_refuses_dotdot_escape(self):
-        with self.assertRaises(SystemExit):
-            b.check_outputs([os.path.join(self.dir, "..", "x.jsonl")])
-
-    def test_allows_plain_file_in_staging_question_map(self):
-        b.check_outputs([os.path.join(self.dir, "q.jsonl"), os.path.join(self.dir, "q_summary.json")])
-
-    def test_main_writes_nothing_if_any_output_is_unsafe(self):
+    def run_main(self, name, graph_rows=None):
         tmp = tempfile.mkdtemp()
         graph = os.path.join(tmp, "g.jsonl")
         street = os.path.join(tmp, "s.csv")
         with open(graph, "w") as f:
-            f.write(json.dumps(graph_row("Q-1", "What is consent under the Act?")) + "\n")
+            for r in graph_rows or [graph_row("Q-1", "What is consent under the Act?")]:
+                f.write(json.dumps(r) + "\n")
         with open(street, "w") as f:
             f.write("id,text,topic,grade,quality,hits\n")
-        out = os.path.join(self.dir, "zz_guard_test.jsonl")
-        review = os.path.join(self.dir, "zz_guard_test_review.csv")
-        os.symlink(os.path.join(b.REPO_ROOT, "scripts", "question_map", "README.md"), review)
-        self.made += [review, out, os.path.join(self.dir, "zz_guard_test_summary.json")]
-        res = subprocess.run([sys.executable, b.__file__, "--graph", graph, "--street", street, "--out", out],
-                             capture_output=True, text=True)
-        self.assertNotEqual(res.returncode, 0)
-        self.assertFalse(os.path.exists(out))
-        self.assertFalse(os.path.exists(os.path.join(self.dir, "zz_guard_test_summary.json")))
+        return subprocess.run([sys.executable, b.__file__, "--graph", graph, "--street", street, "--name", name],
+                              capture_output=True, text=True)
 
+    def tearDown(self):
+        d = os.path.join(b.REPO_ROOT, *b.OUT_REL)
+        for n in ("zz_out_test.jsonl", "zz_out_test_summary.json", "zz_out_test_review.csv"):
+            p = os.path.join(d, n)
+            if os.path.lexists(p):
+                os.remove(p)
 
-class TestOutputGuard(unittest.TestCase):
-    def test_git_missing_exits_cleanly(self):
-        old = os.environ.get("PATH")
-        os.environ["PATH"] = ""
-        try:
-            with self.assertRaises(SystemExit):
-                b.check_outputs([os.path.join(b.REPO_ROOT, "staging", "question-map", "q.jsonl")])
-        finally:
-            os.environ["PATH"] = old
+    def test_writes_three_files_in_staging_question_map(self):
+        res = self.run_main("zz_out_test")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        d = os.path.join(b.REPO_ROOT, *b.OUT_REL)
+        for n in ("zz_out_test.jsonl", "zz_out_test_summary.json", "zz_out_test_review.csv"):
+            self.assertTrue(os.path.isfile(os.path.join(d, n)), n)
 
-    def test_refuses_tracked_path(self):
-        with self.assertRaises(SystemExit):
-            b.check_outputs([os.path.join(b.REPO_ROOT, "scripts", "question_map", "out.jsonl")])
+    def test_name_with_path_is_refused(self):
+        for bad in ("../x", "a/b", "../../deployments/dpdpa-backend/.env", "/tmp/x"):
+            res = self.run_main(bad)
+            self.assertNotEqual(res.returncode, 0, bad)
 
-    def test_allows_gitignored_staging(self):
-        b.check_outputs([os.path.join(b.REPO_ROOT, "staging", "question-map", "q.jsonl")])
+    def test_uses_the_shared_safe_writer(self):
+        import inspect
+        src = inspect.getsource(b.main)
+        self.assertIn("safe_output.write_files", src)
+        self.assertNotIn("open(", src.replace("with open(a.graph)", "").replace("with open(a.street", ""))
 
 
 if __name__ == "__main__":

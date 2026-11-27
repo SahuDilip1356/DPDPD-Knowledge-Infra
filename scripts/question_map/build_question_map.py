@@ -13,12 +13,13 @@ names or URLs, no variants. Labels are rule-made drafts (label_source "rule", re
 Usage:
   python3 scripts/question_map/build_question_map.py \
       --graph <unified_questions.jsonl> --street <classified-street.csv> \
-      --out staging/question-map/question_map.jsonl
+      [--name question_map]   # writes staging/question-map/<name>{.jsonl,_summary.json,_review.csv}
 """
 
 import argparse
 import collections
 import csv
+import io
 import json
 import os
 import re
@@ -222,37 +223,9 @@ def build(graph, street, target=1000, topic_floor=15):
     return picked
 
 
-OUT_DIR = os.path.join(REPO_ROOT, "staging", "question-map")
-
-
-def check_outputs(paths):
-    """Refuse unless every path is a plain file directly inside staging/question-map/.
-
-    The map holds market-lane text, so it may only land in that one gitignored folder.
-    Paths are resolved with realpath, an existing symlink is refused, and the folder
-    itself must resolve inside the repo. All paths are checked before anything is written.
-    """
-    allowed = os.path.realpath(OUT_DIR)
-    if os.path.commonpath([allowed, os.path.realpath(REPO_ROOT)]) != os.path.realpath(REPO_ROOT):
-        sys.exit(f"Refusing to write: {OUT_DIR} resolves outside the repository.")
-    for path in paths:
-        if os.path.islink(path):
-            sys.exit(f"Refusing to write {path}: it is a symlink.")
-        real = os.path.realpath(path)
-        if os.path.dirname(real) != allowed:
-            sys.exit(f"Refusing to write {path}: outputs must go directly in staging/question-map/.")
-        try:
-            res = subprocess.run(["git", "-C", REPO_ROOT, "check-ignore", "-q", real])
-        except FileNotFoundError:
-            sys.exit("Refusing to write: git is not available to confirm the path is gitignored.")
-        if res.returncode != 0:
-            sys.exit(f"Refusing to write {path}: it is not gitignored.")
-
-
-def _open_new(path, newline=None):
-    """Open for writing without following a symlink planted after the check."""
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o644)
-    return os.fdopen(fd, "w", newline=newline)
+OUT_REL = ("staging", "question-map")
+sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
+import safe_output  # noqa: E402  (shared: plain names, no symlinks or hard links written through)
 
 
 def summary(rows):
@@ -272,34 +245,35 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--graph", required=True)
     ap.add_argument("--street", required=True)
-    ap.add_argument("--out", default=os.path.join(REPO_ROOT, "staging", "question-map", "question_map.jsonl"))
+    ap.add_argument("--name", default="question_map",
+                    help="file name stem; files go only in staging/question-map/")
     ap.add_argument("--target", type=int, default=1000)
     ap.add_argument("--topic-floor", type=int, default=15)
     a = ap.parse_args()
 
-    stem = os.path.splitext(a.out)[0]
-    summary_path, review_path = stem + "_summary.json", stem + "_review.csv"
-    os.makedirs(OUT_DIR, exist_ok=True)
-    check_outputs([a.out, summary_path, review_path])
+    names = {k: f"{a.name}{k}" for k in (".jsonl", "_summary.json", "_review.csv")}
+    for n in names.values():
+        if not safe_output.PLAIN_NAME.match(n):
+            sys.exit(f"Refusing to write: {n!r} is not a plain file name.")
     with open(a.graph) as f:
         graph = [json.loads(line) for line in f if line.strip()]
     with open(a.street, newline="") as f:
         street = list(csv.DictReader(f))
     rows = build(graph, street, a.target, a.topic_floor)
-
-    with _open_new(a.out) as f:
-        for r in rows:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
     s = summary(rows)
-    with _open_new(summary_path) as f:
-        json.dump(s, f, indent=2)
-    with _open_new(review_path, newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["id", "question", "kind", "reader", "lane", "first_person", "topic", "demand",
-                    "your_call (ok / change to ... / drop)"])
-        for r in rows:
-            w.writerow([r["id"], r["question"], r["kind"], r["reader"], r["lane"],
-                        "yes" if r["first_person"] else "", r["topic"], r["demand"], ""])
+
+    review = io.StringIO()
+    w = csv.writer(review)
+    w.writerow(["id", "question", "kind", "reader", "lane", "first_person", "topic", "demand",
+                "your_call (ok / change to ... / drop)"])
+    for r in rows:
+        w.writerow([r["id"], r["question"], r["kind"], r["reader"], r["lane"],
+                    "yes" if r["first_person"] else "", r["topic"], r["demand"], ""])
+    safe_output.write_files(REPO_ROOT, OUT_REL, {
+        names[".jsonl"]: "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
+        names["_summary.json"]: json.dumps(s, indent=2),
+        names["_review.csv"]: review.getvalue(),
+    })
     print(json.dumps(s, indent=2))
 
 
