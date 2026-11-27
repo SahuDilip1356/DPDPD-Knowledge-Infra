@@ -469,3 +469,52 @@ class TestRound3NumberWords(TestRealLawFalsePasses):
 
     def test_one_and_articles_still_pass(self):
         self.good(self.r7("report within 72 hours; this is one of the duties (Rule 7)."))
+
+
+@unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")
+class TestF13ScriptsAndLookalikes(TestRealLawFalsePasses):
+    """PR #17 review round 2 (F13): only ASCII plus a short allowlist may appear in answers."""
+
+    def test_hindi_amounts_and_deadlines_fail(self):
+        for a in ("pay दो सौ पचास करोड़ रुपये (Rule 7).", "report within बहत्तर घंटे (Rule 7)."):
+            self.bad(self.r7(a))
+
+    def test_hinglish_amounts_and_deadlines_fail(self):
+        for a in ("pay dhai sau karod rupaye (Rule 7).", "pay pachas hazaar rupaye (Rule 7).",
+                  "report within bahattar ghante (Rule 7).", "report within do din (Rule 7).",
+                  "report within teen mahine (Rule 7).", "keep it for ek saal (Rule 7).",
+                  "pay dedh lakh (Rule 7).", "pay sawa crore (Rule 7)."):
+            self.bad(self.r7(a))
+
+    def test_lookalike_and_invisible_characters_fail(self):
+        for a in ("report within sevеnty-two hours (Rule 7).",   # Cyrillic e
+                  "report within s​eventy-two hours (Rule 7).",   # zero-width space
+                  "report within seventy‑two hours (Rule 7).",   # non-breaking hyphen
+                  "report within 72 hours (Rule 7)."):          # no-break space
+            self.bad(self.r7(a))
+
+    def test_allowed_punctuation_passes(self):
+        self.good(self.r7("report within 72 hours; it’s the Board’s “full report” — see (Rule 7)."))
+
+    def test_citations_must_exist(self):
+        self.bad(self.r7("report within 72 hours (Rule 7, Section 1000)."))
+        self.bad(self.r7("report within 72 hours (Rule 2025(1))."))
+        self.good(self.r7("report within 72 hours under the DPDP Rules 2025 (Rule 7)."))
+
+    def test_schedule_part_must_exist_and_be_cited(self):
+        self.bad(self.r7("report within 72 hours (Rule 7, Fourth Schedule, Part C)."))
+        self.bad(self.r7("report within 72 hours (Rule 7, Fourth Schedule, Part B)."))
+
+    def test_schedule_part_must_match_the_cited_part(self):
+        sch = {"text": "x", "cite": "rules-sch4-a",
+               "quote": "A Data Fiduciary who is an educational institution. Conditions: Processing is restricted to tracking"}
+        for part in ("B", "C"):
+            self.bad(self.r7(f"report within 72 hours (Rule 7, Fourth Schedule, Part {part}).", extra=[sch]))
+        self.good(self.r7("report within 72 hours (Rule 7, Fourth Schedule, Part A).", extra=[sch]))
+
+    def test_bad_as_of_exits_cleanly(self):
+        import subprocess
+        res = subprocess.run([sys.executable, c.__file__, "--law", REAL_LAW_DIR, "--as-of", "2026-13-01", "x.jsonl"],
+                             capture_output=True, text=True)
+        self.assertNotEqual(res.returncode, 0)
+        self.assertNotIn("Traceback", res.stderr)

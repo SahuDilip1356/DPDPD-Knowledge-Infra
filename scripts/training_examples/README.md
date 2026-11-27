@@ -20,14 +20,15 @@ reference only in these house forms:
 | Date | 13 May 2027 | must be a real start date in the Act or Rules, or a known gazette date; every pending start date of a cited provision must appear |
 | Notification | G.S.R. 843(E) | must be listed in `dpdp-notifications.jsonl` (or be the Rules' own G.S.R. 846(E)) |
 | Citation | (Section 8(6)), (Rule 7(2)(b)), (Sections 11 to 14) | each number is cited; each sub-section and clause exists in that part of the cited text |
-| Schedule | (The Schedule), Fourth Schedule, Part A | the schedule is cited |
+| Schedule | (The Schedule), Fourth Schedule, Part A | the schedule, and the part if named, exists and is cited |
 | Amount | ₹250 crore, ₹10,000 | the value and unit are in that claim's own quote |
 | Time limit | 72 hours, seventy-two hours, one year | the value and unit are in a quote |
 
 The checker removes those forms after checking them. If anything numeric or reference-like
 is left (a digit in any script, a currency sign, "Rs", "crores", "per cent", "a dozen",
 "half", "u/s", "§", "s. 8", "schedule" in another form, "72-hour", "a fortnight", "seven
-business days", "the fifth day", any number word but "one", a Roman numeral), the example fails, whatever the wording. A quote may not
+business days", "the fifth day", any number word but "one", a Hindi or Hinglish number or unit word, a Roman numeral), the example fails, whatever the wording. Answers may use only ASCII plus ₹ ‘ ’ “ ” — –, so other scripts, look-alike letters and
+invisible or non-breaking characters fail. A quote may not
 cut a number phrase ("two hours" out of "seventy-two hours"). The tests list every wording a reviewer has found, and they must keep failing.
 
 It also fails an example when:
@@ -45,9 +46,7 @@ It also fails an example when:
 - an amount or limit that is quoted correctly but described as being for the wrong duty
   (a ₹250 crore quote presented as the fine for not reporting a breach);
 - whether a start date sits next to the duty it belongs to, not only somewhere in the answer;
-- clause letters are checked only for presence in the whole provision ("8(1)(a)" passes if
-  "(a)" appears anywhere in section 8);
-- references written in words ("section nine") and lowercase invented phrases.
+- lowercase invented phrases ("data breach inquiry report").
 
 It can also fail correct text, such as "Unique Identification Authority". Those false
 fails are safe; reword or add the name to the allowlist.

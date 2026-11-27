@@ -44,7 +44,7 @@ REF = re.compile(
     re.I,
 )
 ORDINAL = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7}
-SCHEDULE_REF = re.compile(r"\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule\b|\b(?:the|The) Schedule\b")
+SCHEDULE_REF = re.compile(r"\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule\b(?:, Part ([A-Z])\b)?|\b(?:the|The) Schedule\b")
 
 WORD_NUM = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
@@ -122,11 +122,16 @@ RESIDUAL_BAD = [
     (re.compile(r"\bu/s\b|(?<![\w.])(?:ss?|r|secs?|art)\.?\s*\d|\b(?:section|rule)s?\s+\d|\bread with\b|\bthrough\s+\d", re.I),
      "a reference not in the house form (Section N) or (Rule N)"),
     (re.compile(r"\bschedules?\b", re.I), "a schedule not named in the house form"),
+    (re.compile(r"\bPart [A-Z]\b"), "a schedule part not in the house form"),
     (re.compile(r"\b(?:fortnight|hrs?|mins?|minutes?|working days?|business days?)\b", re.I),
      "a time limit not in the house form N hours/days/months/years"),
     (re.compile(r"\b(?:" + NUM_WORDS + r")\b(?:\W+\w+){0,3}?\W+(?:hours?|days?|weeks?|months?|years?)\b", re.I),
      "a time limit not in the house form"),
     (re.compile(r"%|\bper ?cent\b|\bpercent\b", re.I), "a percentage"),
+    (re.compile(r"\b(?:ek|teen|chaar|paanch|panch|chhe|saat|aath|nau|gyarah|baarah|bees|tees|chalis|pachas|pachaas|"
+                r"saath|sattar|assi|nabbe|bahattar|adtalis|sau|hazaar|hazar|karod|karor|ghante?|ghanta|din|"
+                r"mahine?|mahina|saal|varsh|dhai|dedh|sawa|paune|rupaye|rupaiya|rupiya)\b", re.I),
+     "a Hindi or Hinglish number or unit word"),
     (re.compile(r"\b(?:dozens?|couple|half|quarters?|score|trillions?|crore|lakh)\b", re.I),
      "an amount or count word outside the house forms"),
     (re.compile(r"\b(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
@@ -141,11 +146,18 @@ RESIDUAL_BAD = [
 ROMAN = re.compile(r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})")
 
 
+ALLOWED_NON_ASCII = set("₹‘’“”—–")
+
+
 def _residual(answer, quote_values):
     errs = []
     for ch in answer:
-        if unicodedata.category(ch).startswith("N") and not ("0" <= ch <= "9"):
-            errs.append(f"answer has {ch!r}: a non-ASCII digit or numeral")
+        if ord(ch) > 127 and ch not in ALLOWED_NON_ASCII:
+            errs.append(f"answer has {ch!r} (U+{ord(ch):04X}): only ASCII and ₹ ‘ ’ “ ” — – are allowed "
+                        "(blocks other scripts, look-alike letters, invisible and non-breaking characters)")
+            break
+        if unicodedata.category(ch) in ("Cf", "Cc") and ch not in "\n\t":
+            errs.append(f"answer has an invisible character (U+{ord(ch):04X})")
             break
     text = answer
     for pat in CANON:
@@ -370,8 +382,10 @@ def _check_refs(answer, cites, law):
         kind = "rule" if m.group("kind").lower().startswith("r") else "section"
         for item in _expand(m.group("list")):
             base = re.match(r"\d+[A-Za-z]?", item).group(0)
-            if base.isdigit() and int(base) >= 1000:
-                continue  # a year, as in "Rules 2025"
+            is_year = (m.group("kind").lower() == "rules" and base.isdigit()
+                       and 1900 <= int(base) <= 2100 and item == base)
+            if is_year:
+                continue  # "DPDP Rules 2025" names the Rules, not a rule
             rec = by_kind[kind].get(base)
             if rec is None:
                 errs.append(f"answer refers to {kind} {item} without citing it")
@@ -382,8 +396,11 @@ def _check_refs(answer, cites, law):
     for m in SCHEDULE_REF.finditer(answer):
         if m.group(1):
             n = ORDINAL[m.group(1).lower()]
-            if not any(c.startswith(f"rules-sch{n}") for c in cites):
-                errs.append(f"answer refers to the {m.group(1)} Schedule without citing it")
+            want = f"rules-sch{n}-{m.group(2).lower()}" if m.group(2) else f"rules-sch{n}"
+            if m.group(2) and want not in law:
+                errs.append(f"answer refers to the {m.group(1)} Schedule, Part {m.group(2)}, which does not exist")
+            elif not any(c == want or (not m.group(2) and c.startswith(want)) for c in cites):
+                errs.append(f"answer refers to the {m.group(1)} Schedule{', Part ' + m.group(2) if m.group(2) else ''} without citing it")
         elif not any(c.startswith("act-sch") for c in cites):
             errs.append("answer refers to the Schedule without citing it")
     return errs
@@ -418,7 +435,10 @@ def valid_date(text):
     would compare wrongly as a string and silently switch the start-date check off."""
     if not isinstance(text, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
         sys.exit(f"Refusing: --as-of must be YYYY-MM-DD, got {text!r}.")
-    datetime.date.fromisoformat(text)
+    try:
+        datetime.date.fromisoformat(text)
+    except ValueError:
+        sys.exit(f"Refusing: --as-of {text!r} is not a real date (YYYY-MM-DD).")
     return text
 
 
