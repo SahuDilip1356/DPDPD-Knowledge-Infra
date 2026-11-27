@@ -22,9 +22,8 @@ names and URLs. Street searches graded `throw_out`, `exam_noise` or `seed_drift`
 | reader | business, learner, public |
 | lane | law_answers, law_silent, needs_lawyer, comparison, out_of_scope |
 
-`when` is not in the original five (who, why, how, what, where). It was added because
-start dates are one of the most-asked things, and Dilip approves it or folds it into
-`what`.
+`when` was added to the original five (who, why, how, what, where) because start dates
+are among the most-asked things. Dilip approved all six kinds on 2026-11-27.
 
 Selection: every kept street question first, then at least 15 graph questions per topic,
 then the rest by demand (sites asking it, plus 3 × street hits, plus 2 if SaralPrivacy
