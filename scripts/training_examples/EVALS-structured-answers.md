@@ -259,3 +259,47 @@ only. 86 checker tests pass, and the mutation run kills 60 of 60. E27: three cla
 newly failed and were reworded through the rewrites file. Q-00036 had "Under 18.", Q-00047
 had "with two exceptions" and N2-008 had "Eighth Schedule languages". Batches 01 and 02 then
 report 0 failing.
+
+## Slots in claims (draft, waiting for Dilip's approval)
+
+Asked for by Dilip on 2026-11-28 ("Slots in claims too") after the PR #19 review at f8491a4
+returned Rethink. Since the whole-render check, the rendered answer has held. Every leak
+since then has been in `claims[].text`, the one field still checked by lists of patterns.
+These pass today on a Rule 7, First Schedule Part A, Third Schedule or Schedule claim:
+
+| Kind | Claim text that passes today |
+|---|---|
+| a part that does not exist | `Rule 7(9)`, `Rule 7(2)(z)`, `Rule 7(b)`, `From 13 May 2027 (Rule 7(9))` |
+| a schedule part that does not exist or is not the claim's own | `First Schedule, Part B` (claim cites Part A), `Third Schedule, Part A`, `Third Schedule, Part B` |
+| a figure in a broken form | `7,2 hours`, `7,,2 hours`, `072 hours` and `seventy two hours`, all read as 72 hours |
+| an amount in a broken form | `₹2,50 crore`, `₹25,0 crore` and `₹0250 crore`, all read as ₹250 crore |
+| an invalid date | `From 31 February 2027.` stops the whole batch run with a crash |
+
+So claim text becomes a template too, checked by the same code as the answer.
+
+**Pass/fail checks**
+- E28. Each claim carries a `text_template`: prose with slots, in the same syntax as
+  `answer_template`. Its `text` must equal the rendered template exactly. A claim without one
+  fails.
+- E29. Claim prose passes the same prose checks as the answer (E3 to E7, E18). The rendered
+  claim passes the same whole-render checks (E16, E17, E23, E24). A figure, date, unit, month,
+  reference or notification outside a slot fails. Every row of the table above fails.
+- E30. A slot in a claim may name only that claim's own provision (its `cite`), and the
+  claim's own quote must back it. That covers parts, figures and dates. For example,
+  `{ref:rules-r7#9}` fails because Rule 7 has no part 9, and `{period:rules-r7|72 hours}`
+  passes only if the claim's own quote holds seventy-two hours. A slot naming any other
+  provision, including another part of a schedule, fails.
+- E31. A claim's date slot renders only its own provision's start date. A notification slot
+  in a claim fails.
+- E32. An invalid date never crashes the checker or the converter. It fails that row with a
+  reason.
+- E33. The pattern-based claim checks are retired: E19 and E25 (`check_claim_text`,
+  `check_claim_leftover`, `CLAIM_FORMS`). E28 to E31 replace them. One checker now serves
+  both fields.
+- E34. Mutation run: switching off claim rendering (E28), the claim prose and whole-render
+  checks (E29), or the own-provision rule (E30) makes at least one test fail.
+- E35. The converter turns each claim's `text` in batches 01 to 03 into a `text_template`.
+  Every claim whose rendered text changes, or that now fails, is listed by id before any
+  rewrite. Each such claim gets a legal re-read, so the batches stay Ready.
+
+E1 to E18 and E20 to E27 stay as they are and must stay green.
