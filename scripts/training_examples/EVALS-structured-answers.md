@@ -108,7 +108,7 @@ as failing and names the reason.
 
 ## Build notes (2026-11-28)
 
-Choices made while building and in review round 1, for Dilip to confirm:
+Choices made while building and in review rounds 1 to 3. Dilip accepted them on 2026-11-28:
 
 - **One date slot can name several provisions** (`{date:act-s8,rules-r7}`) when they start
   on the same date. Most answers say "From 13 May 2027" once for several duties. The slot
