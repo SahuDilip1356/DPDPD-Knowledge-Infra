@@ -148,3 +148,53 @@ sentences, it is given to them and the example is flagged "check attribution". I
 flags a sentence that names a provision which does not start on the date it gives. 47 of
 the 100 carry a flag. Every changed or flagged answer is in
 `staging/training-examples/batch01_c_changes.md` and `batch02_c_changes.md`.
+
+## Whole-render check (draft, waiting for Dilip's approval)
+
+Asked for by Dilip on 2026-11-28 ("Setu: whole-render check") after the PR #17 review at
+40313e1. Today the checker reads the prose with each slot blanked to a space, so text glued
+to a slot is never seen as part of the figure or reference. These pass today against the
+real law, and must fail:
+
+| Template | Renders |
+|---|---|
+| `under {name:rules-r7}A` | under Rule 7A |
+| `under {name:rules-r7}-A` | under Rule 7-A |
+| `within l{period:rules-r7\|72 hours}` | within l72 hours |
+| `within O{period:rules-r7\|72 hours}` | within O72 hours |
+| `{period:rules-r7\|72 hours}{period:rules-r7\|72 hours}` | 72 hours72 hours |
+
+The new rule: render the whole answer, with every slot filled from the law data, and scan
+the rendered text instead of the blanked prose.
+
+**Pass/fail checks**
+- E16. On the rendered answer, every digit, number word, currency sign, unit word, month
+  name, reference ("Section 8", "Rule 7(2)(b)", a schedule name) and notification citation
+  must lie wholly inside the rendered span of one slot. Anything found outside a slot fails.
+  The five templates above fail.
+- E17. A slot's rendered span must have a word boundary on both sides: no letter, digit or
+  hyphen may touch it, and two slots may not touch each other. A bracket right after a slot
+  still fails (today's rule, kept).
+- E18. "May" or "may" followed by a number word or an ordinal ("May one", "may third") is a
+  date with no slot, and fails wherever it appears.
+- E19. Claim text (`claims[].text`) is checked too. It may state a period, amount or count
+  only if its own quote holds the same figure, a date only if it is a start date of its own
+  provision, and a reference only to its own provision. "Report within 48 hours under
+  Section 9." with a Rule 7 quote fails on both the figure and the reference.
+- E20. Training rows carry no unchecked text. The converter no longer writes `answer_v2`
+  into a batch. The v2 answers go to a separate `batchNN_v2_answers.jsonl` that the training
+  step never reads. A test fails if any batch row has a field outside the checked set (id,
+  question, kind, reader, lane, provisions, answer_template, answer, claims and the
+  bookkeeping fields source, as_of, drafted_by, review, version).
+- E21. Mutation run: switching off the whole-render boundary check, or the claim-text check,
+  makes at least one test fail. Both join `mutation_run.py`.
+- E22. Batches 01 and 02 are re-run under the new rules. Any example that now fails is
+  listed by id and reason before anything is changed, and fixes go through the rewrites file
+  and the legal re-read list.
+
+E1 to E15 stay as they are and must stay green.
+
+**Not part of the evals (done in the same change):** rewrite the PR #17 body for the
+structured checker; write the converter's outputs through `scripts/safe_output.py`; remove
+three unused names. PR #17 will be squash-merged, because nine earlier commits carry a home
+path.
