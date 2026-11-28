@@ -560,6 +560,21 @@ class TestReview2Fake(Base):
             self.bad(ex(t), "prose has")
 
 
+class TestReview3Fake(Base):
+    """PR review round 3 of 25bbad6."""
+
+    def test_no_bracket_right_after_a_slot(self):
+        for t in ("A Data Principal is defined in {name:act-s2}(F).", "A Data Principal is defined in {name:act-s2} (ZA)."):
+            self.bad(ex(t, [claim("act-s2")]), "right after a slot")
+
+    def test_may_before_an_ordinal_is_a_month(self):
+        for t in ("Tell the Board {ref:act-s8} {date:act-s8}. May—third was when.",
+                  "Tell the Board {ref:act-s8} {date:act-s8}. May, the third.",
+                  "Tell the Board may third {ref:act-s8} {date:act-s8}.",
+                  "Tell the Board round may third {ref:act-s8} {date:act-s8}."):
+            self.bad(ex(t), "month name")
+
+
 REAL_LAW_DIR = "/Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/staging/law-import"
 
 

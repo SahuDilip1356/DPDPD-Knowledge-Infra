@@ -677,9 +677,9 @@ def check_number_words(prose):                                              # E7
     for m in MONTH_NAMES.finditer(prose):
         if m.group(0).lower() == "may":
             before = prose[:m.start()].rstrip()
-            after = re.match(r"[\s,]*(\w+)", prose[m.end():])
+            after = re.match(r"[\W_]*(?:the\s+)?(\w+)", prose[m.end():], re.I)
             ordinal = after and after.group(1).lower() in {"first", "second", "third"}
-            if m.group(0) == "may" and not _MAY_AS_MONTH.search(prose[:m.end()][-20:]):
+            if m.group(0) == "may" and not ordinal and not _MAY_AS_MONTH.search(prose[:m.end()][-20:]):
                 continue          # "the Board may ...": the verb
             if m.group(0) == "May" and (not before or before[-1] in ".?!") and not ordinal:
                 continue          # "May the Board ...": the verb, at the start of a sentence
@@ -690,6 +690,18 @@ def check_number_words(prose):                                              # E7
     for m in re.finditer(r"\b[MDCLXVI]{2,}\b", prose):
         if ROMAN.fullmatch(m.group(0)):
             return [f"prose has {m.group(0)!r}: a Roman numeral"]
+    return []
+
+
+SLOT_SUFFIX = re.compile(r"\}\s*\((?!\s*\{)")
+
+
+def check_slot_suffix(template):                                            # E5
+    """A bracket right after a slot reads as a part of it ("Section 2(F)"), whatever its case."""
+    m = SLOT_SUFFIX.search(template)
+    if m:
+        return [f"template has {template[max(0, m.start() - 12):m.end() + 4]!r}: a bracket right after a slot "
+                "reads as a part; put the part inside the slot"]
     return []
 
 
@@ -946,6 +958,7 @@ def check(example, law, as_of=None):
     prose = prose_of(pieces)
     for fn in PROSE_CHECKS:                                                  # E3-E7
         errs += fn(prose)
+    errs += check_slot_suffix(template)
     errs += check_ref_slots(slots, law, quoted)                              # E9
     errs += check_figure_slots(slots, law, quoted, pieces)                   # E10
     need, pend_errs = _pending(claims, law, as_of, good)

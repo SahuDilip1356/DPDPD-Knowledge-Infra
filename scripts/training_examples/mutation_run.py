@@ -92,6 +92,8 @@ MUTANTS = {
     "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
     "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
     "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
+    # Round 3 review
+    "E5 bracket after a slot": lambda m: setattr(m, "check_slot_suffix", lambda t: []),
     # Round 2 review
     "E9 commencement quote only": lambda m: setattr(m, "_named_in_quotes", _any_reference_in_quotes),
     "E7 lowercase may as a month": lambda m: setattr(m, "_MAY_AS_MONTH", NEVER),
