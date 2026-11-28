@@ -212,10 +212,6 @@ class TestOutputs(unittest.TestCase):
         self.assertNotIn("open(", src.replace("with open(a.graph)", "").replace("with open(a.street", ""))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestWrittenQuestionsMerged(unittest.TestCase):
     def test_written_questions_come_first_and_keep_their_labels(self):
         written = [{"id": "W-act-s8-01", "question": "Who is responsible when our vendor mishandles data?",
@@ -235,3 +231,15 @@ class TestWrittenQuestionsMerged(unittest.TestCase):
         rows = b.build([graph_row("Q-1", "What is consent under the Act?")], [], target=10, topic_floor=1,
                        written=written)
         self.assertEqual([r["id"] for r in rows], ["W-1"])
+
+
+    def test_written_questions_do_not_use_up_the_market_target(self):
+        written = [{"id": "W-1", "question": "Who answers for a vendor's breach?", "kind": "who",
+                    "reader": "business", "lane": "law_answers", "provisions": ["act-s8"], "source": "written"}]
+        graph = [graph_row(f"Q-{i}", f"What does duty number {chr(97 + i)} mean?") for i in range(5)]
+        rows = b.build(graph, [], target=2, topic_floor=1, written=written)
+        self.assertEqual(len(rows), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()

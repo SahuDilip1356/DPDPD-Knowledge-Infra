@@ -1,8 +1,9 @@
 """Coverage check for the Setu questionnaire.
 
 Counts questions per provision of the Act and Rules, per lane, reader and kind, and lists
-every target that is missed. Written questions carry the provisions they test; graph
-questions count through their provision hints (S8 -> act-s8, R7 -> rules-r7).
+every target that is missed, plus any written question that cites an id the law-import
+folder does not have. Written questions carry the provisions they test; graph questions
+count through their provision hints (S8 -> act-s8, R7 -> rules-r7).
 
 Usage:
   python3 scripts/question_map/coverage_check.py --law <law-import dir> [--map staging/question-map/question_map.jsonl]
@@ -59,18 +60,23 @@ def hint_to_id(hint):
     return ("act-s" if m.group(1) == "S" else "rules-r") + m.group(2)
 
 
-def report(written, mapped, ids):
+def report(written, mapped, ids, citable=None):
+    """Counts and misses. With `citable` (provision and notification ids), a written
+    question that cites an id outside it is a miss too."""
     rows = list(written) + list(mapped)
     per = collections.Counter()
+    unknown = []
     for r in written:
         for p in r.get("provisions", []):
             per[p] += 1
+            if citable is not None and p not in citable:
+                unknown.append(f"{r['id']}: unknown provision {p}")
     for r in mapped:
         for h in r.get("provision_hints", []):
             pid = hint_to_id(h)
             if pid:
                 per[pid] += 1
-    misses = []
+    misses = list(unknown)
     for pid in ids:
         if pid == "act-long-title":
             continue
@@ -104,7 +110,7 @@ def main():
     if a.map:
         with open(a.map) as f:
             mapped = [json.loads(line) for line in f if line.strip() and json.loads(line)["source"] != "written"]
-    r = report(wq.rows(), mapped, law_ids(a.law))
+    r = report(wq.rows(), mapped, law_ids(a.law), citable=set(citable_ids(a.law)))
     print(json.dumps({k: v for k, v in r.items() if k != "per_provision"}, indent=2))
     sys.exit(1 if r["misses"] else 0)
 

@@ -1,7 +1,8 @@
 """Build the Setu question map (training guide step 1).
 
-Takes question text only from two internal sources and writes a labelled, deduplicated
-map of about 1,000 questions to a gitignored file:
+Starts with SaralPrivacy's own written questions (written_questions.py, kept whole), then
+takes question text only from two internal sources and writes a labelled, deduplicated
+map to a gitignored file:
 
 - the canonical question graph (staging/competitive_intel/questions/unified_questions.jsonl)
 - the classified street searches (classified-street.csv)
