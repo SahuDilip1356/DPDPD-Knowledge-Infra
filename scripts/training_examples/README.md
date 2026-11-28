@@ -10,43 +10,66 @@ L="<main checkout>/staging/law-import"
 python3 scripts/training_examples/check_examples.py --law "$L" staging/training-examples/batch01.jsonl
 python3 scripts/training_examples/make_review_sheet.py --law "$L" staging/training-examples/batch01.jsonl
 python3 -m unittest scripts/training_examples/test_check_examples.py -v
+python3 scripts/training_examples/mutation_run.py
 ```
 
-The checker fails closed. An answer may carry a number, an amount, a time limit or a
-reference only in these house forms:
+## Structured answers (option C)
 
-| Form | Example | Also checked |
+Every example carries an `answer_template`: prose with typed slots. A figure, date,
+amount, reference or notification can enter the answer only through a slot, and
+`answer` must be exactly the rendered template. The approved checks are E1 to E15 in
+[EVALS-structured-answers.md](EVALS-structured-answers.md).
+
+| Slot | Renders | Checked against |
 |---|---|---|
-| Date | 13 May 2027 | must be a real start date in the Act or Rules, or a known gazette date; every pending start date of a cited provision must appear |
-| Notification | G.S.R. 843(E) | must be listed in `dpdp-notifications.jsonl` (or be the Rules' own G.S.R. 846(E)) |
-| Citation | (Section 8(6)), (Rule 7(2)(b)), (Sections 11 to 14) | each number is cited; each sub-section and clause exists in that part of the cited text |
-| Schedule | (The Schedule), Fourth Schedule, Part A | the schedule, and the part if named, exists and is cited |
-| Amount | ₹250 crore, ₹10,000 | the value and unit are in that claim's own quote |
-| Time limit | 72 hours, seventy-two hours, one year | the value and unit are in a quote |
+| `{ref:act-s8}`, `{ref:act-s8#6}`, `{ref:rules-r8,rules-sch3}` | (Section 8), (Section 8(6)), (Rule 8, Third Schedule) | the id exists, the part exists in its text, a claim with a verified quote cites it |
+| `{name:act-s3}` | Section 3 | same as `ref` |
+| `{period:rules-r7\|72 hours}` | 72 hours | a quote of a claim citing that id holds the same period |
+| `{amount:act-schedule\|₹250 crore}` | ₹250 crore | a quote of a claim citing that id holds the same amount |
+| `{count:rules-sch3\|2 crore}` | 2 crore | same as `amount` |
+| `{date:act-s8}`, `{date:act-s6#9}`, `{date:act-s8,rules-r7}` | 13 May 2027 | nothing typed: the in-force table gives the date |
+| `{notification:gsr-843e-2025}` | G.S.R. 843(E) | a known notification |
+| `{notified:gsr-843e-2025}` | 13 November 2025 | nothing typed: the notification record gives the date |
 
-The checker removes those forms after checking them. If anything numeric or reference-like
-is left (a digit in any script, a currency sign, "Rs", "crores", "per cent", "a dozen",
-"half", "u/s", "§", "s. 8", "schedule" in another form, "72-hour", "a fortnight", "seven
-business days", "the fifth day", any number word but "one", a Hindi or Hinglish number or unit word, a Roman numeral), the example fails, whatever the wording. Answers may use only ASCII plus ₹ ‘ ’ “ ” — –, so other scripts, look-alike letters and
-invisible or non-breaking characters fail. A quote may not
-cut a number phrase ("two hours" out of "seventy-two hours"). The tests list every wording a reviewer has found, and they must keep failing.
+The prose between the slots may not contain:
+- a digit in any script;
+- a character other than ASCII letters, spaces and `. , ; : ' " ? ! ( ) -` plus ‘ ’ “ ” — –;
+- a unit or reference word, in English or Hinglish (hour, crore, lakh, Section, rule, schedule,
+  clause, Part A, per cent, ghante, saal and the rest), or a word one inserted, deleted or
+  swapped letter away from one ("hourss", "yeras", "secton");
+- a number word other than "one", in English or Hinglish, or a Roman numeral.
 
-It also fails an example when:
-- a quote is not one unbroken run of at least 6 words, in the same case, from the cited
-  provision, starting and ending on whole words (no "…");
-- the answer uses a capitalised name the Act and Rules never use, or a known wrong name;
-- the check date is not a real YYYY-MM-DD date (`--as-of`, or today);
-- a claim's `applies_from` does not match the sub-section its quote comes from;
-- a label is outside the approved sets, a law-answers or comparison example has no quote,
-  or a refusal example has no plain refusal phrase, or states a duty with no quote.
+"the Rules" is allowed; the singular "rule" is not. A cited provision that is not in force
+on the check date needs a `date` slot for it, or for the part a claim relies on
+(`applies_from`). The check date is `--as-of` or today; an example cannot set its own.
+
+The claim checks are unchanged. A quote is one unbroken run of at least 6 words, in the
+same case, from the cited provision, starting and ending on whole words, and never cutting
+a number phrase. Labels must come from the approved sets, law-answers and comparison
+examples need a quote, and refusal lanes need a plain refusal phrase. Capitalised names the
+Act and Rules never use fail.
+
+`mutation_run.py` switches off each check in turn and fails if the tests still pass.
+
+## Converting free-text answers
+
+`convert_to_template.py` turns a v2 batch into templates. It keeps the old text as
+`answer_v2` and writes a report of every answer whose rendering differs. Rewordings for
+prose the new checks ban go in a JSON file of `{id: [[old, new], ...]}`.
+
+```bash
+python3 scripts/training_examples/convert_to_template.py --law "$L" --as-of 2026-11-27 \
+  --rewrites staging/training-examples/c_rewrites.json --report changes.md in.jsonl out.jsonl
+```
 
 ## What it cannot catch (left to the legal read and Dilip)
 
 - whether a plain-English sentence means what the law means;
-- an amount or limit that is quoted correctly but described as being for the wrong duty
-  (a ₹250 crore quote presented as the fine for not reporting a breach);
-- whether a start date sits next to the duty it belongs to, not only somewhere in the answer;
+- an amount or limit that is quoted correctly but described as being for the wrong duty;
+- whether a date slot sits next to the duty it belongs to;
+- a misspelled unit word under five letters ("dayz") or with a replaced letter ("hoyrs");
+- a number with no unit and no slot ("within fourty-eight");
 - lowercase invented phrases ("data breach inquiry report").
 
 It can also fail correct text, such as "Unique Identification Authority". Those false
-fails are safe; reword or add the name to the allowlist.
+fails are safe; reword, or add the name to the allowlist.

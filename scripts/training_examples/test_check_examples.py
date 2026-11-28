@@ -1,520 +1,481 @@
-"""Checks for the training-example quote checker (training guide step 2).
+"""Tests for the structured-answer checker (option C, evals E1-E15).
 
 Run: python3 -m unittest scripts/training_examples/test_check_examples.py -v
+Each test class names the eval in EVALS-structured-answers.md it covers.
 """
 
 import os
+import subprocess
 import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
 import check_examples as c  # noqa: E402
 
+AS_OF = "2026-11-27"
+
 LAW = {
+    "act-s2": {"id": "act-s2", "citation": "Section 2", "number": "2",
+               "text": "2. In this Act,— (j) “Data Principal” means the individual to whom the personal data relates",
+               "in_force": [{"provision": "section 2", "from": "2025-11-13"}]},
+    "act-s6": {"id": "act-s6", "citation": "Section 6", "number": "6",
+               "text": "6. (1) The consent given by the Data Principal shall be free, specific, informed, unconditional and unambiguous\n"
+                       "(9) Every Consent Manager shall be registered with the Board in such manner",
+               "in_force": [{"provision": "section 6(1)-(8), (10)", "from": "2027-05-13"},
+                            {"provision": "section 6(9)", "from": "2026-11-13"}]},
     "act-s8": {"id": "act-s8", "citation": "Section 8", "number": "8",
-               "text": "(6) In the event of a personal data breach, the Data Fiduciary shall give the Board and each affected Data Principal, intimation of such breach in such form and manner as may be prescribed."},
-    "act-sch": {"id": "act-sch", "citation": "The Schedule", "number": "",
-                "text": "Breach in observing the obligation to take reasonable security safeguards to prevent personal data breach under sub-section (5) of section 8. May extend to two hundred and fifty crore rupees."},
+               "text": "8. (6) In the event of a personal data breach, the Data Fiduciary shall give the Board and each "
+                       "affected Data Principal, intimation of such breach in such form and manner as may be prescribed.",
+               "in_force": [{"provision": "section 8", "from": "2027-05-13"}]},
+    "act-schedule": {"id": "act-schedule", "citation": "Schedule", "number": None,
+                     "text": "1. Breach in observing the obligation to take reasonable security safeguards. "
+                             "May extend to two hundred and fifty crore rupees. 2. Breach of any other provision. "
+                             "May extend to ten thousand rupees.",
+                     "in_force": [{"provision": "Schedule (applied through section 33)", "from": "2027-05-13"}]},
+    "rules-r7": {"id": "rules-r7", "citation": "Rule 7", "number": "7",
+                 "text": "7. (1) On becoming aware of any personal data breach, the Data Fiduciary shall intimate to the Board\n"
+                         "(2) The Data Fiduciary shall also intimate to the Board,—\n"
+                         "(b) within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow",
+                 "in_force": [{"provision": "rule 7", "from": "2027-05-13"}]},
+    "rules-r8": {"id": "rules-r8", "citation": "Rule 8", "number": "8",
+                 "text": "8. (3) A Data Fiduciary shall retain such personal data and logs for a minimum period of one year",
+                 "in_force": [{"provision": "rule 8", "from": "2027-05-13"}]},
+    "rules-sch3": {"id": "rules-sch3", "citation": "Third Schedule", "number": None,
+                   "text": "Such class of Data Fiduciaries as an e-commerce entity having not less than two crore registered users in India",
+                   "in_force": [{"provision": "Third Schedule (applies through rule 8(1))", "from": "2027-05-13"}]},
 }
-GOOD_QUOTE = "the Data Fiduciary shall give the Board and each affected Data Principal, intimation of such breach"
+NOTES = {"gsr-843e-2025": {"citation": "G.S.R. 843(E)", "date": "2025-11-13"},
+         "gsr-846e-2025": {"citation": "G.S.R. 846(E)", "date": "2025-11-13"}}
+
+Q8 = "the Data Fiduciary shall give the Board and each affected Data Principal, intimation of such breach"
+Q7 = "within seventy-two hours of becoming aware of the breach"
+QSCH = "May extend to two hundred and fifty crore rupees"
+QSCH2 = "Breach of any other provision. May extend to ten thousand rupees"
+Q83 = "retain such personal data and logs for a minimum period of one year"
+QSC3 = "an e-commerce entity having not less than two crore registered users in India"
+Q69 = "Every Consent Manager shall be registered with the Board"
+Q61 = "The consent given by the Data Principal shall be free, specific, informed"
+Q2 = "means the individual to whom the personal data relates"
+
+CL = {"act-s8": Q8, "rules-r7": Q7, "act-schedule": QSCH, "rules-r8": Q83, "rules-sch3": QSC3, "act-s2": Q2}
 
 
-def ex(**kw):
-    base = {
-        "id": "E-001", "question": "Who do we tell after a breach?", "kind": "who",
-        "reader": "business", "lane": "law_answers", "provisions": ["act-s8"],
-        "answer": "Tell the Board and every affected person (Section 8).",
-        "claims": [{"text": "Tell the Board and every affected person.", "cite": "act-s8", "quote": GOOD_QUOTE}],
-    }
-    base.update(kw)
-    return base
+def claim(cite, quote=None, **kw):
+    d = {"text": "x", "cite": cite, "quote": quote or CL[cite]}
+    d.update(kw)
+    return d
 
 
-class TestQuotes(unittest.TestCase):
+def ex(template, claims=None, answer=None, **kw):
+    """An example whose answer is the rendering of its template (unless answer is given)."""
+    claims = [claim("act-s8")] if claims is None else claims
+    e = {"id": "E-001", "question": "q", "kind": "who", "reader": "business", "lane": "law_answers",
+         "provisions": sorted({x["cite"] for x in claims}), "answer_template": template, "claims": claims}
+    if answer is None:
+        answer = c.render(c.parse_template(template)[0], LAW)
+    e["answer"] = answer
+    e.update(kw)
+    return e
+
+
+def run(e, as_of=AS_OF):
+    return c.check(e, LAW, as_of=as_of)
+
+
+GOOD = "From {date:act-s8}, tell the Board and every affected person {ref:act-s8}."
+
+
+class Base(unittest.TestCase):
+    def setUp(self):
+        c.KNOWN_NOTIFICATIONS.clear()
+        c.KNOWN_NOTIFICATIONS.update(NOTES)
+
+    def ok(self, e, as_of=AS_OF):
+        self.assertEqual(run(e, as_of), [], e["answer_template"])
+
+    def bad(self, e, needle=None, as_of=AS_OF):
+        errs = run(e, as_of)
+        self.assertTrue(errs, e.get("answer_template"))
+        if needle:
+            self.assertTrue(any(needle in x for x in errs), (needle, errs))
+
+
+class TestE1Format(Base):
     def test_good_example_passes(self):
-        self.assertEqual(c.check(ex(), LAW), [])
+        self.ok(ex(GOOD))
 
-    def test_quote_not_in_text_fails(self):
-        bad = ex(claims=[{"text": "x", "cite": "act-s8", "quote": "the Data Fiduciary shall inform the Board within seventy two hours"}])
-        self.assertTrue(any("not found" in e for e in c.check(bad, LAW)))
+    def test_missing_template_fails(self):
+        e = ex(GOOD)
+        del e["answer_template"]
+        self.bad(e, "no answer_template")
+        self.bad(ex("   "), "no answer_template")
 
-    def test_elision_fails(self):
-        bad = ex(claims=[{"text": "x", "cite": "act-s8", "quote": "the Data Fiduciary shall … intimation of such breach"}])
-        self.assertTrue(any("elision" in e for e in c.check(bad, LAW)))
+    def test_answer_must_be_the_rendering(self):
+        self.bad(ex(GOOD, answer="From 13 May 2027, tell the Board within 48 hours (Section 8)."), "rendered")
+        self.bad(ex(GOOD, answer=""), "rendered")
 
-    def test_short_quote_fails(self):
-        bad = ex(claims=[{"text": "x", "cite": "act-s8", "quote": "the Data Fiduciary shall"}])
-        self.assertTrue(any("6 words" in e for e in c.check(bad, LAW)))
-
-    def test_case_must_match(self):
-        bad = ex(claims=[{"text": "x", "cite": "act-s8", "quote": GOOD_QUOTE.upper()}])
-        self.assertTrue(any("not found" in e for e in c.check(bad, LAW)))
-
-    def test_whitespace_is_normalised(self):
-        ok = ex(claims=[{"text": "x", "cite": "act-s8", "quote": GOOD_QUOTE.replace(" ", "  \n")}])
-        self.assertEqual(c.check(ok, LAW), [])
-
-    def test_unknown_cite_fails(self):
-        bad = ex(claims=[{"text": "x", "cite": "act-s99", "quote": GOOD_QUOTE}])
-        self.assertTrue(any("unknown provision" in e for e in c.check(bad, LAW)))
-
-
-class TestAnswerText(unittest.TestCase):
-    def test_section_not_cited_fails(self):
-        bad = ex(answer="Tell the Board (Section 8). Section 33 sets the fine.")
-        self.assertTrue(any("section 33" in e for e in c.check(bad, LAW)))
-
-    def test_rule_not_cited_fails(self):
-        bad = ex(answer="Tell the Board within 72 hours under Rule 7.")
-        self.assertTrue(any("rule 7" in e for e in c.check(bad, LAW)))
-
-    def test_amount_must_be_in_a_quote(self):
-        bad = ex(answer="Tell the Board (Section 8). The fine can reach ₹300 crore.")
-        self.assertTrue(any("300" in e for e in c.check(bad, LAW)))
-
-    def test_amount_backed_by_quote_passes(self):
-        ok = ex(provisions=["act-s8", "act-sch"], answer="The cap is ₹250 crore (The Schedule).",
-                claims=[{"text": "The cap is ₹250 crore.", "cite": "act-sch",
-                         "quote": "May extend to two hundred and fifty crore rupees"}])
-        self.assertEqual(c.check(ok, LAW), [])
-
-    def test_invented_term_fails(self):
-        bad = ex(answer="File a Data Personal Breach Inquiry with the Board (Section 8).")
-        self.assertTrue(any("Data Personal Breach Inquiry" in e for e in c.check(bad, LAW)))
+    def test_rendering(self):
+        cases = {
+            "{ref:act-s8}": "(Section 8)",
+            "{ref:act-s8#6}": "(Section 8(6))",
+            "{ref:rules-r7#2(b)}": "(Rule 7(2)(b))",
+            "{ref:rules-r8,rules-sch3}": "(Rule 8, Third Schedule)",
+            "{ref:act-schedule}": "(The Schedule)",
+            "{name:act-s8} applies": "Section 8 applies",
+            "under {name:act-schedule}": "under the Schedule",
+            "{period:rules-r7|72 hours}": "72 hours",
+            "{amount:act-schedule|₹250 crore}": "₹250 crore",
+            "{count:rules-sch3|2 crore}": "2 crore",
+            "{date:act-s8}": "13 May 2027",
+            "{date:act-s6#9}": "13 November 2026",
+            "{date:act-s6#1}": "13 May 2027",
+            "{notification:gsr-843e-2025}": "G.S.R. 843(E)",
+            "{notified:gsr-843e-2025}": "13 November 2025",
+        }
+        for t, want in cases.items():
+            self.assertEqual(c.render(c.parse_template(t)[0], LAW), want, t)
 
 
-class TestRealLawShapes(unittest.TestCase):
-    def test_numeric_number_field(self):
-        law = {k: dict(v) for k, v in LAW.items()}
-        law["act-s8"]["number"] = 8
-        self.assertEqual(c.check(ex(), law), [])
+class TestE2Malformed(Base):
+    def test_malformed_slots_fail(self):
+        for t in ("{foo:act-s8} tell the Board.", "Tell the Board {ref:}.", "Tell the Board {ref:Act S8}.",
+                  "Tell the Board {ref:act-s8.", "Tell the Board ref:act-s8}.", "Tell {ref:{ref:act-s8}}.",
+                  "Report within {period:rules-r7}.", "From {date:act-s8|13 May 2027}, tell the Board.",
+                  "Tell the Board {refact-s8}.", "See {notification:gsr-843e-2025#1}.",
+                  "Report within {period:rules-r7#2|72 hours}."):
+            self.bad(ex(t, answer="x"), None)
 
-    def test_plural_of_a_law_term_is_fine(self):
-        law = {k: dict(v) for k, v in LAW.items()}
-        law["act-s8"]["text"] += " Significant Data Fiduciary"
-        ok = ex(answer="Significant Data Fiduciaries have more duties (Section 8).")
-        self.assertEqual(c.check(ok, law), [])
+    def test_error_names_the_problem(self):
+        self.bad(ex("{foo:act-s8} x", answer="x"), "unknown slot type")
+        self.bad(ex("Tell the Board {ref:act-s8.", answer="x"), "brace")
 
 
-class TestInForce(unittest.TestCase):
-    def law(self):
-        law = {k: dict(v) for k, v in LAW.items()}
-        law["act-s8"]["in_force"] = [{"provision": "section 8", "from": "2027-05-13"}]
-        return law
+class TestE3Digits(Base):
+    def test_any_digit_in_prose_fails(self):
+        for d in ("72", "７２", "⁴⁸", "४८", "٤٨", "Ⅻ"):
+            self.bad(ex(f"From {{date:act-s8}}, report within {d} {{ref:act-s8}}."), "figures may only enter through a slot")
 
-    def test_duty_not_yet_in_force_must_give_its_date(self):
-        errs = c.check(ex(), self.law(), as_of="2026-11-27")
-        self.assertTrue(any("13 May 2027" in e for e in errs))
 
-    def test_date_in_answer_passes(self):
-        ok = ex(answer="From 13 May 2027, tell the Board and every affected person (Section 8).")
-        self.assertEqual(c.check(ok, self.law(), as_of="2026-11-27"), [])
+class TestE4Characters(Base):
+    def test_characters_outside_the_allowlist_fail(self):
+        for ch in ("₹", "$", "%", "§", "​", " ", "е", "द", "/", "&", "*", "\n"):
+            self.bad(ex(f"From {{date:act-s8}}, tell the Board{ch}now {{ref:act-s8}}."), "prose has")
+
+    def test_allowed_punctuation_passes(self):
+        self.ok(ex("From {date:act-s8}: tell the Board’s “team” — fast; why? now! (yes) - ‘ok’ – \"fine\" {ref:act-s8}."))
+
+
+PEER_ROUND_3 = [
+    "do hafte", "das hours", "chaubis ghanton", "das rupaiye", "pandrah laakh", "fourty-eight hours",
+    "sevnty-two hours", "seventytwo hours", "within X days", "Section X", "one lac", "one cr", "one bn",
+    "one arab", "one grand", "section one", "sub-rule (ix) of Rule seven", "clause (z) of Rule seven",
+]
+
+
+class TestE5UnitAndReferenceWords(Base):
+    def t(self, words):
+        return ex(f"From {{date:act-s8}}, tell the Board {words} {{ref:act-s8}}.")
+
+    def test_peer_round_three_inputs_fail(self):
+        for w in PEER_ROUND_3:
+            self.bad(self.t(w))
+
+    def test_each_word_group_fails(self):
+        for w in ("within the hour", "in minutes", "by the fortnight", "each quarter", "per annum", "a decade",
+                  "monthly", "in rupees", "Rs", "INR", "paise", "crores", "lakhs", "karod", "hazaar", "millions",
+                  "bn", "USD", "euros", "pounds", "percent", "per cent", "per-cent", "the percentage",
+                  "the section", "SECTIONS", "the subsection", "as a rule", "the sub-rule", "the clause",
+                  "the schedules", "the article", "the regulation", "a chapter", "the paragraph", "para",
+                  "the item", "the entries", "Part A", "Part IV", "part (b)", "ghante", "din", "mahine", "saal",
+                  "varsh", "baras", "rupaye", "the year's end", "the sub-clause"):
+            self.bad(self.t(w), "prose has")
+
+    def test_the_rules_and_ordinary_words_pass(self):
+        for w in ("under the Rules", "under the DPDP Rules", "today", "on Monday", "in part", "first",
+                  "the second step", "part of the duty"):
+            self.ok(self.t(w))
+
+
+class TestE6Misspellings(Base):
+    def test_one_letter_off_fails(self):
+        for w in ("hourss", "yeras", "secton", "sectoin", "schedle", "monthss", "minuts", "crorre"):
+            self.bad(ex(f"From {{date:act-s8}}, tell the Board within {w} {{ref:act-s8}}."), "one letter away")
+
+    def test_real_words_and_short_words_are_exempt(self):
+        for w in ("cause", "causes", "scheduled", "ruled", "sentry", "particles"):
+            self.ok(ex(f"From {{date:act-s8}}, tell the Board of the {w} {{ref:act-s8}}."))
+
+
+class TestE7NumberWords(Base):
+    def test_number_words_fail(self):
+        for w in ("two", "seventy-two", "seventytwo", "twenty", "a dozen", "half", "twice", "zero",
+                  "ek", "das", "pandrah", "chaubis", "dhai", "XLVIII", "hundreds of"):
+            self.bad(ex(f"From {{date:act-s8}}, tell the Board {w} times {{ref:act-s8}}."), "prose has")
+
+    def test_one_passes(self):
+        self.ok(ex("From {date:act-s8}, this is one of the duties: tell the Board {ref:act-s8}."))
+
+
+class TestE8FixedNames(Base):
+    def test_fixed_names_pass(self):
+        for n in ("the DPDP Act", "the DPDP Rules", "the Act", "the Rules", "the Act and Rules",
+                  "the Data Protection Board"):
+            self.ok(ex(f"From {{date:act-s8}}, {n} says tell the Board {{ref:act-s8}}."))
+
+
+class TestE9RefSlots(Base):
+    def test_unknown_id_fails(self):
+        self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8,act-s99}."), "unknown provision")
+
+    def test_part_must_exist(self):
+        self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8#9}."), "no part")
+        self.bad(ex("From {date:rules-r7}, report {ref:rules-r7#2(e)}.", [claim("rules-r7")]), "no part")
+        self.bad(ex("Pay up to {amount:act-schedule|₹250 crore} {ref:act-schedule#1}, from {date:act-schedule}.",
+                    [claim("act-schedule")]), "no numbered parts")
+        self.ok(ex("From {date:rules-r7}, report {ref:rules-r7#2(b)}.", [claim("rules-r7")]))
+
+    def test_a_claim_with_a_quote_must_cite_it(self):
+        self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8} {ref:rules-r7}."), "no claim with a quote cites rules-r7")
+        self.bad(ex("Section {name:rules-r7} x"), "no claim")
+        broken = claim("rules-r7", quote="within forty-eight hours of becoming aware of the breach")
+        self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8} {ref:rules-r7}.", [claim("act-s8"), broken]),
+                 "no claim with a quote cites rules-r7")
+
+    def test_date_slot_needs_a_known_provision_only(self):
+        # A date comes from the in-force table, so its provision need not be quoted (E9 covers ref and name).
+        self.ok(ex("From {date:rules-r7,act-s8}, tell the Board {ref:act-s8}."))
+        self.bad(ex("From {date:act-s8,act-s99}, tell the Board {ref:act-s8}."), "unknown provision")
+
+
+class TestE10FigureSlots(Base):
+    def r7(self, t):
+        return ex("From {date:rules-r7}, " + t + " {ref:rules-r7}.", [claim("rules-r7")])
+
+    def sch(self, t, claims=None):
+        return ex("From {date:act-schedule}, " + t + " {ref:act-schedule}.", claims or [claim("act-schedule")])
+
+    def test_quoted_figures_pass(self):
+        self.ok(self.r7("report within {period:rules-r7|72 hours}"))
+        self.ok(self.r7("report within {period:rules-r7|seventy-two hours}"))
+        self.ok(self.sch("pay up to {amount:act-schedule|₹250 crore}"))
+        self.ok(self.sch("pay up to {amount:act-schedule|₹10,000}", [claim("act-schedule", QSCH2)]))
+        self.ok(ex("From {date:rules-r8}, keep logs for {period:rules-r8|one year} {ref:rules-r8}.", [claim("rules-r8")]))
+        self.ok(ex("From {date:rules-sch3}, sites with {count:rules-sch3|2 crore} users {ref:rules-sch3}.",
+                   [claim("rules-sch3")]))
+
+    def test_unquoted_figures_fail(self):
+        self.bad(self.r7("report within {period:rules-r7|48 hours}"), "no quote")
+        self.bad(self.r7("report within {period:rules-r7|72 days}"), "no quote")
+        self.bad(self.sch("pay up to {amount:act-schedule|₹200 crore}"), "no quote")
+        self.bad(self.sch("pay up to {amount:act-schedule|₹50 crore}"), "no quote")
+        self.bad(self.sch("pay up to {amount:act-schedule|₹250 lakh}"), "no quote")
+        self.bad(ex("From {date:rules-sch3}, sites with {count:rules-sch3|3 crore} users {ref:rules-sch3}.",
+                    [claim("rules-sch3")]), "no quote")
+
+    def test_figure_must_come_from_that_provision(self):
+        e = ex("From {date:act-s8}, tell the Board within {period:act-s8|72 hours} {ref:act-s8} {ref:rules-r7}.",
+               [claim("act-s8"), claim("rules-r7")])
+        self.bad(e, "no quote of a claim citing act-s8")
+
+    def test_values_must_parse(self):
+        for v in ("72 hrs", "72-hour", "about 72 hours", "₹ 250 crore", "Rs 250 crore", "₹250 crores", "250 crore"):
+            self.bad(self.r7(f"report within {{period:rules-r7|{v}}}"))
+            self.bad(self.sch(f"pay {{amount:act-schedule|{v}}}"))
+        self.bad(self.r7("report within {period:act-s99|72 hours}"), "unknown provision")
+
+
+class TestE11StartDates(Base):
+    def test_pending_provision_needs_a_date_slot(self):
+        self.bad(ex("Tell the Board {ref:act-s8}."), "needs a {date:act-s8} slot")
+
+    def test_date_slot_for_another_provision_does_not_count(self):
+        e = ex("From {date:rules-r7}, tell the Board {ref:act-s8} {ref:rules-r7}.", [claim("act-s8"), claim("rules-r7")])
+        self.bad(e, "needs a {date:act-s8} slot")
 
     def test_in_force_already_needs_nothing(self):
-        self.assertEqual(c.check(ex(), self.law(), as_of="2027-06-01"), [])
+        self.ok(ex("Tell the Board {ref:act-s8}."), as_of="2027-06-01")
+        self.ok(ex("A Data Principal is the person the data is about {ref:act-s2}.", [claim("act-s2")]))
 
-    def test_in_force_as_string_is_read(self):
-        law = self.law()
-        law["act-s8"]["in_force"] = "[{'provision': 'section 8', 'from': '2027-05-13'}]"
-        self.assertTrue(c.check(ex(), law, as_of="2026-11-27"))
-
-
-class TestLanes(unittest.TestCase):
-    def test_law_answers_needs_a_claim(self):
-        bad = ex(claims=[])
-        self.assertTrue(any("needs at least one" in e for e in c.check(bad, LAW)))
-
-    def test_refusal_lanes_need_a_reason(self):
-        bad = ex(lane="law_silent", claims=[], provisions=[], answer="Yes, you can.")
-        self.assertTrue(any("say plainly" in e for e in c.check(bad, LAW)))
-        ok = ex(lane="law_silent", claims=[], provisions=[],
-                answer="The DPDP Act and Rules do not set up any certificate.")
-        self.assertEqual(c.check(ok, LAW), [])
-
-    def test_bad_labels_fail(self):
-        bad = ex(kind="whom", reader="lawyer", lane="maybe")
-        errs = c.check(bad, LAW)
-        self.assertEqual(len([e for e in errs if "label" in e]), 3)
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-# ---- Round 2: bypasses found by the code review of 1a65df0 ----
-SCH_QUOTE_250 = "May extend to two hundred and fifty crore rupees"
-
-
-def law_with_dates():
-    law = {k: dict(v) for k, v in LAW.items()}
-    law["act-s8"]["in_force"] = [{"provision": "section 8", "from": "2027-05-13"}]
-    law["act-s6"] = {"id": "act-s6", "citation": "Section 6", "number": "6",
-                     "text": "(9) Every Consent Manager shall be registered with the Board in such manner",
-                     "in_force": [{"provision": "6(1)-(8)", "from": "2027-05-13"},
-                                  {"provision": "section 6(9)", "from": "2026-11-13"}]}
-    law["rules-r7"] = {"id": "rules-r7", "citation": "Rule 7", "number": "7",
-                       "text": "(2)(b) within seventy-two hours of becoming aware of the breach, or within such longer period",
-                       "in_force": [{"provision": "rule 7", "from": "2027-05-13"}]}
-    return law
-
-
-class TestRefBypasses(unittest.TestCase):
-    def test_short_forms_and_plurals(self):
-        for a in ("Under s. 9 you must tell.", "Per sec 9 you must tell.", "Sections 8 and 9 apply.",
-                  "See r. 7 too.", "Rule7 applies.", "Section 8A applies.", "Rules 3, 5 to 16 apply."):
-            errs = c.check(ex(answer=a), LAW, as_of="2030-01-01")
-            self.assertTrue(errs, a)
-
-    def test_subsection_must_exist_in_cited_text(self):
-        errs = c.check(ex(answer="Tell the Board (Section 8(9))."), LAW, as_of="2030-01-01")
-        self.assertTrue(any("8(9)" in e for e in errs))
-        self.assertEqual(c.check(ex(answer="Tell the Board (Section 8(6))."), LAW, as_of="2030-01-01"), [])
-
-    def test_gazette_numbers_are_not_rules(self):
-        self.assertEqual(c.check(ex(answer="Tell the Board (Section 8, G.S.R. 843(E))."), LAW, as_of="2030-01-01"), [])
-
-    def test_schedule_mentions_need_a_cite(self):
-        errs = c.check(ex(answer="See the Fourth Schedule (Section 8)."), LAW, as_of="2030-01-01")
-        self.assertTrue(any("Fourth Schedule" in e for e in errs))
-
-
-class TestAmountBypasses(unittest.TestCase):
-    def amt(self, answer, quote=SCH_QUOTE_250, text=None):
-        return ex(provisions=["act-sch"], answer=answer,
-                  claims=[{"text": text or answer, "cite": "act-sch", "quote": quote}])
-
-    def test_rs_inr_and_bare(self):
-        for a in ("The cap is Rs 500 crore.", "The cap is INR 500 crore.", "The cap is 500 crore."):
-            self.assertTrue(c.check(self.amt(a), LAW, as_of="2030-01-01"), a)
-
-    def test_fifty_inside_two_hundred_and_fifty_is_not_fifty(self):
-        self.assertTrue(c.check(self.amt("The cap is ₹50 crore."), LAW, as_of="2030-01-01"))
-        self.assertTrue(c.check(self.amt("The cap is ₹200 crore."), LAW, as_of="2030-01-01"))
-        self.assertEqual(c.check(self.amt("The cap is ₹250 crore."), LAW, as_of="2030-01-01"), [])
-
-    def test_unit_matters(self):
-        self.assertTrue(c.check(self.amt("The cap is ₹250 lakh."), LAW, as_of="2030-01-01"))
-
-    def test_amount_must_come_from_its_own_claim(self):
-        e = ex(provisions=["act-s8", "act-sch"],
-               answer="Not telling the Board costs up to ₹250 crore (Section 8).",
-               claims=[{"text": "Tell the Board.", "cite": "act-s8", "quote": GOOD_QUOTE},
-                       {"text": "Not telling the Board costs up to ₹200 crore.", "cite": "act-sch", "quote": SCH_QUOTE_250}])
-        self.assertTrue(c.check(e, LAW, as_of="2030-01-01"))
-
-
-class TestTimeLimits(unittest.TestCase):
-    def test_time_limit_must_be_in_a_quote(self):
-        law = law_with_dates()
-        base = dict(provisions=["rules-r7"], claims=[{"text": "x", "cite": "rules-r7",
-                    "quote": "within seventy-two hours of becoming aware of the breach"}])
-        ok = ex(answer="From 13 May 2027, report within 72 hours (Rule 7).", **base)
-        bad = ex(answer="From 13 May 2027, report within 7 days (Rule 7).", **base)
-        self.assertEqual(c.check(ok, law, as_of="2026-11-27"), [])
-        self.assertTrue(any("7 days" in e for e in c.check(bad, law, as_of="2026-11-27")))
-
-
-class TestInForceBypasses(unittest.TestCase):
     def test_example_cannot_set_its_own_date(self):
-        e = ex(as_of="2030-01-01")
-        self.assertTrue(c.check(e, law_with_dates(), as_of="2026-11-27"))
+        self.bad(ex("Tell the Board {ref:act-s8}.", as_of="2030-01-01"))
 
-    def test_a_past_date_does_not_cover_a_pending_one(self):
-        e = ex(provisions=["act-s6"], answer="Consent rules started on 13 November 2026 (Section 6).",
-               claims=[{"text": "x", "cite": "act-s6", "quote": "Every Consent Manager shall be registered with the Board"}])
-        self.assertTrue(any("13 May 2027" in x for x in c.check(e, law_with_dates(), as_of="2026-11-27")))
+    def test_one_slot_can_date_several_provisions(self):
+        e = ex("From {date:act-s8,rules-r7}, tell the Board {ref:act-s8} {ref:rules-r7}.", [claim("act-s8"), claim("rules-r7")])
+        self.assertEqual(e["answer"], "From 13 May 2027, tell the Board (Section 8) (Rule 7).")
+        self.ok(e)
 
-    def test_claim_can_name_the_part_already_in_force(self):
-        e = ex(provisions=["act-s6"], answer="Consent Managers register with the Board, since 13 November 2026 (Section 6).",
-               claims=[{"text": "x", "cite": "act-s6", "applies_from": "2026-11-13",
-                        "quote": "Every Consent Manager shall be registered with the Board"}])
-        self.assertEqual(c.check(e, law_with_dates(), as_of="2026-11-27"), [])
+    def test_several_provisions_in_one_slot_must_share_a_date(self):
+        e = ex("Since {date:act-s8,act-s6#9}, tell the Board {ref:act-s8}.", answer="x")
+        self.bad(e, "different dates")
 
-    def test_applies_from_must_be_a_real_date_of_that_provision(self):
-        e = ex(provisions=["act-s6"], answer="Since 1 January 2020 (Section 6).",
-               claims=[{"text": "x", "cite": "act-s6", "applies_from": "2020-01-01",
-                        "quote": "Every Consent Manager shall be registered with the Board"}])
-        self.assertTrue(any("applies_from" in x for x in c.check(e, law_with_dates(), as_of="2026-11-27")))
+    def test_multi_date_provision_needs_the_part(self):
+        e = ex("From {date:act-s6}, use one {ref:act-s6}.", [claim("act-s6", Q61)])
+        self.bad(e, "more than one start date")
+        self.ok(ex("From {date:act-s6#1}, consent must be free {ref:act-s6}.", [claim("act-s6", Q61)]))
+
+    def test_applies_from_names_the_part_in_force(self):
+        e = ex("Consent Managers register with the Board, since {date:act-s6#9} {ref:act-s6}.",
+               [claim("act-s6", Q69, applies_from="2026-11-13")])
+        self.ok(e)
+        e = ex("Consent Managers register with the Board {ref:act-s6}.", [claim("act-s6", Q69)])
+        self.bad(e, "needs a {date:act-s6} slot")
+
+    def test_applies_from_must_match_the_quoted_part(self):
+        e = ex("Consent is free {ref:act-s6}.", [claim("act-s6", Q61, applies_from="2026-11-13")])
+        self.bad(e, "applies_from")
+
+    def test_date_slot_part_without_a_start_date_fails(self):
+        self.bad(ex("From {date:act-s6#11}, tell {ref:act-s6}.", [claim("act-s6", Q61)]))
 
 
-class TestRefusalAndTerms(unittest.TestCase):
-    def test_refusal_needs_a_real_refusal_phrase(self):
-        e = ex(lane="law_silent", claims=[], provisions=[], answer="This is not hard: delete data in 30 days.")
-        self.assertTrue(c.check(e, LAW, as_of="2030-01-01"))
+class TestE12Notifications(Base):
+    def test_unknown_notification_fails(self):
+        self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8} ({notification:gsr-999e-2025})."), "unknown notification")
+        self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8}, notified {notified:gsr-999e-2025}."), "unknown notification")
 
-    def test_refusal_stating_a_duty_needs_a_quote(self):
-        e = ex(lane="law_silent", claims=[], provisions=[],
-               answer="The DPDP Act does not say so, but you must delete data in a month.")
-        self.assertTrue(any("must" in x for x in c.check(e, LAW, as_of="2030-01-01")))
+    def test_known_notification_passes(self):
+        self.ok(ex("From {date:act-s8}, tell the Board {ref:act-s8} ({notification:gsr-843e-2025}, {notified:gsr-843e-2025})."))
+
+
+class TestE13Quotes(Base):
+    def q(self, quote):
+        return ex(GOOD, [claim("act-s8", quote)])
+
+    def test_quote_rules(self):
+        self.bad(self.q("the Data Fiduciary shall inform the Board within seventy two hours"), "not found")
+        self.bad(self.q("the Data Fiduciary shall … intimation of such breach"), "elision")
+        self.bad(self.q("the Data Fiduciary shall"), "6 words")
+        self.bad(self.q(Q8.upper()), "not found")
+        self.bad(self.q("he Data Fiduciary shall give the Board and each affected"), "mid-word")
+        self.ok(self.q(Q8.replace(" ", "  \n")))
+
+    def test_unknown_cite_fails(self):
+        self.bad(ex(GOOD, [claim("act-s8"), {"text": "x", "cite": "act-s99", "quote": Q8}]), "unknown provision")
+
+    def test_number_phrase_may_not_be_cut(self):
+        e = ex("From {date:rules-r7}, report within {period:rules-r7|2 hours} {ref:rules-r7}.",
+               [claim("rules-r7", "two hours of becoming aware of the breach")])
+        self.bad(e)
+
+    def test_claim_text_amount_must_be_in_its_quote(self):
+        e = ex("From {date:act-schedule}, pay up to {amount:act-schedule|₹250 crore} {ref:act-schedule}.",
+               [claim("act-schedule", text="Up to ₹300 crore.")])
+        self.bad(e, "its own quote")
+
+
+class TestE13LabelsLanes(Base):
+    def test_bad_labels_fail(self):
+        errs = run(ex(GOOD, kind="whom", reader="lawyer", lane="maybe"))
+        self.assertEqual(len([x for x in errs if "label" in x]), 3)
+
+    def test_law_answers_needs_a_claim(self):
+        self.bad(ex("Tell the Board.", []), "needs at least one")
+
+    def test_refusal_lanes(self):
+        self.bad(ex("Yes, you can.", [], lane="law_silent"), "say plainly")
+        self.ok(ex("The DPDP Act and Rules do not set up any certificate.", [], lane="law_silent"))
+        self.bad(ex("The DPDP Act does not say so, but you must delete it.", [], lane="law_silent"), "must")
+        for a in ("Get legal advice before you use it.", "This needs a lawyer.", "Check your setup with a lawyer.",
+                  "A lawyer can check your case.", "I cannot answer outside the law."):
+            self.ok(ex(a, [], lane="needs_lawyer"))
+        self.bad(ex("It depends on many things.", [], lane="needs_lawyer"))
+
+    def test_refusal_checked_on_the_rendering(self):
+        self.bad(ex("It depends {ref:act-s8}, from {date:act-s8}.", lane="needs_lawyer"), "say plainly")
 
     def test_comparison_needs_quotes(self):
-        e = ex(lane="comparison", claims=[], provisions=[], answer="You must report breaches quickly.")
-        self.assertTrue(c.check(e, LAW, as_of="2030-01-01"))
+        self.bad(ex("You must report breaches quickly.", [], lane="comparison"))
 
-    def test_known_wrong_names(self):
-        for a in ("The Data Protection Act requires it (Section 8).",
-                  "The Indian Data Protection Rules require it (Section 8).",
-                  "The Commissioner decides (Section 8)."):
-            self.assertTrue(c.check(ex(answer=a), LAW, as_of="2030-01-01"), a)
+    def test_invented_and_wrong_names_fail(self):
+        for a in ("File a Data Personal Breach Inquiry", "The Data Protection Act requires it",
+                  "The Commissioner decides", "The Indian Data Protection Rules require it"):
+            self.bad(ex("From {date:act-s8}, " + a + " {ref:act-s8}."), "not in the law text")
 
 
-# ---- Round 3: holes left after 3b5e5f3 ----
-class TestRound3(unittest.TestCase):
-    def law44(self):
-        law = law_with_dates()
-        law["act-s44"] = {"id": "act-s44", "citation": "Section 44", "number": "44",
-                          "text": "44. (1) Section 43A of the said Act shall be omitted from the date notified.\n"
-                                  "(2) In section 8 of the Right to Information Act, clause (j) shall be substituted by this text.",
-                          "in_force": [{"provision": "section 44(1)", "from": "2025-11-13"},
-                                       {"provision": "section 44(2)", "from": "2027-05-13"}]}
-        return law
-
-    def test_applies_from_must_match_the_part_the_quote_is_in(self):
-        bad = ex(provisions=["act-s44"], answer="Since 13 November 2025 (Section 44).",
-                 claims=[{"text": "x", "cite": "act-s44", "applies_from": "2025-11-13",
-                          "quote": "In section 8 of the Right to Information Act, clause (j)"}])
-        self.assertTrue(any("applies_from" in e for e in c.check(bad, self.law44(), as_of="2026-11-27")))
-        ok = ex(provisions=["act-s44"], answer="Since 13 November 2025 (Section 44).",
-                claims=[{"text": "x", "cite": "act-s44", "applies_from": "2025-11-13",
-                         "quote": "Section 43A of the said Act shall be omitted"}])
-        self.assertEqual(c.check(ok, self.law44(), as_of="2026-11-27"), [])
-
-    def test_hyphenated_and_article_time_limits(self):
-        law = law_with_dates()
-        base = dict(provisions=["rules-r7"], claims=[{"text": "x", "cite": "rules-r7",
-                    "quote": "within seventy-two hours of becoming aware of the breach"}])
-        # Fail-closed design: "72-hour" is not a house form, so it fails even when 72 is quoted.
-        self.assertTrue(c.check(ex(answer="Send the 72-hour report (Rule 7).", **base), law, as_of="2030-01-01"))
-        self.assertEqual(c.check(ex(answer="Send the report within 72 hours (Rule 7).", **base), law, as_of="2030-01-01"), [])
-        self.assertTrue(c.check(ex(answer="Send the 48-hour report (Rule 7).", **base), law, as_of="2030-01-01"))
-        self.assertTrue(c.check(ex(answer="Report within a week (Rule 7).", **base), law, as_of="2030-01-01"))
-        self.assertTrue(c.check(ex(answer="A 16-year-old is a child (Rule 7).", **base), law, as_of="2030-01-01"))
-
-    def test_space_before_subsection(self):
-        self.assertTrue(c.check(ex(answer="Tell the Board (Section 8 (15))."), LAW, as_of="2030-01-01"))
-
-
-class TestRefusalPhrases(unittest.TestCase):
-    def test_common_lawyer_phrasings_count(self):
-        for a in ("Get legal advice before you use it.", "This needs a lawyer.",
-                  "Check your setup with a lawyer.", "Check the records with a lawyer or your CA.",
-                  "A lawyer can check your case."):
-            e = ex(lane="needs_lawyer", claims=[], provisions=[], answer=a)
-            self.assertEqual(c.check(e, LAW, as_of="2030-01-01"), [], a)
-
-    def test_vague_text_still_fails(self):
-        e = ex(lane="needs_lawyer", claims=[], provisions=[], answer="It depends on many things.")
-        self.assertTrue(c.check(e, LAW, as_of="2030-01-01"))
-
-
-class TestAsOfValidation(unittest.TestCase):
+class TestAsOf(Base):
     def test_bad_dates_are_refused(self):
         for bad in ("27-11-2026", "2026/11/27", "tomorrow", "2026-13-01", ""):
             with self.assertRaises((SystemExit, ValueError), msg=bad):
-                c.check(ex(), LAW, as_of=bad)
+                c.check(ex(GOOD), LAW, as_of=bad)
 
     def test_cli_refuses_bad_date(self):
-        import subprocess
         res = subprocess.run([sys.executable, c.__file__, "--law", ".", "--as-of", "27-11-2026", "x.jsonl"],
                              capture_output=True, text=True)
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("YYYY-MM-DD", res.stderr + res.stdout)
+        self.assertNotIn("Traceback", res.stderr)
 
 
-# ---- Fail-closed design (Dilip approved 2026-11-27) ----
-# Every wording a reviewer found must fail; every house-style form must pass. Narrowing the
-# canonical patterns breaks TestHouseStylePasses; widening the residual check breaks
-# TestEveryBypassFails. Both are the mutation guard the PR #17 review asked for.
-LAW_FC = {k: dict(v) for k, v in LAW.items()}
-LAW_FC["rules-r7"] = {"id": "rules-r7", "citation": "Rule 7", "number": "7",
-                      "text": "(2) (b) within seventy-two hours of becoming aware of the breach, or within such longer period"}
-LAW_FC["act-schedule"] = LAW_FC.pop("act-sch")
-LAW_FC["act-schedule"]["id"] = "act-schedule"
-LAW_FC["act-s8"]["in_force"] = [{"provision": "section 8", "from": "2027-05-13"}]
-R7 = {"text": "x", "cite": "rules-r7", "quote": "within seventy-two hours of becoming aware of the breach"}
-S8 = {"text": "x", "cite": "act-s8", "quote": GOOD_QUOTE}
-SCH = {"text": "Up to ₹250 crore.", "cite": "act-schedule", "quote": "May extend to two hundred and fifty crore rupees"}
+# Every wording a reviewer found against the free-text checker (PR #17, rounds 1-3 and F13).
+# With citations moved into slots, the wording left in the prose must still fail.
+OLD_BYPASSES = [
+    "The fine is ₹300 crores", "The fine is Rs. 300 crores", "The fine is ₹5 lakhs", "A 300-crore fine applies",
+    "The fine is 10,000 rupees", "The fine is $30 million", "The fine is INR 250 crore", "The fine is 250 crore",
+    "Report within 72 hrs", "Report within 72h", "Report within 30 working days", "Report within seven business days",
+    "Report within 90 minutes", "Report within a fortnight", "Send the 72-hour report",
+    "Tell the Board u/s 8", "Tell the Board under s 8", "Report under r 7", "Tell the Board under §8",
+    "Read Section 8 read with 7", "See Sections 8 through 12", "See Sections 8—12", "Tell the Board (Sec. 8)",
+    "See the fourth schedule", "See Schedule I", "See the schedules",
+    "It was uploaded on 14 November", "The Act has 44 sections", "It is the 45th section",
+    "Under s. 9 you must tell", "Per sec 9 you must tell", "See r. 7 too", "Rule7 applies", "Section 8A applies",
+    "Send the 48-hour report", "Report within a week", "A 16-year-old is a child", "Tell the Board (Section 8 (15))",
+    "pay four per cent of turnover", "pay 4% of turnover", "pay a crore", "pay one and a half crore",
+    "pay a trillion", "report by the fifth day", "report within a dozen days", "report within a couple of days",
+    "report within five full calendar days", "report within ⁴⁸ hours", "report within ７２ hours",
+    "forty-eight at the latest", "report on day five", "report within two nights", "report within two weekends",
+    "report within XLVIII hours", "fines run to tens of millions",
+    "pay दो सौ पचास करोड़ रुपये", "report within बहत्तर घंटे", "pay dhai sau karod rupaye",
+    "pay pachas hazaar rupaye", "report within bahattar ghante", "report within do din",
+    "report within teen mahine", "keep it for ek saal", "pay dedh lakh", "pay sawa crore",
+    "report within sevеnty-two hours", "report within s​eventy-two hours", "report within seventy‑two hours",
+    "report within 72 hours", "under the DPDP Rules 2025",
+]
 
 
-def fc(answer, claims=None):
-    claims = claims or [S8, R7, SCH]
-    return ex(answer=answer, claims=claims, provisions=sorted({x["cite"] for x in claims}))
+class TestOldBypassesStillFail(Base):
+    def test_each_old_bypass_fails_in_prose(self):
+        for w in OLD_BYPASSES:
+            self.bad(ex("From {date:rules-r7}, " + w + " {ref:rules-r7}.", [claim("rules-r7")]))
 
 
-class TestEveryBypassFails(unittest.TestCase):
-    BYPASSES = [
-        # amounts
-        "The fine is ₹300 crores (Section 8).", "The fine is Rs. 300 crores (Section 8).",
-        "The fine is ₹5 lakhs (Section 8).", "A 300-crore fine applies (Section 8).",
-        "The fine is 10,000 rupees (Section 8).", "The fine is $30 million (Section 8).",
-        "The fine is INR 250 crore (Section 8).", "The fine is 250 crore (Section 8).",
-        # time limits
-        "Report within 72 hrs (Rule 7).", "Report within 72h (Rule 7).",
-        "Report within 30 working days (Rule 7).", "Report within seven business days (Rule 7).",
-        "Report within 90 minutes (Rule 7).", "Report within a fortnight (Rule 7).",
-        "Send the 72-hour report (Rule 7).",
-        # references
-        "Tell the Board u/s 8.", "Tell the Board under s 8.", "Report under r 7 (Section 8).",
-        "Tell the Board under §8.", "Read Section 8 read with 7.", "See Sections 8 through 12.",
-        "See Sections 8—12.", "See Sections 8–12.", "Tell the Board (Sec. 8).",
-        # schedules
-        "See the fourth schedule (Section 8).", "See Schedule I (Section 8).",
-        "See the schedules (Section 8).",
-        # stray numbers and partial dates
-        "It was uploaded on 14 November (Section 8).", "The Act has 44 sections (Section 8).",
-        "It is the 45th section (Section 8).",
-    ]
-
-    def test_each_bypass_fails(self):
-        for a in self.BYPASSES:
-            self.assertTrue(c.check(fc(a), LAW_FC, as_of="2030-01-01"), a)
-
-
-class TestHouseStylePasses(unittest.TestCase):
-    GOOD = [
-        "Tell the Board and every affected person (Section 8).",
-        "Tell the Board (Section 8(6)).",
-        "The full report is due within 72 hours (Rule 7).",
-        "The full report is due within seventy-two hours (Rule 7).",
-        "The cap is ₹250 crore (The Schedule).",
-        "The cap is ₹250 crore, for failing safeguards (The Schedule).",
-        "From 13 May 2027, tell the Board (Section 8).",
-        "Most duties start on 13 May 2027 (G.S.R. 843(E)).",
-        "Read it in any language in the Eighth Schedule to the Constitution (Section 8).",
-        "Tell the Board in one place, as one of the steps, with a government ID (Section 8).",
-    ]
-
-    def test_each_form_passes(self):
-        c.KNOWN_NOTIFICATIONS["G.S.R. 843(E)"] = "2025-11-13"
-        for a in self.GOOD:
-            self.assertEqual(c.check(fc(a), LAW_FC, as_of="2030-01-01"), [], a)
-
-
-class TestQuoteBoundaries(unittest.TestCase):
-    def test_quote_must_start_and_end_on_word_boundaries(self):
-        mid = {"text": "x", "cite": "act-s8", "quote": "he Data Fiduciary shall give the Board and each affected"}
-        self.assertTrue(any("word" in e for e in c.check(fc("Tell the Board (Section 8).", [mid]), LAW_FC, as_of="2030-01-01")))
-        end = {"text": "x", "cite": "act-s8", "quote": "the Data Fiduciary shall give the Board and each affec"}
-        self.assertTrue(any("word" in e for e in c.check(fc("Tell the Board (Section 8).", [end]), LAW_FC, as_of="2030-01-01")))
-
-
-# ---- Fail-closed round 2: false passes found by the review of 2b542ff ----
 REAL_LAW_DIR = "/Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/staging/law-import"
 
 
 @unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")
-class TestRealLawFalsePasses(unittest.TestCase):
+class TestRealLaw(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.law = c.load_law(REAL_LAW_DIR)
 
-    def r7(self, answer, quote="within seventy-two hours of becoming aware of the breach", extra=None):
-        claims = [{"text": "x", "cite": "rules-r7", "quote": quote}] + (extra or [])
-        return ex(answer="From 13 May 2027, " + answer, claims=claims,
-                  provisions=sorted({x["cite"] for x in claims}))
+    def date(self, ident, part=None):
+        return c._date_for(self.law[ident], part)[0]
 
-    def bad(self, e):
-        self.assertTrue(c.check(e, self.law, as_of="2026-11-27"), e["answer"])
+    def test_start_dates_by_part(self):
+        self.assertEqual(self.date("act-s6", "9"), "2026-11-13")
+        self.assertEqual(self.date("act-s6", "1"), "2027-05-13")
+        self.assertEqual(self.date("act-s6", "10"), "2027-05-13")
+        self.assertIsNone(self.date("act-s6"))
+        self.assertEqual(self.date("act-s27", "1(d)"), "2026-11-13")
+        self.assertEqual(self.date("act-s27", "2"), "2027-05-13")
+        self.assertIsNone(self.date("act-s27", "1"))
+        self.assertEqual(self.date("act-s44", "2"), "2027-05-13")
+        self.assertEqual(self.date("act-s44", "3"), "2025-11-13")
+        self.assertEqual(self.date("act-s8"), "2027-05-13")
+        self.assertEqual(self.date("act-schedule"), "2027-05-13")
 
-    def good(self, e):
-        self.assertEqual(c.check(e, self.law, as_of="2026-11-27"), [], e["answer"])
+    def test_rules_notification_is_known(self):
+        self.assertIn("gsr-846e-2025", c.KNOWN_NOTIFICATIONS)
+        self.assertIn("gsr-843e-2025", c.KNOWN_NOTIFICATIONS)
 
-    def test_quote_cut_inside_hyphenated_number(self):
-        self.bad(self.r7("report within 2 hours (Rule 7).", quote="two hours of becoming aware of the breach"))
-
-    def test_quote_keeping_only_the_tail_of_a_number(self):
-        sch = {"text": "Up to ₹50 crore.", "cite": "act-schedule",
-               "quote": "fifty crore rupees. 2. Breach in observing the obligation"}
-        self.bad(self.r7("security failures cost up to ₹50 crore (The Schedule) (Rule 7).", extra=[sch]))
-
-    def test_dates_must_be_real_start_or_gazette_dates(self):
-        self.bad(self.r7("the Board has enforced it since 1 January 2024 (Rule 7)."))
-        self.bad(ex(answer="These Rules came into force on 13 November 2024 (Rule 1).",
-                    claims=[{"text": "x", "cite": "rules-r1",
-                             "quote": "Rules 1, 2 and 17 to 21 shall come into force on the date of their publication"}],
-                    provisions=["rules-r1"]))
-        self.good(ex(answer="These Rules came into force on 13 November 2025 (Rule 1).",
-                     claims=[{"text": "x", "cite": "rules-r1",
-                              "quote": "Rules 1, 2 and 17 to 21 shall come into force on the date of their publication"}],
-                     provisions=["rules-r1"]))
-
-    def test_unknown_notification_number_fails(self):
-        self.bad(self.r7("report within 72 hours (Rule 7, G.S.R. 999(E))."))
-        self.good(self.r7("report within 72 hours (Rule 7, G.S.R. 846(E))."))
-
-    def test_number_words_and_symbols(self):
-        for a in ("pay four per cent of turnover (Rule 7).", "pay 4% of turnover (Rule 7).",
-                  "pay a crore (Rule 7).", "pay one and a half crore (Rule 7).", "pay a trillion (Rule 7).",
-                  "report by the fifth day (Rule 7).", "report within a dozen days (Rule 7).",
-                  "report within a couple of days (Rule 7).", "report within five full calendar days (Rule 7).",
-                  "report within ⁴⁸ hours (Rule 7).", "report within ７２ hours (Rule 7)."):
-            self.bad(self.r7(a))
-
-    def test_clause_must_be_in_the_named_subsection(self):
-        self.bad(self.r7("report the contact person (Rule 7(2)(e))."))
-        self.good(self.r7("report within 72 hours (Rule 7(2)(b))."))
-
-    def test_house_text_still_passes(self):
-        self.good(self.r7("report within 72 hours (Rule 7)."))
+    def test_real_example(self):
+        e = {"id": "Q-00022", "question": "q", "kind": "when", "reader": "business", "lane": "law_answers",
+             "answer_template": "From {date:rules-r7}: send the full report within {period:rules-r7|72 hours} "
+                                "of finding out {ref:rules-r7}.",
+             "answer": "From 13 May 2027: send the full report within 72 hours of finding out (Rule 7).",
+             "claims": [{"text": "x", "cite": "rules-r7",
+                         "quote": "within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow"}]}
+        self.assertEqual(c.check(e, self.law, as_of=AS_OF), [])
 
 
-@unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")
-class TestRound3NumberWords(TestRealLawFalsePasses):
-    def test_leftover_number_words_fail(self):
-        for a in ("report within 72 hours (Rule 7), or forty-eight at the latest.",
-                  "report on day five (Rule 7).", "report within two nights (Rule 7).",
-                  "report within two weekends (Rule 7).", "report within XLVIII hours (Rule 7).",
-                  "fines run to tens of millions (Rule 7)."):
-            self.bad(self.r7(a))
-
-    def test_one_and_articles_still_pass(self):
-        self.good(self.r7("report within 72 hours; this is one of the duties (Rule 7)."))
-
-
-@unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")
-class TestF13ScriptsAndLookalikes(TestRealLawFalsePasses):
-    """PR #17 review round 2 (F13): only ASCII plus a short allowlist may appear in answers."""
-
-    def test_hindi_amounts_and_deadlines_fail(self):
-        for a in ("pay दो सौ पचास करोड़ रुपये (Rule 7).", "report within बहत्तर घंटे (Rule 7)."):
-            self.bad(self.r7(a))
-
-    def test_hinglish_amounts_and_deadlines_fail(self):
-        for a in ("pay dhai sau karod rupaye (Rule 7).", "pay pachas hazaar rupaye (Rule 7).",
-                  "report within bahattar ghante (Rule 7).", "report within do din (Rule 7).",
-                  "report within teen mahine (Rule 7).", "keep it for ek saal (Rule 7).",
-                  "pay dedh lakh (Rule 7).", "pay sawa crore (Rule 7)."):
-            self.bad(self.r7(a))
-
-    def test_lookalike_and_invisible_characters_fail(self):
-        for a in ("report within sevеnty-two hours (Rule 7).",   # Cyrillic e
-                  "report within s​eventy-two hours (Rule 7).",   # zero-width space
-                  "report within seventy‑two hours (Rule 7).",   # non-breaking hyphen
-                  "report within 72 hours (Rule 7)."):          # no-break space
-            self.bad(self.r7(a))
-
-    def test_allowed_punctuation_passes(self):
-        self.good(self.r7("report within 72 hours; it’s the Board’s “full report” — see (Rule 7)."))
-
-    def test_citations_must_exist(self):
-        self.bad(self.r7("report within 72 hours (Rule 7, Section 1000)."))
-        self.bad(self.r7("report within 72 hours (Rule 2025(1))."))
-        self.good(self.r7("report within 72 hours under the DPDP Rules 2025 (Rule 7)."))
-
-    def test_schedule_part_must_exist_and_be_cited(self):
-        self.bad(self.r7("report within 72 hours (Rule 7, Fourth Schedule, Part C)."))
-        self.bad(self.r7("report within 72 hours (Rule 7, Fourth Schedule, Part B)."))
-
-    def test_schedule_part_must_match_the_cited_part(self):
-        sch = {"text": "x", "cite": "rules-sch4-a",
-               "quote": "A Data Fiduciary who is an educational institution. Conditions: Processing is restricted to tracking"}
-        for part in ("B", "C"):
-            self.bad(self.r7(f"report within 72 hours (Rule 7, Fourth Schedule, Part {part}).", extra=[sch]))
-        self.good(self.r7("report within 72 hours (Rule 7, Fourth Schedule, Part A).", extra=[sch]))
-
-    def test_bad_as_of_exits_cleanly(self):
-        import subprocess
-        res = subprocess.run([sys.executable, c.__file__, "--law", REAL_LAW_DIR, "--as-of", "2026-13-01", "x.jsonl"],
-                             capture_output=True, text=True)
-        self.assertNotEqual(res.returncode, 0)
-        self.assertNotIn("Traceback", res.stderr)
+if __name__ == "__main__":
+    unittest.main()

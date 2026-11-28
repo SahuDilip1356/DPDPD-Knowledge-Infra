@@ -1,17 +1,19 @@
-"""Quote checker for Setu training examples (training guide step 2).
+"""Checker for Setu training examples (training guide step 2), structured answers (option C).
 
-Every example must pass before Dilip sees it. The checker fails an example when:
-- a claim cites an unknown provision, or its quote is not one unbroken run of at least 6
-  words, in the same case, from that provision (whitespace ignored, no elision);
-- the answer refers to a section, rule or schedule it does not cite (long and short forms,
-  plurals, ranges), or to a sub-section or clause the cited text does not have;
-- the answer states a rupee amount or a time limit that no quote contains, or a claim
-  states an amount its own quote does not contain;
-- a cited provision is not yet in force on the check date and the answer does not give
-  every pending start date (a claim may name the part it relies on with `applies_from`);
-- the answer uses a name the law does not use, or a known wrong name;
-- a label is outside the approved sets, a law-answers or comparison example has no quote,
-  or a refusal example has no plain refusal phrase or states a duty without a quote.
+Each example carries an `answer_template`: plain prose with typed slots in braces. A
+figure, date, amount or reference can enter the answer only through a slot. The checker
+validates every slot against the law, renders the template, and requires `answer` to be
+exactly that rendering. The prose between the slots may not hold a digit, a unit word, a
+reference word or a number word at all. The approved checks are E1-E15 in
+EVALS-structured-answers.md; each check below names the eval it implements.
+
+Slots:
+  {ref:act-s8}  {ref:act-s8#6}  {ref:rules-r8,rules-sch3}  ->  (Section 8)  (Section 8(6))  (Rule 8, Third Schedule)
+  {name:act-s3}                                            ->  Section 3
+  {period:rules-r7|72 hours}  {amount:act-schedule|₹250 crore}  {count:rules-sch3|2 crore}
+  {date:act-s8}  {date:act-s6#9}  {date:act-s8,rules-r7}   ->  the start date from the in-force table
+                                                              (several ids must share one date)
+  {notification:gsr-843e-2025}  {notified:gsr-843e-2025}   ->  G.S.R. 843(E)  13 November 2025
 
 The check date is `--as-of` or today. An example cannot set its own.
 
@@ -36,15 +38,6 @@ QUOTE_REQUIRED_LANES = {"law_answers", "comparison"}
 MIN_QUOTE_WORDS = 6
 
 ELISION = re.compile(r"…|\.\.\.|\[\s*\.\.\.\s*\]")
-
-NUM = r"\d+[A-Za-z]?(?: ?\(\d+[A-Za-z]?\))*(?: ?\([a-z]{1,4}\))*"
-REF = re.compile(
-    r"(?<![\w.-])(?P<kind>sections?|ss?\.|secs?\.?|rules?|r\.)\s*"
-    r"(?P<list>" + NUM + r"(?:\s*(?:,|and|or|to|-|–)\s*" + NUM + r")*)",
-    re.I,
-)
-ORDINAL = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7}
-SCHEDULE_REF = re.compile(r"\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule\b(?:, Part ([A-Z])\b)?|\b(?:the|The) Schedule\b")
 
 WORD_NUM = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
@@ -89,103 +82,99 @@ KNOWN_WRONG_TERMS = {
 }
 KNOWN_WRONG_WORDS = re.compile(r"\b(Commissioner|Ombudsman|Authority|Regulator)\b")
 
-# ---- Fail-closed residual check ----
-# Only these exact house forms may carry a number, a currency or a reference. Each is
-# validated by the checks above, then removed; anything numeric or reference-like left over
-# fails, whatever its wording.
-MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
-DATE = re.compile(r"\b\d{1,2} (?:" + MONTHS + r") \d{4}\b")
-NOTIFICATION = re.compile(r"\b(?:G\.S\.R\.|S\.O\.) \d+\(E\)")
+# ---------------------------------------------------------------- prose word lists (E5-E7)
 
 
-def _iso(human):
-    try:
-        return datetime.datetime.strptime(human, "%d %B %Y").date().isoformat()
-    except ValueError:
-        return None
+def _plurals(word):
+    out = {word}
+    if re.search(r"(?:s|x|z|ch|sh)$", word):
+        out.add(word + "es")
+    elif re.search(r"[^aeiou]y$", word):
+        out.add(word[:-1] + "ies")
+    else:
+        out.add(word + "s")
+    return out
 
 
-CANON = [
-    DATE,                                                                     # 13 May 2027
-    NOTIFICATION,                                                             # G.S.R. 843(E)
-    re.compile(r"\b(?:Section|Rule)s? \d+[A-Z]?(?:\(\d+[A-Za-z]?\))*(?:\([a-z]{1,4}\))?"
-               r"(?:(?:, | and | to )\d+[A-Z]?(?:\(\d+[A-Za-z]?\))*)*(?![\w(])"),  # Section 8(6), Sections 11 to 14
-    re.compile(r"\b[Tt]he Schedule\b|\b(?:First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule"
-               r"(?:, Part [AB])?\b|\bEighth Schedule to the Constitution\b"),
-    re.compile(r"₹\d{1,3}(?:,\d{2,3})*(?!,?\d)(?: (?:crore|lakh)\b(?!s))?"),       # ₹250 crore, ₹10,000
-    re.compile(r"\b(?:\d+|" + NUM_WORDS + r") (?:hours?|days?|weeks?|months?|years?)\b", re.I),  # 72 hours
-]
-COUNT = re.compile(r"\b(\d+) (?:crore|lakh) (?!rupees)[a-z]+")                     # 2 crore registered users
-RESIDUAL_BAD = [
-    (re.compile(r"[₹$€£§]|\bRs\b\.?|\bINR\b|\bUSD\b|\brupees?\b|\bcrores\b|\blakhs\b|\b(?:m|b|tr)illions?\b", re.I),
-     "a currency or amount not in the house form ₹N crore"),
-    (re.compile(r"\bu/s\b|(?<![\w.])(?:ss?|r|secs?|art)\.?\s*\d|\b(?:section|rule)s?\s+\d|\bread with\b|\bthrough\s+\d", re.I),
-     "a reference not in the house form (Section N) or (Rule N)"),
-    (re.compile(r"\bschedules?\b", re.I), "a schedule not named in the house form"),
-    (re.compile(r"\bPart [A-Z]\b"), "a schedule part not in the house form"),
-    (re.compile(r"\b(?:fortnight|hrs?|mins?|minutes?|working days?|business days?)\b", re.I),
-     "a time limit not in the house form N hours/days/months/years"),
-    (re.compile(r"\b(?:" + NUM_WORDS + r")\b(?:\W+\w+){0,3}?\W+(?:hours?|days?|weeks?|months?|years?)\b", re.I),
-     "a time limit not in the house form"),
-    (re.compile(r"%|\bper ?cent\b|\bpercent\b", re.I), "a percentage"),
-    (re.compile(r"\b(?:ek|teen|chaar|paanch|panch|chhe|saat|aath|nau|gyarah|baarah|bees|tees|chalis|pachas|pachaas|"
-                r"saath|sattar|assi|nabbe|bahattar|adtalis|sau|hazaar|hazar|karod|karor|ghante?|ghanta|din|"
-                r"mahine?|mahina|saal|varsh|dhai|dedh|sawa|paune|rupaye|rupaiya|rupiya)\b", re.I),
-     "a Hindi or Hinglish number or unit word"),
-    (re.compile(r"\b(?:dozens?|couple|half|quarters?|score|trillions?|crore|lakh)\b", re.I),
-     "an amount or count word outside the house forms"),
-    (re.compile(r"\b(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
-                r"\w+teenth|\w+tieth)\s+(?:hours?|days?|weeks?|months?|years?)\b", re.I),
-     "a deadline written as an ordinal"),
-    (re.compile(r"\b(?:" + "|".join(w for w in sorted(WORD_NUM, key=len, reverse=True) if w != "one") + r")\b", re.I),
-     "a number word outside the house forms (only 'one' is allowed in prose)"),
-    (re.compile(r"\d"), "a number outside the house forms (dates, citations, ₹ amounts, time limits)"),
-]
+_UNIT_BASES = {
+    "time": ("minute hour hr day week fortnight month year yr decade annum quarter "
+             "hourly daily weekly fortnightly monthly quarterly yearly annual annually"),
+    "money or count": ("rupee rs inr paisa paise crore cr lakh lac laakh karod karor arab kharab "
+                       "thousand hazaar hazar million mn billion bn trillion grand dollar usd euro "
+                       "pound percent percentage"),
+    "reference": ("section subsection rule subrule clause subclause schedule article regulation "
+                  "chapter paragraph para item entry"),
+}
+# Hinglish unit words take no English plurals; they are listed in their own forms.
+_HINGLISH_UNITS = ("ghanta ghante ghanton din dino dinon hafta hafte hafton saptah mahina mahine "
+                   "mahino mahinon saal saalon varsh varshon baras barason rupaye rupaiye rupaiya "
+                   "rupiya rupaya")
+UNIT_WORDS = {}   # word -> its group
+for _group, _words in _UNIT_BASES.items():
+    for _w in _words.split():
+        for _f in _plurals(_w):
+            UNIT_WORDS[_f] = _group
+for _w in _HINGLISH_UNITS.split():
+    UNIT_WORDS[_w] = "time" if not _w.startswith("rup") else "money or count"
+UNIT_WORDS.pop("rules")      # "the Rules" names the DPDP Rules; the singular stays banned
+PER_CENT = re.compile(r"\bper[\s-]*cents?\b", re.I)
+PART_REF = re.compile(r"\b(?i:parts?)\s+\(?(?:[A-Za-z]|[IVXLCDM]+)\)?(?![A-Za-z'’])")
 
+# E6: real words one letter away from a unit or reference word. Exempt from the fuzzy check.
+FUZZY_EXEMPT = {
+    "cause", "causes", "rules", "ruled", "ruler", "rulers", "scheduled", "particle", "particles",
+    "sentry", "sentries", "gentry", "acres", "lacks", "laces", "lances", "crest", "crests",
+    "brass", "praise", "hazard", "hazards", "machine", "machines", "minuet", "mines", "salon",
+    "yearn", "yearns", "manes", "parka", "dingo", "articled",
+}
+FUZZY_MIN = 5
 
+ENGLISH_NUMBER_WORDS = (set(WORD_NUM) - {"one"}) | {
+    "zero", "nil", "dozen", "dozens", "half", "halves", "twice", "thrice", "couple",
+    "hundreds", "thousands", "tens", "millions", "billions",
+}
+HINGLISH_NUMBER_WORDS = set((
+    "ek teen chaar char paanch panch chhe chhah saat aath nau das gyarah barah baarah terah "
+    "chaudah pandrah solah satrah atharah unnis bees ikkis baais teis chaubis pachis pachchis "
+    "chhabbis sattais atthais untis tees chalis chaalis adtalis pachas pachaas saath sattar assi "
+    "nabbe sau dedh dhai sawa paune aadha bahattar").split())
+# "do" (two) is left out: it is the English "do" in "do not".
+NUMBER_WORDS = ENGLISH_NUMBER_WORDS | HINGLISH_NUMBER_WORDS
+_COMPOUND = re.compile(r"(?:" + "|".join(sorted(WORD_NUM, key=len, reverse=True)) + r"){2,}")
 ROMAN = re.compile(r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})")
 
+PROSE_PUNCT = set(" .,;:'\"?!()-") | set("‘’“”—–")
 
-ALLOWED_NON_ASCII = set("₹‘’“”—–")
-
-
-def _residual(answer, quote_values):
-    errs = []
-    for ch in answer:
-        if ord(ch) > 127 and ch not in ALLOWED_NON_ASCII:
-            errs.append(f"answer has {ch!r} (U+{ord(ch):04X}): only ASCII and ₹ ‘ ’ “ ” — – are allowed "
-                        "(blocks other scripts, look-alike letters, invisible and non-breaking characters)")
-            break
-        if unicodedata.category(ch) in ("Cf", "Cc") and ch not in "\n\t":
-            errs.append(f"answer has an invisible character (U+{ord(ch):04X})")
-            break
-    text = answer
-    for pat in CANON:
-        text = pat.sub(" ", text)
-    for m in COUNT.finditer(text):
-        if float(m.group(1)) in quote_values:
-            text = text.replace(m.group(0), " ")
-    for m in re.finditer(r"\b[MDCLXVI]{2,}\b", text):
-        if ROMAN.fullmatch(m.group(0)):
-            errs.append(f"answer has {m.group(0)!r}: a Roman numeral")
-            break
-    for pat, why in RESIDUAL_BAD:
-        m = pat.search(text)
-        if m:
-            errs.append(f"answer has {m.group(0)!r}: {why}")
-    return errs
+# ---------------------------------------------------------------- helpers
 
 
-def _quote_values(quotes):
-    vals = set()
-    for q in quotes:
-        for m in re.finditer(r"\d[\d,]*", q):
-            vals.add(float(m.group(0).replace(",", "")))
-        for m in re.finditer(NUM_WORDS, q, re.I):
-            v = to_number(m.group(0))
-            if v is not None:
-                vals.add(v)
-    return vals
+def squash(text):
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+KNOWN_NOTIFICATIONS = {}   # id -> {"citation": ..., "date": ISO}
+
+
+def load_law(law_dir):
+    KNOWN_NOTIFICATIONS.clear()
+    notes = os.path.join(law_dir, "dpdp-notifications.jsonl")
+    if os.path.exists(notes):
+        with open(notes) as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    KNOWN_NOTIFICATIONS[r["id"]] = {"citation": r.get("citation"),
+                                                    "date": r.get("date") or r.get("published")}
+    # The Rules themselves are G.S.R. 846(E) of 13 November 2025 (law-import README, sources table).
+    KNOWN_NOTIFICATIONS.setdefault("gsr-846e-2025", {"citation": "G.S.R. 846(E)", "date": "2025-11-13"})
+    law = {}
+    for name in ("dpdp-act-2023.jsonl", "dpdp-rules-2025.jsonl"):
+        with open(os.path.join(law_dir, name)) as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    law[r["id"]] = r
+    return law
 
 
 NUMBER_WORD_SET = set(WORD_NUM) | {"and", "hundred", "thousand", "lakh", "crore"}
@@ -216,34 +205,6 @@ def _on_word_boundaries(quote, text):
             return True
         start = text.find(quote, start + 1)
     return False
-
-
-def squash(text):
-    return re.sub(r"\s+", " ", text or "").strip()
-
-
-KNOWN_NOTIFICATIONS = {}   # citation -> date, loaded from dpdp-notifications.jsonl
-
-
-def load_law(law_dir):
-    KNOWN_NOTIFICATIONS.clear()
-    notes = os.path.join(law_dir, "dpdp-notifications.jsonl")
-    if os.path.exists(notes):
-        with open(notes) as f:
-            for line in f:
-                if line.strip():
-                    r = json.loads(line)
-                    KNOWN_NOTIFICATIONS[r.get("citation")] = r.get("date") or r.get("published")
-        # The Rules themselves are G.S.R. 846(E) of 13 November 2025 (law-import README, sources table).
-        KNOWN_NOTIFICATIONS.setdefault("G.S.R. 846(E)", "2025-11-13")
-    law = {}
-    for name in ("dpdp-act-2023.jsonl", "dpdp-rules-2025.jsonl"):
-        with open(os.path.join(law_dir, name)) as f:
-            for line in f:
-                if line.strip():
-                    r = json.loads(line)
-                    law[r["id"]] = r
-    return law
 
 
 def words_to_int(text):
@@ -317,8 +278,8 @@ def _in_force(record):
 
 
 def _part_text(record, label):
-    """The text of the sub-section (and clause) an in-force label names, e.g. 'section 44(1)'.
-    Returns None when the label is a range or cannot be located: such claims go to a person."""
+    """The text of the sub-section (and clause) a label names, e.g. 'section 44(1)'.
+    Returns None when the label is a range or cannot be located."""
     m = re.match(r"\s*(?:section|rule)\s+\d+[A-Za-z]?((?:\(\w+\))+)\s*$", label or "", re.I)
     if not m:
         return None
@@ -343,7 +304,7 @@ def _part_text(record, label):
         return out
 
     seg = lines
-    for k, sub in enumerate(subs):
+    for sub in subs:
         seg = segment(seg, sub, sub.isdigit())
         if seg is None:
             return None
@@ -353,57 +314,6 @@ def _part_text(record, label):
 def _human(iso):
     d = datetime.date.fromisoformat(iso)
     return f"{d.day} {d.strftime('%B')} {d.year}"
-
-
-def _expand(listing):
-    """'3, 5 to 16 and 22' -> ['3', '5', ..., '16', '22'] (sub-parts kept on singles)."""
-    out = []
-    for p in re.split(r"\s*(?:,|\band\b|\bor\b)\s*", listing):
-        rng = re.split(r"\s*(?:\bto\b|-|–)\s*", p)
-        if len(rng) == 2 and rng[0].isdigit() and rng[1].isdigit():
-            out += [str(i) for i in range(int(rng[0]), int(rng[1]) + 1)]
-        elif p:
-            out.append(p)
-    return out
-
-
-def _check_refs(answer, cites, law):
-    errs = []
-    by_kind = {"section": {}, "rule": {}}
-    for c in cites:
-        if c not in law:
-            continue
-        num = str(law[c].get("number") or "")
-        if c.startswith("act-s") and num:
-            by_kind["section"][num] = law[c]
-        elif c.startswith("rules-r") and num:
-            by_kind["rule"][num] = law[c]
-    for m in REF.finditer(answer):
-        kind = "rule" if m.group("kind").lower().startswith("r") else "section"
-        for item in _expand(m.group("list")):
-            base = re.match(r"\d+[A-Za-z]?", item).group(0)
-            is_year = (m.group("kind").lower() == "rules" and base.isdigit()
-                       and 1900 <= int(base) <= 2100 and item == base)
-            if is_year:
-                continue  # "DPDP Rules 2025" names the Rules, not a rule
-            rec = by_kind[kind].get(base)
-            if rec is None:
-                errs.append(f"answer refers to {kind} {item} without citing it")
-                continue
-            subs = "".join(re.findall(r"\([0-9A-Za-z]+\)", item[len(base):]))
-            if subs and _part_text(rec, f"{kind} {base}{subs}") is None:
-                errs.append(f"answer refers to {kind} {base}{subs}, but {rec['citation']} has no such part")
-    for m in SCHEDULE_REF.finditer(answer):
-        if m.group(1):
-            n = ORDINAL[m.group(1).lower()]
-            want = f"rules-sch{n}-{m.group(2).lower()}" if m.group(2) else f"rules-sch{n}"
-            if m.group(2) and want not in law:
-                errs.append(f"answer refers to the {m.group(1)} Schedule, Part {m.group(2)}, which does not exist")
-            elif not any(c == want or (not m.group(2) and c.startswith(want)) for c in cites):
-                errs.append(f"answer refers to the {m.group(1)} Schedule{', Part ' + m.group(2) if m.group(2) else ''} without citing it")
-        elif not any(c.startswith("act-sch") for c in cites):
-            errs.append("answer refers to the Schedule without citing it")
-    return errs
 
 
 def _invented_terms(answer, law_blob):
@@ -442,18 +352,335 @@ def valid_date(text):
     return text
 
 
-def check(example, law, as_of=None):
-    """as_of: the ISO date the answer is read on; defaults to today. The example's own
-    `as_of` field is ignored, so an example cannot move its own check date."""
-    as_of = valid_date(datetime.date.today().isoformat() if as_of is None else as_of)
-    errs = []
-    for field, allowed in (("kind", KINDS), ("reader", READERS), ("lane", LANES)):
-        if example.get(field) not in allowed:
-            errs.append(f"label {field}={example.get(field)!r} not in approved set")
+# ---------------------------------------------------------------- template parsing (E2)
 
-    claims = example.get("claims") or []
-    cites = [cl.get("cite") for cl in claims]
-    quotes = []
+SLOT_TYPES = {"ref", "name", "period", "amount", "count", "date", "notification", "notified"}
+VALUE_SLOTS = {"period", "amount", "count"}
+SLOT = re.compile(r"\{([^{}]*)\}")
+ID = r"[a-z][a-z0-9-]*"
+PART = r"\w+(?:\(\w+\))*"
+TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?")
+PERIOD_VALUE = re.compile(r"(?:\d+|" + NUM_WORDS + r") (?:hours?|days?|weeks?|months?|years?)", re.I)
+AMOUNT_VALUE = re.compile(r"₹\d{1,3}(?:,\d{2,3})*(?: (?:crore|lakh))?")
+COUNT_VALUE = re.compile(r"\d{1,3}(?:,\d{2,3})* (?:crore|lakh)")
+
+
+def _part_labels(part):
+    """'6(b)(ii)' -> ['6', 'b', 'ii']."""
+    if not part:
+        return []
+    first = re.match(r"\w+", part).group(0)
+    return [first] + re.findall(r"\((\w+)\)", part[len(first):])
+
+
+def parse_template(template):
+    """Split a template into prose strings and slot dicts. Returns (pieces, errors)."""
+    pieces, errs, pos = [], [], 0
+    for m in SLOT.finditer(template):
+        pieces.append(template[pos:m.start()])
+        pos = m.end()
+        body = m.group(1)
+        kind, sep, rest = body.partition(":")
+        if not sep or kind not in SLOT_TYPES:
+            errs.append(f"slot {m.group(0)!r}: unknown slot type {kind!r}")
+            continue
+        args, bar, value = rest.partition("|")
+        if kind in VALUE_SLOTS and not (bar and value):
+            errs.append(f"slot {m.group(0)!r}: a {kind} slot needs a value after '|'")
+            continue
+        if kind not in VALUE_SLOTS and bar:
+            errs.append(f"slot {m.group(0)!r}: a {kind} slot takes no typed value")
+            continue
+        targets = args.split(",") if kind in ("ref", "date") else [args]
+        parsed = []
+        for t in targets:
+            tm = TARGET.fullmatch(t)
+            if not tm:
+                parsed = None
+                break
+            parsed.append((tm.group(1), tm.group(2)))
+        if not parsed:
+            errs.append(f"slot {m.group(0)!r}: malformed target {args!r}")
+            continue
+        if kind in VALUE_SLOTS | {"notification", "notified"} and any(p for _, p in parsed):
+            errs.append(f"slot {m.group(0)!r}: a {kind} slot takes no part")
+            continue
+        pieces.append({"type": kind, "targets": parsed, "value": value if bar else None, "raw": m.group(0)})
+    pieces.append(template[pos:])
+    for i, p in enumerate(pieces):
+        if isinstance(p, str) and ("{" in p or "}" in p):
+            errs.append("template has an unclosed or stray brace")
+            break
+    return pieces, errs
+
+
+def prose_of(pieces):
+    """The template with every slot replaced by a space."""
+    return "".join(p if isinstance(p, str) else " " for p in pieces)
+
+
+# ---------------------------------------------------------------- rendering
+
+
+def _label(law, ident, part, kind):
+    rec = law.get(ident)
+    if rec is None:
+        return None
+    if ident == "act-schedule":
+        return "The Schedule" if kind == "ref" else "the Schedule"
+    text = rec.get("citation") or ident
+    return text + "".join(f"({x})" for x in _part_labels(part))
+
+
+def _date_for(rec, part):
+    """(ISO date, None) for a provision or part, or (None, reason)."""
+    entries = _in_force_entries(rec)
+    if not entries:
+        return None, "has no start date in the in-force table"
+    if not part:
+        dates = {e["from"] for e in entries}
+        if len(dates) == 1:
+            return dates.pop(), None
+        return None, "has more than one start date; name the part, as in {date:id#N}"
+    kind = "rule" if rec["id"].startswith("rules-r") else "section"
+    num = str(rec.get("number") or "")
+    labels = _part_labels(part)
+    want = f"{kind} {num}" + "".join(f"({x})" for x in labels)
+    listed, whole = [], []
+    for e in entries:
+        label = squash(e.get("provision")).lower()
+        if label == want:
+            return e["from"], None
+        m = re.match(rf"{kind} {re.escape(num)}\b(.*)$", label)
+        if not m:
+            continue
+        rest = m.group(1).strip()
+        if rest.startswith(", except"):
+            excluded, mine = rest[len(", except"):].strip(), want[len(kind) + 1:]
+            if not (mine.startswith(excluded) or excluded.startswith(mine)):
+                whole.append(e["from"])
+            continue
+        if not rest:
+            whole.append(e["from"])
+            continue
+        for item in rest.split(","):
+            subs = re.findall(r"\((\w+)\)", item)
+            rng = re.fullmatch(r"\s*\((\d+)\)-\((\d+)\)\s*", item)
+            if rng and labels[0].isdigit() and int(rng.group(1)) <= int(labels[0]) <= int(rng.group(2)):
+                listed.append(e["from"])
+            elif not rng and subs and labels[:len(subs)] == subs:
+                listed.append(e["from"])
+    found = set(listed) or set(whole)
+    if len(found) == 1:
+        return found.pop(), None
+    return None, f"has no single start date listed for {want}"
+
+
+def render(pieces, law):
+    out = []
+    for p in pieces:
+        if isinstance(p, str):
+            out.append(p)
+            continue
+        t, (ident, part) = p["type"], p["targets"][0]
+        if t == "ref":
+            labels = [_label(law, i, pt, "ref") for i, pt in p["targets"]]
+            out.append("(" + ", ".join(x or "?" for x in labels) + ")")
+        elif t == "name":
+            out.append(_label(law, ident, part, "name") or "?")
+        elif t in VALUE_SLOTS:
+            out.append(p["value"])
+        elif t == "date":
+            dates = {_date_for(law[i], pt)[0] if i in law else None for i, pt in p["targets"]}
+            d = dates.pop() if len(dates) == 1 else None
+            out.append(_human(d) if d else "?")
+        elif t == "notification":
+            out.append((KNOWN_NOTIFICATIONS.get(ident) or {}).get("citation") or "?")
+        elif t == "notified":
+            d = (KNOWN_NOTIFICATIONS.get(ident) or {}).get("date")
+            out.append(_human(d) if d else "?")
+    return "".join(out)
+
+
+# ---------------------------------------------------------------- prose checks (E3-E7)
+
+
+def _tokens(prose):
+    """Lower-cased words; hyphens split words, a possessive 's is dropped."""
+    return [re.sub(r"['’]s$", "", w).lower() for w in re.findall(r"[A-Za-z]+(?:['’][A-Za-z]+)?", prose)]
+
+
+def check_digits(prose):                                                    # E3
+    for ch in prose:
+        if unicodedata.category(ch) in ("Nd", "No", "Nl"):
+            return [f"prose has {ch!r}: figures may only enter through a slot"]
+    return []
+
+
+def check_characters(prose):                                                # E4
+    for ch in prose:
+        if not ((ch.isascii() and ch.isalpha()) or ch in PROSE_PUNCT):
+            return [f"prose has {ch!r} (U+{ord(ch):04X}): only letters, spaces and . , ; : ' \" ? ! ( ) - "
+                    "‘ ’ “ ” — – are allowed outside slots"]
+    return []
+
+
+def check_unit_words(prose):                                                # E5
+    errs = []
+    for w in _tokens(prose):
+        if w in UNIT_WORDS:
+            errs.append(f"prose has {w!r}: a {UNIT_WORDS[w]} word may only enter through a slot")
+            break
+    for pat, why in ((PER_CENT, "a percentage"), (PART_REF, "a schedule part")):
+        m = pat.search(prose)
+        if m:
+            errs.append(f"prose has {m.group(0)!r}: {why} may only enter through a slot")
+    return errs
+
+
+def _one_edit(a, b):
+    """True if a becomes b by one inserted, deleted or swapped (adjacent) letter."""
+    if a == b:
+        return False
+    la, lb = len(a), len(b)
+    if la == lb:
+        diff = [i for i in range(la) if a[i] != b[i]]
+        return len(diff) == 2 and diff[1] == diff[0] + 1 and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]]
+    if abs(la - lb) != 1:
+        return False
+    short, long_ = (a, b) if la < lb else (b, a)
+    return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
+
+
+def check_fuzzy_units(prose):                                               # E6
+    for w in _tokens(prose):
+        if len(w) < FUZZY_MIN or w in UNIT_WORDS or w in FUZZY_EXEMPT:
+            continue
+        for unit in UNIT_WORDS:
+            if _one_edit(w, unit):
+                return [f"prose has {w!r}, one letter away from {unit!r}: spell figures through a slot"]
+    return []
+
+
+def check_number_words(prose):                                              # E7
+    for w in _tokens(prose):
+        if w in NUMBER_WORDS or _COMPOUND.fullmatch(w):
+            return [f"prose has {w!r}: number words other than 'one' may only enter through a slot"]
+    for m in re.finditer(r"\b[MDCLXVI]{2,}\b", prose):
+        if ROMAN.fullmatch(m.group(0)):
+            return [f"prose has {m.group(0)!r}: a Roman numeral"]
+    return []
+
+
+PROSE_CHECKS = [check_digits, check_characters, check_unit_words, check_fuzzy_units, check_number_words]
+
+# ---------------------------------------------------------------- slot checks (E9-E12)
+
+
+def check_ref_slots(slots, law, quoted):                                    # E9
+    errs = []
+    for s in slots:
+        if s["type"] not in ("ref", "name", "date"):
+            continue
+        for ident, part in s["targets"]:
+            if ident not in law:
+                errs.append(f"slot {s['raw']}: unknown provision {ident!r}")
+                continue
+            if part:
+                rec = law[ident]
+                if not re.match(r"(?:act-s|rules-r)\d", ident):
+                    errs.append(f"slot {s['raw']}: {rec['citation']} has no numbered parts")
+                    continue
+                kind = "rule" if ident.startswith("rules-r") else "section"
+                label = f"{kind} {rec.get('number')}" + "".join(f"({x})" for x in _part_labels(part))
+                if _part_text(rec, label) is None:
+                    errs.append(f"slot {s['raw']}: {rec['citation']} has no part {part}")
+                    continue
+            if s["type"] != "date" and ident not in quoted:
+                errs.append(f"slot {s['raw']}: no claim with a quote cites {ident}")
+    return errs
+
+
+def check_figure_slots(slots, law, quoted):                                 # E10
+    errs = []
+    for s in slots:
+        if s["type"] not in VALUE_SLOTS:
+            continue
+        ident, value = s["targets"][0][0], s["value"]
+        if ident not in law:
+            errs.append(f"slot {s['raw']}: unknown provision {ident!r}")
+            continue
+        pattern = {"period": PERIOD_VALUE, "amount": AMOUNT_VALUE, "count": COUNT_VALUE}[s["type"]]
+        if not pattern.fullmatch(value):
+            errs.append(f"slot {s['raw']}: {value!r} is not a {s['type']} in the house form")
+            continue
+        quotes = quoted.get(ident, [])
+        if s["type"] == "period":
+            want, found = time_limits(value), set().union(*(time_limits(q) for q in quotes)) if quotes else set()
+        else:
+            want, found = amounts(value), set().union(*(amounts(q) for q in quotes)) if quotes else set()
+        if len(want) != 1 or not want <= found:
+            errs.append(f"slot {s['raw']}: no quote of a claim citing {ident} contains {value}")
+    return errs
+
+
+def _pending(claims, law, as_of, quoted_claims):
+    """{(cite, ISO date)} that must be dated: start dates after the check date."""
+    need, errs = set(), []
+    for i, cl in quoted_claims:
+        cite = cl["cite"]
+        dates = _in_force(law[cite])
+        if cl.get("applies_from"):
+            # The date must belong to the very part of the provision the quote comes from.
+            labels = [x.get("provision") for x in _in_force_entries(law[cite]) if x.get("from") == cl["applies_from"]]
+            parts = [_part_text(law[cite], lb) for lb in labels]
+            if not any(p and squash(cl.get("quote")) in p for p in parts):
+                errs.append(f"claim {i}: applies_from {cl['applies_from']} does not cover the part of "
+                            f"{law[cite]['citation']} the quote is from")
+                continue
+            dates = [cl["applies_from"]]
+        for d in dates:
+            if d > as_of:
+                need.add((cite, d))
+    return need, errs
+
+
+def check_date_slots(slots, law, need):                                     # E11
+    errs, have = [], set()
+    for s in slots:
+        if s["type"] != "date":
+            continue
+        found = {}
+        for ident, part in s["targets"]:
+            if ident not in law:
+                continue                  # reported by check_ref_slots
+            d, why = _date_for(law[ident], part)
+            if d is None:
+                errs.append(f"slot {s['raw']}: {law[ident]['citation']} {why}")
+            else:
+                found[ident] = d
+        if len(set(found.values())) > 1:
+            errs.append(f"slot {s['raw']}: these provisions start on different dates; use one slot per date")
+            continue
+        have |= set(found.items())
+    for cite, d in sorted(need - have):
+        errs.append(f"{law[cite]['citation']} is not in force until {_human(d)}; "
+                    f"the template needs a {{date:{cite}}} slot for it")
+    return errs
+
+
+def check_notification_slots(slots):                                        # E12
+    return [f"slot {s['raw']}: unknown notification {s['targets'][0][0]!r}"
+            for s in slots if s["type"] in ("notification", "notified")
+            and s["targets"][0][0] not in KNOWN_NOTIFICATIONS]
+
+
+# ---------------------------------------------------------------- claims, labels, lanes (E13)
+
+
+def check_claims(claims, law):
+    """Returns (errors, [(index, claim)] whose quotes are verified)."""
+    errs, good = [], []
     for i, cl in enumerate(claims, 1):
         cite, quote = cl.get("cite"), squash(cl.get("quote"))
         if cite not in law:
@@ -471,12 +698,20 @@ def check(example, law, as_of=None):
         if not _on_word_boundaries(quote, squash(law[cite]["text"])):
             errs.append(f"claim {i}: quote starts or ends mid-word in {law[cite]['citation']}")
             continue
-        quotes.append(quote)
+        good.append((i, cl))
         for v, unit in sorted(amounts(cl.get("text", "")) - amounts(quote)):
             errs.append(f"claim {i}: states {v:g} {unit} but its own quote does not")
+    return errs, good
 
-    lane = example.get("lane")
-    answer = example.get("answer", "")
+
+def check_labels(example):
+    return [f"label {f}={example.get(f)!r} not in approved set"
+            for f, allowed in (("kind", KINDS), ("reader", READERS), ("lane", LANES))
+            if example.get(f) not in allowed]
+
+
+def check_lane(example, answer):
+    errs, lane, claims = [], example.get("lane"), example.get("claims") or []
     if lane in QUOTE_REQUIRED_LANES and not claims:
         errs.append(f"{lane} needs at least one quoted claim")
     if lane in REFUSAL_LANES:
@@ -484,63 +719,63 @@ def check(example, law, as_of=None):
             errs.append("refusal lane must say plainly that the law does not answer or a lawyer is needed")
         if DUTY_WORDS.search(answer) and not claims:
             errs.append("refusal answer states a duty ('must', 'shall' ...) with no quote behind it")
+    return errs
 
-    errs += _check_refs(answer, cites, law)
 
-    quote_amounts, claim_amounts, quote_times = set(), set(), set()
-    for q in quotes:
-        quote_amounts |= amounts(q)
-        quote_times |= time_limits(q)
-    for cl in claims:
-        claim_amounts |= amounts(cl.get("text", ""))
-    for v, unit in sorted(amounts(answer)):
-        if (v, unit) not in quote_amounts or (v, unit) not in claim_amounts:
-            errs.append(f"answer states {v:g} {unit} but no claim quotes it")
-    for v, unit in sorted(time_limits(answer)):
-        if (v, unit) not in quote_times:
-            errs.append(f"answer states {v:g} {unit}{'s' if v != 1 else ''} but no quote contains it")
-
-    # A duty that has not started yet must be dated, or readers act on it too early.
-    pending = {}
-    for i, cl in enumerate(claims, 1):
-        cite = cl.get("cite")
-        if cite not in law:
-            continue
-        dates = _in_force(law[cite])
-        if cl.get("applies_from"):
-            # The date must belong to the very part of the provision the quote comes from.
-            labels = [x.get("provision") for x in _in_force_entries(law[cite]) if x.get("from") == cl["applies_from"]]
-            parts = [_part_text(law[cite], lb) for lb in labels]
-            if not any(p and squash(cl.get("quote")) in p for p in parts):
-                errs.append(f"claim {i}: applies_from {cl['applies_from']} does not cover the part of "
-                            f"{law[cite]['citation']} the quote is from")
-                continue
-            dates = [cl["applies_from"]]
-        for d in dates:
-            if d > as_of:
-                pending.setdefault(d, law[cite]["citation"])
-    for d, citation in sorted(pending.items()):
-        if _human(d) not in answer:
-            errs.append(f"{citation} is not in force until {_human(d)}; the answer must say so")
-
-    for m in NOTIFICATION.finditer(answer):
-        if m.group(0) not in KNOWN_NOTIFICATIONS:
-            errs.append(f"answer names {m.group(0)}, which is not a known notification")
-    # A date must be a real start date somewhere in the Act or Rules, or a known gazette date.
-    # (Which duty it belongs to is left to the legal read; the pending-date check above makes
-    # sure each cited provision's own start date is present.)
-    allowed_dates = {d for r in law.values() for d in _in_force(r)}
-    allowed_dates |= {d for d in KNOWN_NOTIFICATIONS.values() if d}
-    for m in DATE.finditer(answer):
-        iso = _iso(m.group(0))
-        if iso not in allowed_dates:
-            errs.append(f"answer gives {m.group(0)}, which is not a start date of a cited provision or a known gazette date")
-
-    errs += _residual(answer, _quote_values(quotes))
-
+def check_names(answer, law):
     law_blob = " ".join(squash(r["text"]) + " " + r.get("title", "") for r in law.values())
-    for term in _invented_terms(answer, law_blob):
-        errs.append(f"answer uses {term!r}, which is not in the law text")
+    return [f"answer uses {t!r}, which is not in the law text" for t in _invented_terms(answer, law_blob)]
+
+
+# ---------------------------------------------------------------- the whole check
+
+
+def check_has_template(template):                                           # E1
+    if not isinstance(template, str) or not template.strip():
+        return ["example has no answer_template"]
+    return []
+
+
+def check_rendered(answer, rendered):                                       # E1
+    if answer != rendered:
+        return [f"answer is not the rendered template; expected {rendered!r}"]
+    return []
+
+
+def check(example, law, as_of=None):
+    """as_of: the ISO date the answer is read on; defaults to today. The example's own
+    `as_of` field is ignored, so an example cannot move its own check date."""
+    as_of = valid_date(datetime.date.today().isoformat() if as_of is None else as_of)
+    errs = check_labels(example)
+    claims = example.get("claims") or []
+    claim_errs, good = check_claims(claims, law)
+    errs += claim_errs
+    quoted = {}
+    for _, cl in good:
+        quoted.setdefault(cl["cite"], []).append(squash(cl["quote"]))
+
+    template = example.get("answer_template")
+    answer = example.get("answer", "")
+    missing = check_has_template(template)                                   # E1
+    if missing:
+        return errs + missing + check_lane(example, answer)
+    pieces, parse_errs = parse_template(template)                            # E2
+    errs += parse_errs
+    slots = [p for p in pieces if isinstance(p, dict)]
+    prose = prose_of(pieces)
+    for fn in PROSE_CHECKS:                                                  # E3-E7
+        errs += fn(prose)
+    errs += check_ref_slots(slots, law, quoted)                              # E9
+    errs += check_figure_slots(slots, law, quoted)                           # E10
+    need, pend_errs = _pending(claims, law, as_of, good)
+    errs += pend_errs
+    errs += check_date_slots(slots, law, need)                               # E11
+    errs += check_notification_slots(slots)                                  # E12
+    rendered = render(pieces, law)
+    if not parse_errs:
+        errs += check_rendered(answer, rendered)                             # E1
+    errs += check_lane(example, rendered)                                    # E13
+    errs += check_names(prose, law)
     return errs
 
 

@@ -1,6 +1,6 @@
 # Evals for structured answers (option C)
 
-Status: draft, waiting for Dilip's approval. Nothing is built until he approves.
+Status: approved by Dilip on 2026-11-28 ("Start build"). Built on `feat/training-examples`; see Build notes.
 Risk tier: High (training data for a model that answers law questions).
 
 ## The idea
@@ -32,7 +32,7 @@ spellings are not.
 | `{period:rules-r7\|72 hours}` | 72 hours | The value parses as a number and a unit; that period appears in a quote of a claim citing that id |
 | `{amount:act-schedule\|₹250 crore}` | ₹250 crore | The value parses; that amount appears in a quote of a claim citing that id |
 | `{count:rules-sch3\|2 crore}` | 2 crore | Same as `amount` |
-| `{date:act-s8}`, `{date:act-s8#6}` | 13 May 2027 | Nothing typed: the date comes from the in-force table |
+| `{date:act-s8}`, `{date:act-s6#9}`, `{date:act-s8,rules-r7}` | 13 May 2027 | Nothing typed: the date comes from the in-force table; several ids must share one date |
 | `{notification:gsr-846e-2025}` | G.S.R. 846(E) | The id is a known notification |
 | `{notified:gsr-846e-2025}` | 13 November 2025 | Nothing typed: the date comes from the notification record |
 
@@ -97,10 +97,32 @@ as failing and names the reason.
 
 ## What this does not close
 
-- A misspelled unit word under five letters, such as "dayz". Fuzzy matching on short
+- A misspelled unit word under five letters, such as "dayz", or one with a replaced letter,
+  such as "hoyrs" (see Build notes). Fuzzy matching on short
   words would flag ordinary words ("days" is one letter from "dais" and "dads").
 - A number with no unit and no slot, such as "within fourty-eight". It has no legal
   meaning on its own, and a legal reviewer still reads every answer.
 - Whether the model trains on the template (it would then emit slots and the API would
   render them) or on the rendered text. Both fields are stored. This is decided at step
   3 of the training guide, not here.
+
+## Build notes (2026-11-28)
+
+Four choices made while building, for Dilip to confirm:
+
+- **One date slot can name several provisions** (`{date:act-s8,rules-r7}`) when they start
+  on the same date. Most answers say "From 13 May 2027" once for several duties; without
+  this, each answer would repeat the date. The slot fails if the dates differ.
+- **A date slot needs no quoting claim.** E9 asks for a quote only behind `ref` and `name`.
+  The date itself always comes from the in-force table. This lets an answer about
+  commencement say "most duties begin on {date:rules-r3}" while quoting Rule 1.
+- **Ordinals are not number words.** "a first description" passes. An ordinal deadline
+  still fails, because it needs a unit word ("the fifth day").
+- **E6 covers inserted, deleted and swapped letters, not replaced ones.** A replaced letter
+  turns unit words into common words ("years" into "hears", "pounds" into "sounds"), so
+  that check would fail ordinary sentences. "hoyrs" is therefore not caught.
+
+E14: 15 of the 100 rendered answers differ from their v2 text. They are listed in
+`staging/training-examples/batch01_c_changes.md` and `batch02_c_changes.md` for a legal
+re-read. Most swap a banned word ("rule" to "requirement", "item" to "piece"); three name a
+schedule part their claim already cites; one lists Sections 11 to 14 one by one.
