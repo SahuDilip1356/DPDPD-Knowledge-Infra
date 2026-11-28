@@ -149,7 +149,7 @@ flags a sentence that names a provision which does not start on the date it give
 the 100 carry a flag. Every changed or flagged answer is in
 `staging/training-examples/batch01_c_changes.md` and `batch02_c_changes.md`.
 
-## Whole-render check (draft, waiting for Dilip's approval)
+## Whole-render check (approved by Dilip on 2026-11-28)
 
 Asked for by Dilip on 2026-11-28 ("Setu: whole-render check") after the PR #17 review at
 40313e1. Today the checker reads the prose with each slot blanked to a space, so text glued
@@ -193,6 +193,13 @@ the rendered text instead of the blanked prose.
   and the legal re-read list.
 
 E1 to E15 stay as they are and must stay green.
+
+**Build result (2026-11-28).** The five templates above fail. 79 tests pass and the mutation
+run kills 55 of 55. E22: three examples failed on claim text and were fixed through the
+rewrites file, each listed in the changes report. In Q-00071 claim 2 named Rule 4 while
+citing Rule 1. In Q-00010 claim 3 stated a period only claim 4's quote holds. In Q-00509
+claim 2 named the Second Schedule while citing Rule 16. Batches 01 and 02 then report 0
+failing.
 
 **Not part of the evals (done in the same change):** rewrite the PR #17 body for the
 structured checker; write the converter's outputs through `scripts/safe_output.py`; remove

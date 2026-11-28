@@ -521,7 +521,6 @@ class TestReview2Fake(Base):
         self.ok(ex("From {date:rules-r7}, report {ref:rules-r7#2(b)}.", [claim("rules-r7")]))
 
     def test_only_commencement_quotes_name_a_date(self):
-        other = claim("act-s2", "means the individual to whom the personal data relates")
         law = dict(LAW)
         law["act-s2"] = dict(LAW["act-s2"], text=LAW["act-s2"]["text"] + " established under section 8 of the Telecom Act")
         e = ex("Rights start {date:act-s8} {ref:act-s2}.",
@@ -575,6 +574,71 @@ class TestReview3Fake(Base):
             self.bad(ex(t), "month name")
 
 
+class TestWholeRender(Base):
+    """Whole-render check, E16-E20 (approved 2026-11-28)."""
+
+    GLUED = [
+        "From {date:rules-r7}, report under {name:rules-r7}A.",
+        "From {date:rules-r7}, report under {name:rules-r7}-A.",
+        "From {date:rules-r7}, report within l{period:rules-r7|72 hours} {ref:rules-r7}.",
+        "From {date:rules-r7}, report within O{period:rules-r7|72 hours} {ref:rules-r7}.",
+        "From {date:rules-r7}, within {period:rules-r7|72 hours}{period:rules-r7|72 hours} {ref:rules-r7}.",
+        "From {date:rules-r7}x, report {ref:rules-r7}.",
+        "From {date:rules-r7}, report within {period:rules-r7|72 hours}-ish {ref:rules-r7}.",
+    ]
+
+    def test_text_glued_to_a_slot_fails(self):                              # E16, E17
+        for t in self.GLUED:
+            self.bad(ex(t, [claim("rules-r7")]), "slot")
+
+    def test_figure_word_outside_a_slot_fails_on_the_rendering(self):       # E16
+        errs = c.check_rendered_spans(*c.render_spans(c.parse_template(
+            "From {date:rules-r7}, report {ref:rules-r7}.")[0], LAW))
+        self.assertEqual(errs, [])
+        text, spans = "From 13 May 2027, report within 72 hours (Rule 7).", [(5, 16), (42, 50)]
+        self.assertTrue(any("72" in e for e in c.check_rendered_spans(text, spans)))
+
+    def test_clean_answers_still_pass(self):
+        self.ok(ex("From {date:rules-r7}: report within {period:rules-r7|72 hours} {ref:rules-r7}.", [claim("rules-r7")]))
+        self.ok(ex("Consent Managers register ({name:act-s6}, from {date:act-s6#9}).",
+                   [claim("act-s6", Q69, applies_from="2026-11-13")]))
+
+    def test_may_before_a_number_word_is_a_date(self):                      # E18
+        for t in ("Tell the Board {ref:act-s8} {date:act-s8}. May one is the date.",
+                  "Tell the Board by may one {ref:act-s8} {date:act-s8}.",
+                  ):
+            self.bad(ex(t), "month name")
+        self.bad(ex("Tell the Board {ref:act-s8} {date:act-s8}. May twelve, then."))
+
+    def test_claim_text_is_checked(self):                                   # E19
+        bad = [dict(claim("rules-r7"), text="Report within 48 hours under Section 9."),
+               dict(claim("rules-r7"), text="Report within 48 hours."),
+               dict(claim("rules-r7"), text="Report under Section 9."),
+               dict(claim("rules-r7"), text="Report from 13 November 2026."),
+               dict(claim("act-schedule"), text="Up to ₹200 crore."),
+               dict(claim("rules-sch3"), text="Sites with 3 crore users.")]
+        t = {"rules-r7": "From {date:rules-r7}, report {ref:rules-r7}.",
+             "act-schedule": "From {date:act-schedule}, pay {ref:act-schedule}.",
+             "rules-sch3": "From {date:rules-sch3}, big sites {ref:rules-sch3}."}
+        for cl in bad:
+            self.bad(ex(t[cl["cite"]], [cl]), "claim 1")
+        good = [dict(claim("rules-r7"), text="Report within 72 hours from 13 May 2027 (Rule 7)."),
+                dict(claim("act-schedule"), text="Up to ₹250 crore (The Schedule)."),
+                dict(claim("rules-sch3"), text="Sites with 2 crore users.")]
+        for cl in good:
+            self.ok(ex(t[cl["cite"]], [cl]))
+
+    def test_rows_carry_only_checked_fields(self):                          # E20
+        e = ex(GOOD)
+        e["answer_v2"] = "From 13 May 2027, tell the Board within 48 hours (Section 8)."
+        self.bad(e, "answer_v2")
+        e = ex(GOOD, [dict(claim("act-s8"), note="unchecked")])
+        self.bad(e, "note")
+        e = ex(GOOD, source="map", as_of="2026-11-27", drafted_by="claude", review="pending", version=3,
+               provisions=["act-s8"])
+        self.ok(e)
+
+
 # The law-import folder is gitignored, so these tests run only where it exists. Point
 # SETU_LAW_DIR at it from another checkout or a worktree; CI skips them.
 REAL_LAW_DIR = os.environ.get("SETU_LAW_DIR") or os.path.join(
@@ -616,6 +680,18 @@ class TestRealLaw(unittest.TestCase):
             self.assertTrue(has("act-s2", part), part)
         self.assertFalse(has("act-s2", "zz"))
         self.assertIn("Data Fiduciary", c._part_text(self.law["act-s2"], "section 2(i)"))
+
+    def test_real_batches_carry_only_checked_fields(self):                  # E20
+        folder = os.path.join(os.path.dirname(__file__), "..", "..", "staging", "training-examples")
+        for name in ("batch01.jsonl", "batch02.jsonl"):
+            path = os.path.join(folder, name)
+            if not os.path.exists(path):
+                continue
+            with open(path) as f:
+                for line in f:
+                    if line.strip():
+                        row = __import__("json").loads(line)
+                        self.assertEqual(c.check_fields(row), [], (name, row.get("id")))
 
     def test_rules_notification_is_known(self):
         self.assertIn("gsr-846e-2025", c.KNOWN_NOTIFICATIONS)

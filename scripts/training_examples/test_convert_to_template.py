@@ -8,7 +8,6 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
-import check_examples as c  # noqa: E402
 import convert_to_template as conv  # noqa: E402
 
 LAW = {
@@ -46,6 +45,31 @@ class TestAttribution(unittest.TestCase):
     def test_figure_quoted_by_another_provision_is_flagged(self):
         conv.convert(ex("From 13 May 2027, apply within 72 hours (Rule 4)."))
         self.assertTrue(any("72 hours" in f for f in conv.FLAGS), conv.FLAGS)
+
+
+class TestOutputs(unittest.TestCase):
+    def test_rewrites_reach_the_answer_and_named_claims(self):
+        e = {"id": "X", "answer": "a rule here", "claims": [{"text": "Rule 4, one year.", "cite": "rules-r1", "quote": "q"}]}
+        conv.apply_rewrites(e, {"X": [["a rule", "a requirement"]], "X#claim1": [["Rule 4", "Consent Manager rules"]]})
+        self.assertEqual(e["answer"], "a requirement here")
+        self.assertEqual(e["claims"][0]["text"], "Consent Manager rules, one year.")
+        conv.apply_rewrites(e, {"X#claim1": [["Rule 4", "Consent Manager rules"]]})   # rerun: no-op
+        self.assertEqual(e["claims"][0]["text"], "Consent Manager rules, one year.")
+        with self.assertRaises(SystemExit):
+            conv.apply_rewrites(e, {"X#claim1": [["not there", "x"]]})
+
+    def test_rows_drop_answer_v2_and_v2_goes_to_its_own_file(self):        # E20
+        row = {"id": "X", "answer": "a", "answer_v2": "old", "answer_template": "a"}
+        train, v2 = conv.split_v2([row])
+        self.assertNotIn("answer_v2", train[0])
+        self.assertEqual(v2, [{"id": "X", "answer_v2": "old"}])
+
+    def test_outputs_go_through_the_safe_writer(self):
+        import inspect
+        src = inspect.getsource(conv.main)
+        self.assertIn("safe_output.write_files", src)
+        self.assertNotIn('open(a.out', src)
+        self.assertNotIn('open(a.report', src)
 
 
 if __name__ == "__main__":
