@@ -1,6 +1,9 @@
 # Question map (Setu training guide, step 1)
 
-Builds about 1,000 DPDPA questions, labelled for training-example drafting. The output
+Builds the DPDPA question bank, labelled for training-example drafting: our own written
+questions (`written_questions.py`, every one kept) plus market questions up to the target.
+`coverage_check.py` counts the bank per provision, lane, reader and kind, and lists every
+missed target. The output
 is market-lane data, so all three outputs (`<name>.jsonl`, `<name>_summary.json`,
 `<name>_review.csv`) are written only directly inside gitignored `staging/question-map/`.
 `--name` takes a plain file name only. Writing goes through `scripts/safe_output.py`,
@@ -12,8 +15,12 @@ never written through.
 python3 scripts/question_map/build_question_map.py \
   --graph "<main checkout>/staging/competitive_intel/questions/unified_questions.jsonl" \
   --street "<JV Creatives>/Research/Content-Intelligence/clusters/20261002-001__DPDPA-Train-Classes/classified-street.csv"
-python3 -m unittest scripts/question_map/test_build_question_map.py scripts/test_safe_output.py -v
+python3 scripts/question_map/coverage_check.py --law "<main checkout>/staging/law-import" --map staging/question-map/question_map.jsonl
+SETU_LAW_DIR="<main checkout>/staging/law-import" python3 -m unittest scripts/question_map/test_build_question_map.py scripts/question_map/test_coverage.py scripts/test_safe_output.py -v
 ```
+
+The law-tied coverage tests read `SETU_LAW_DIR` (default `staging/law-import`, which is
+gitignored), so they run locally only; CI skips them.
 
 Kept from each source: the question wording only. Dropped: answers, variants, competitor
 names and URLs. Street searches graded `throw_out`, `exam_noise` or `seed_drift` are left out.
