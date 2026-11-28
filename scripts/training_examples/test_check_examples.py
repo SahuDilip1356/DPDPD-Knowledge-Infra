@@ -241,9 +241,8 @@ class TestE9RefSlots(Base):
         self.bad(ex("From {date:act-s8}, tell the Board {ref:act-s8} {ref:rules-r7}.", [claim("act-s8"), broken]),
                  "no claim with a quote cites rules-r7")
 
-    def test_date_slot_needs_a_known_provision_only(self):
-        # A date comes from the in-force table, so its provision need not be quoted (E9 covers ref and name).
-        self.ok(ex("From {date:rules-r7,act-s8}, tell the Board {ref:act-s8}."))
+    def test_date_slot_needs_a_known_provision(self):
+        self.ok(ex("From {date:rules-r7,act-s8}, tell the Board {ref:act-s8} {ref:rules-r7}.", [claim("act-s8"), claim("rules-r7")]))
         self.bad(ex("From {date:act-s8,act-s99}, tell the Board {ref:act-s8}."), "unknown provision")
 
 
@@ -438,6 +437,82 @@ class TestOldBypassesStillFail(Base):
             self.bad(ex("From {date:rules-r7}, " + w + " {ref:rules-r7}.", [claim("rules-r7")]))
 
 
+class TestReview1Fake(Base):
+    """PR review round 1 of 1b85826: false passes reproduced on the test law."""
+
+    def test_no_part_marker_in_prose(self):
+        for t in ("A Data Principal is defined in {name:act-s2}(q) of the Act.",
+                  "A Data Principal is defined in {name:act-s2}(zz).",
+                  "See cl. (z) of {name:act-s2}.", "See sec of {name:act-s2}.", "See sch {name:act-s2}."):
+            self.bad(ex(t, [claim("act-s2")]), "prose has")
+
+    def test_month_names_and_high_ordinals_fail(self):
+        for w in ("in January", "on the fourteenth of", "by the thirtieth", "in mid-May", "each September"):
+            self.bad(ex(f"From {{date:act-s8}}, tell the Board {w} {{ref:act-s8}}."), "prose has")
+        self.ok(ex("May the Board ask? From {date:act-s8}, it may {ref:act-s8}."))
+        self.ok(ex("From {date:act-s8}, first, second and third steps follow {ref:act-s8}."))
+
+    def test_amount_needs_rupees_and_count_needs_no_rupees(self):
+        self.bad(ex("From {date:rules-sch3}, fines up to {amount:rules-sch3|₹2 crore} {ref:rules-sch3}.",
+                    [claim("rules-sch3")]), "no quote")
+        self.bad(ex("From {date:act-schedule}, a site with {count:act-schedule|250 crore} users {ref:act-schedule}.",
+                    [claim("act-schedule")]), "no quote")
+
+    def test_figure_needs_a_reference_to_its_provision_in_the_sentence(self):
+        e = ex("From {date:rules-r7}, tell the Board within {period:rules-r7|72 hours} {ref:act-s2}.",
+               [claim("rules-r7"), claim("act-s2")])
+        self.bad(e, "same sentence")
+        e = ex("From {date:rules-r7}, report within {period:rules-r7|72 hours}. See {name:rules-r7}.", [claim("rules-r7")])
+        self.bad(e, "same sentence")
+
+    def test_date_slot_needs_a_cited_or_quoted_provision(self):
+        e = ex("The Act does not say. The Board starts work on {date:act-s8}. Ask a lawyer.", [], lane="needs_lawyer")
+        self.bad(e, "not cited")
+        named = {"text": "x", "cite": "rules-r1", "quote": "Rules 3, 5 to 16, 22 and 23 shall come into force"}
+        law = dict(LAW, **{"rules-r1": {"id": "rules-r1", "citation": "Rule 1", "number": "1",
+                                        "text": "1. (4) Rules 3, 5 to 16, 22 and 23 shall come into force eighteen months after",
+                                        "in_force": [{"provision": "rule 1", "from": "2025-11-13"}]},
+                           "rules-r9": {"id": "rules-r9", "citation": "Rule 9", "number": "9", "text": "9. x",
+                                        "in_force": [{"provision": "rule 9", "from": "2027-05-13"}]},
+                           "rules-r4": {"id": "rules-r4", "citation": "Rule 4", "number": "4", "text": "4. x",
+                                        "in_force": [{"provision": "rule 4", "from": "2026-11-13"}]}})
+        good = {"id": "X", "question": "q", "kind": "when", "reader": "business", "lane": "law_answers",
+                "answer_template": "Most Rules start on {date:rules-r9} {ref:rules-r1}.",
+                "answer": "Most Rules start on 13 May 2027 (Rule 1).", "claims": [named]}
+        self.assertEqual(c.check(good, law, as_of=AS_OF), [])
+        good["answer_template"], good["answer"] = "Some start on {date:rules-r4} {ref:rules-r1}.", "Some start on 13 November 2026 (Rule 1)."
+        self.assertTrue(any("not cited" in x for x in c.check(good, law, as_of=AS_OF)))
+
+    def test_prose_leaks(self):
+        for w in ("in Part-A", "in Part one", "in Part (b)", "a twelvemonth", "one la-kh", "seventy-two-hours",
+                  "within seventytwohours", "a tenyear wait"):
+            self.bad(ex(f"From {{date:act-s8}}, tell the Board {w} {{ref:act-s8}}."), "prose has")
+        self.ok(ex("From {date:act-s8}, consent is in part a matter of design {ref:act-s8}."))
+        for w in ("annul", "scheduler"):
+            self.ok(ex(f"From {{date:act-s8}}, the Board may {w} it {{ref:act-s8}}."))
+
+    def test_figure_values_must_be_canonical(self):
+        for v in ("₹2,50 crore", "₹25,0 crore", "₹2,500,000"):
+            self.bad(ex("From {date:act-schedule}, pay {amount:act-schedule|" + v + "} {ref:act-schedule}.",
+                        [claim("act-schedule")]), "house form")
+        for v in ("seventy and two hours", "Seventy-Two hours", "seventy two hours", "seventytwo hours",
+                  "two-seventy hours", "72 hour", "one years"):
+            self.bad(ex("From {date:rules-r7}, report within {period:rules-r7|" + v + "} {ref:rules-r7}.",
+                        [claim("rules-r7")]), "house form")
+        self.ok(ex("From {date:act-schedule}, pay {amount:act-schedule|₹10,000} {ref:act-schedule}.",
+                   [claim("act-schedule", QSCH2)]))
+
+    def test_value_slots_take_no_part(self):
+        self.bad(ex("Report within {period:rules-r7#2|72 hours}.", answer="x"), "takes no part")
+
+    def test_quote_may_not_start_or_end_inside_a_number(self):
+        start = claim("act-schedule", "fifty crore rupees. 2. Breach of any other provision")
+        self.bad(ex("From {date:act-schedule}, pay up to {amount:act-schedule|₹50 crore} {ref:act-schedule}.", [start]),
+                 "mid-word")
+        end = claim("act-schedule", "reasonable security safeguards. May extend to two")
+        self.bad(ex("From {date:act-schedule}, keep safeguards {ref:act-schedule}.", [end]), "mid-word")
+
+
 REAL_LAW_DIR = "/Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/staging/law-import"
 
 
@@ -462,6 +537,20 @@ class TestRealLaw(unittest.TestCase):
         self.assertEqual(self.date("act-s44", "3"), "2025-11-13")
         self.assertEqual(self.date("act-s8"), "2027-05-13")
         self.assertEqual(self.date("act-schedule"), "2027-05-13")
+
+    def test_parts_follow_the_structure(self):
+        def has(ident, part):
+            kind = "rule" if ident.startswith("rules-r") else "section"
+            rec = self.law[ident]
+            return c._part_text(rec, f"{kind} {rec['number']}" + "".join(f"({x})" for x in c._part_labels(part))) is not None
+        for part in ("2(b)(i)", "2(b)(vi)", "2(b)", "1(e)", "2"):
+            self.assertTrue(has("rules-r7", part), part)
+        for part in ("2(i)", "2(vi)", "1(i)", "2(f)", "3"):
+            self.assertFalse(has("rules-r7", part), part)
+        for part in ("j(i)", "j(ii)", "f", "i", "k"):
+            self.assertTrue(has("act-s2", part), part)
+        self.assertFalse(has("act-s2", "zz"))
+        self.assertIn("Data Fiduciary", c._part_text(self.law["act-s2"], "section 2(i)"))
 
     def test_rules_notification_is_known(self):
         self.assertIn("gsr-846e-2025", c.KNOWN_NOTIFICATIONS)

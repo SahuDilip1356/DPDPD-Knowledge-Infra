@@ -37,9 +37,14 @@ The prose between the slots may not contain:
 - a unit or reference word, in English or Hinglish (hour, crore, lakh, Section, rule, schedule,
   clause, Part A, per cent, ghante, saal and the rest), or a word one inserted, deleted or
   swapped letter away from one ("hourss", "yeras", "secton");
-- a number word other than "one", in English or Hinglish, or a Roman numeral.
+- a number word other than "one", in English or Hinglish, or a Roman numeral;
+- a month name, or an ordinal past "third";
+- a part marker such as "(q)", or "cl", "sec", "sch", "Part-A".
 
-"the Rules" is allowed; the singular "rule" is not. A cited provision that is not in force
+"the Rules" is allowed; the singular "rule" is not. A figure slot must share its sentence
+with a ref or name slot for the same provision; an amount must come from a quote that names
+rupees, a count from one that does not. A date slot's provision must be cited by a claim or
+named in a quote. A cited provision that is not in force
 on the check date needs a `date` slot for it, or for the part a claim relies on
 (`applies_from`). The check date is `--as-of` or today; an example cannot set its own.
 
@@ -54,7 +59,8 @@ Act and Rules never use fail.
 ## Converting free-text answers
 
 `convert_to_template.py` turns a v2 batch into templates. It keeps the old text as
-`answer_v2` and writes a report of every answer whose rendering differs. Rewordings for
+`answer_v2` and writes a report of every answer whose rendering differs, or whose date or
+figure it had to attribute to a provision named in another sentence ("check attribution"). Rewordings for
 prose the new checks ban go in a JSON file of `{id: [[old, new], ...]}`.
 
 ```bash
@@ -67,6 +73,7 @@ python3 scripts/training_examples/convert_to_template.py --law "$L" --as-of 2026
 - whether a plain-English sentence means what the law means;
 - an amount or limit that is quoted correctly but described as being for the wrong duty;
 - whether a date slot sits next to the duty it belongs to;
+- which row of the Schedule a figure comes from (the Schedule is one provision);
 - a misspelled unit word under five letters ("dayz") or with a replaced letter ("hoyrs");
 - a number with no unit and no slot ("within fourty-eight");
 - lowercase invented phrases ("data breach inquiry report").

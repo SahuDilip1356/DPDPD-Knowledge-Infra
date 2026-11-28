@@ -117,11 +117,16 @@ for _group, _words in _UNIT_BASES.items():
 for _w in _HINGLISH_UNITS.split():
     UNIT_WORDS[_w] = "time" if not _w.startswith("rup") else "money or count"
 UNIT_WORDS.pop("rules")      # "the Rules" names the DPDP Rules; the singular stays banned
+for _w in "cl cls sec secs sch subsec subcl r s ss art arts reg regs sched twelvemonth twelvemonths".split():
+    UNIT_WORDS[_w] = "time" if _w.startswith("twelve") else "reference"
 PER_CENT = re.compile(r"\bper[\s-]*cents?\b", re.I)
-PART_REF = re.compile(r"\b(?i:parts?)\s+\(?(?:[A-Za-z]|[IVXLCDM]+)\)?(?![A-Za-z'’])")
+PART_REF = re.compile(r"\b[Pp](?i:arts?)[\s-]+(?:\(\s*\w+\s*\)|(?:[A-Z]|[IVXLCDM]+|one)(?![A-Za-z'’]))")
+# A part marker such as (q), (zz) or (xiv) in prose names a clause outside any slot.
+PART_MARKER = re.compile(r"\(\s*(?:[A-Za-z]{1,2}|[ivxlcdmIVXLCDM]{1,6})\s*\)")
 
 # E6: real words one letter away from a unit or reference word. Exempt from the fuzzy check.
 FUZZY_EXEMPT = {
+    "annul", "annuls", "scheduler", "schedulers",
     "cause", "causes", "rules", "ruled", "ruler", "rulers", "scheduled", "particle", "particles",
     "sentry", "sentries", "gentry", "acres", "lacks", "laces", "lances", "crest", "crests",
     "brass", "praise", "hazard", "hazards", "machine", "machines", "minuet", "mines", "salon",
@@ -141,8 +146,13 @@ HINGLISH_NUMBER_WORDS = set((
 # "do" (two) is left out: it is the English "do" in "do not".
 NUMBER_WORDS = ENGLISH_NUMBER_WORDS | HINGLISH_NUMBER_WORDS
 _COMPOUND = re.compile(r"(?:" + "|".join(sorted(WORD_NUM, key=len, reverse=True)) + r"){2,}")
+MONTH_NAMES = re.compile(r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b")
+HIGH_ORDINAL = re.compile(r"\b(?i:fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|"
+                          r"hundredth|thousandth|(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)-?(?:first|second|third))\b")
 ROMAN = re.compile(r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})")
 
+_NUMBER_UNIT = re.compile(r"(?:" + "|".join(sorted(WORD_NUM, key=len, reverse=True)) + r")+(?:"
+                          + "|".join(sorted(UNIT_WORDS, key=len, reverse=True)) + r")")
 PROSE_PUNCT = set(" .,;:'\"?!()-") | set("‘’“”—–")
 
 # ---------------------------------------------------------------- helpers
@@ -184,6 +194,16 @@ def _joins(ch):
     return ch.isalnum() or ch in "-'’"
 
 
+def _cuts_number_start(q_words, prev):
+    """The quote starts inside a number phrase ("fifty crore" out of "two hundred and fifty")."""
+    return bool(q_words and q_words[0] in WORD_NUM and prev and prev[0] in NUMBER_WORD_SET)
+
+
+def _cuts_number_end(q_words, nxt):
+    """The quote ends inside a number phrase ("extend to two" out of "two hundred")."""
+    return bool(q_words and q_words[-1] in NUMBER_WORD_SET and nxt and nxt[0] in NUMBER_WORD_SET)
+
+
 def _on_word_boundaries(quote, text):
     """True if some occurrence starts and ends on whole words and does not cut a number
     phrase ("two hours" out of "seventy-two hours", "fifty crore" out of "two hundred and fifty")."""
@@ -197,9 +217,7 @@ def _on_word_boundaries(quote, text):
             q_words = re.findall(r"[A-Za-z]+", quote.lower())
             prev = re.findall(r"[A-Za-z]+", text[:start].lower())[-1:]
             nxt = re.findall(r"[A-Za-z]+", text[end:].lower())[:1]
-            if q_words and q_words[0] in WORD_NUM and prev and prev[0] in NUMBER_WORD_SET:
-                ok = False
-            if q_words and q_words[-1] in NUMBER_WORD_SET and nxt and nxt[0] in NUMBER_WORD_SET:
+            if _cuts_number_start(q_words, prev) or _cuts_number_end(q_words, nxt):
                 ok = False
         if ok:
             return True
@@ -285,30 +303,87 @@ def _part_text(record, label):
         return None
     subs = re.findall(r"\((\w+)\)", m.group(1))
     lines = (record.get("text") or "").split("\n")
-
-    def segment(lines, marker, numeric):
-        start = None
-        for i, line in enumerate(lines):
-            t = re.sub(r"^\s*\d+[A-Za-z]?\.\s*", "", line) if start is None else line
-            if t.lstrip().startswith(f"({marker})"):
-                start = i
-                break
-        if start is None:
-            return None
-        out = [lines[start]]
-        stop = r"^\s*\(\d+\)" if numeric else r"^\s*\((?:[a-z]{1,4}|\d+)\)"
-        for line in lines[start + 1:]:
-            if re.match(stop, line):
-                break
-            out.append(line)
-        return out
-
-    seg = lines
-    for sub in subs:
-        seg = segment(seg, sub, sub.isdigit())
+    seg, parent = lines, None
+    for depth, sub in enumerate(subs):
+        kind = _marker_kind(sub, parent)
+        seg = _segment(seg, sub, kind, skip_first=depth > 0)
         if seg is None:
             return None
+        parent = kind
     return squash(" ".join(seg))
+
+
+ROMAN_LOWER = re.compile(r"m{0,3}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})")
+_ROMAN_VAL = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000}
+
+
+def _roman_int(r):
+    total = 0
+    for a, b in zip(r, r[1:] + " "):
+        v = _ROMAN_VAL[a]
+        total += -v if b != " " and _ROMAN_VAL.get(b, 0) > v else v
+    return total
+
+
+def _int_roman(n):
+    out = ""
+    for v, r in ((1000, "m"), (900, "cm"), (500, "d"), (400, "cd"), (100, "c"), (90, "xc"), (50, "l"),
+                 (40, "xl"), (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i")):
+        while n >= v:
+            out, n = out + r, n - v
+    return out
+
+
+def _marker_kind(marker, parent):
+    if marker.isdigit():
+        return "num"
+    if parent == "letter" and ROMAN_LOWER.fullmatch(marker):
+        return "roman"
+    return "letter"
+
+
+def _next_marker(kind, marker):
+    if kind == "num":
+        return str(int(re.match(r"\d+", marker).group(0)) + 1)
+    if kind == "roman":
+        return _int_roman(_roman_int(marker) + 1)
+    if marker == "z":
+        return "za"
+    return marker[:-1] + chr(ord(marker[-1]) + 1)
+
+
+_KIND_RE = {"num": re.compile(r"\d+[A-Z]?"), "letter": re.compile(r"[a-z]{1,2}"), "roman": ROMAN_LOWER}
+
+
+def _segment(lines, marker, kind, skip_first):
+    """Lines of the part `marker` among the siblings of its level. A sibling is the first
+    marker of that kind, then each marker that follows on from the last ((a), (b), (c) ...),
+    so a sub-clause (i) is never taken for clause (i) or for a part of another level."""
+    marks = []
+    for i, line in enumerate(lines):
+        if skip_first and i == 0:
+            continue
+        t = re.sub(r"^\s*\d+[A-Za-z]?\.\s*(?:[^(\n]*?—\s*)?", "", line) if i == 0 else line
+        mm = re.match(r"\s*\((\w+)\)", t)
+        if mm:
+            marks.append((i, mm.group(1)))
+    siblings, expected = [], None
+    for k, (i, mk) in enumerate(marks):
+        if not _KIND_RE[kind].fullmatch(mk):
+            continue
+        follows = mk == expected or (kind == "num" and expected is not None
+                                     and int(re.match(r"\d+", mk).group(0)) >= int(expected))
+        if expected is None or follows:
+            nxt = marks[k + 1][1] if k + 1 < len(marks) else None
+            if kind == "letter" and ROMAN_LOWER.fullmatch(mk) and nxt and nxt == _int_roman(_roman_int(mk) + 1):
+                continue          # (i) followed by (ii): sub-clauses of the clause before
+            siblings.append((i, mk))
+            expected = _next_marker(kind, mk)
+    for n, (i, mk) in enumerate(siblings):
+        if mk == marker:
+            stop = siblings[n + 1][0] if n + 1 < len(siblings) else len(lines)
+            return lines[i:stop]
+    return None
 
 
 def _human(iso):
@@ -356,13 +431,35 @@ def valid_date(text):
 
 SLOT_TYPES = {"ref", "name", "period", "amount", "count", "date", "notification", "notified"}
 VALUE_SLOTS = {"period", "amount", "count"}
+NO_PART_SLOTS = VALUE_SLOTS | {"notification", "notified"}
 SLOT = re.compile(r"\{([^{}]*)\}")
 ID = r"[a-z][a-z0-9-]*"
 PART = r"\w+(?:\(\w+\))*"
 TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?")
-PERIOD_VALUE = re.compile(r"(?:\d+|" + NUM_WORDS + r") (?:hours?|days?|weeks?|months?|years?)", re.I)
-AMOUNT_VALUE = re.compile(r"₹\d{1,3}(?:,\d{2,3})*(?: (?:crore|lakh))?")
-COUNT_VALUE = re.compile(r"\d{1,3}(?:,\d{2,3})* (?:crore|lakh)")
+_INDIAN = r"(?:\d{1,3}|\d{1,2}(?:,\d{2})*,\d{3})"            # 250, 10,000, 1,00,000
+PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[a-z]+(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)")
+AMOUNT_VALUE = re.compile(r"₹" + _INDIAN + r"(?: (?:crore|lakh))?")
+COUNT_VALUE = re.compile(_INDIAN + r" (?:crore|lakh)")
+_ONES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
+_TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def number_in_words(n):
+    """The house spelling of 0-99: 'seventy-two', 'eighteen'."""
+    if n < 20:
+        return _ONES[n]
+    return _TENS[n // 10] + ("" if n % 10 == 0 else "-" + _ONES[n % 10])
+
+
+def _canonical_period(value):
+    num, unit = value.split(" ")
+    if num.isdigit():
+        n = int(num)
+    else:
+        n = words_to_int(num)
+        if n is None or n > 99 or number_in_words(n) != num:
+            return False
+    return (unit.endswith("s")) == (n != 1)
 
 
 def _part_labels(part):
@@ -402,7 +499,7 @@ def parse_template(template):
         if not parsed:
             errs.append(f"slot {m.group(0)!r}: malformed target {args!r}")
             continue
-        if kind in VALUE_SLOTS | {"notification", "notified"} and any(p for _, p in parsed):
+        if kind in NO_PART_SLOTS and any(p for _, p in parsed):
             errs.append(f"slot {m.group(0)!r}: a {kind} slot takes no part")
             continue
         pieces.append({"type": kind, "targets": parsed, "value": value if bar else None, "raw": m.group(0)})
@@ -531,7 +628,12 @@ def check_unit_words(prose):                                                # E5
         if w in UNIT_WORDS:
             errs.append(f"prose has {w!r}: a {UNIT_WORDS[w]} word may only enter through a slot")
             break
-    for pat, why in ((PER_CENT, "a percentage"), (PART_REF, "a schedule part")):
+    joined = [w.replace("-", "").lower() for w in re.findall(r"[A-Za-z]+(?:-[A-Za-z]+)+", prose)]
+    for w in joined:
+        if w in UNIT_WORDS:
+            errs.append(f"prose has {w!r} split by hyphens: a {UNIT_WORDS[w]} word may only enter through a slot")
+            break
+    for pat, why in ((PER_CENT, "a percentage"), (PART_REF, "a schedule part"), (PART_MARKER, "a part marker")):
         m = pat.search(prose)
         if m:
             errs.append(f"prose has {m.group(0)!r}: {why} may only enter through a slot")
@@ -563,9 +665,17 @@ def check_fuzzy_units(prose):                                               # E6
 
 
 def check_number_words(prose):                                              # E7
-    for w in _tokens(prose):
-        if w in NUMBER_WORDS or _COMPOUND.fullmatch(w):
+    for w in _tokens(prose) + [w.replace("-", "").lower() for w in re.findall(r"[A-Za-z]+(?:-[A-Za-z]+)+", prose)]:
+        if w in NUMBER_WORDS or _COMPOUND.fullmatch(w) or _NUMBER_UNIT.fullmatch(w):
             return [f"prose has {w!r}: number words other than 'one' may only enter through a slot"]
+    for m in MONTH_NAMES.finditer(prose):
+        before = prose[:m.start()].rstrip()
+        if m.group(0) == "May" and (not before or before[-1] in ".?!"):
+            continue              # "May the Board ...": the verb, at the start of a sentence
+        return [f"prose has {m.group(0)!r}: a month name (dates enter only through a slot)"]
+    m = HIGH_ORDINAL.search(prose)
+    if m:
+        return [f"prose has {m.group(0)!r}: an ordinal past third (a date or deadline enters only through a slot)"]
     for m in re.finditer(r"\b[MDCLXVI]{2,}\b", prose):
         if ROMAN.fullmatch(m.group(0)):
             return [f"prose has {m.group(0)!r}: a Roman numeral"]
@@ -575,6 +685,21 @@ def check_number_words(prose):                                              # E7
 PROSE_CHECKS = [check_digits, check_characters, check_unit_words, check_fuzzy_units, check_number_words]
 
 # ---------------------------------------------------------------- slot checks (E9-E12)
+
+
+LAW_IDS_ALL = {f"act-s{n}" for n in range(1, 45)} | {f"rules-r{n}" for n in range(1, 24)}
+
+
+def _named_in_quotes(quoted):
+    """Ids a verified quote names, as 'Rules 3, 5 to 16, 22 and 23' or 'section 18'."""
+    ids = set()
+    for cite, qs in quoted.items():
+        for q in qs:
+            for m in re.finditer(r"\b(Rules?|rules?|Sections?|sections?) (\d+(?:(?:, | and | to )\d+)*)", q):
+                prefix = "rules-r" if m.group(1).lower().startswith("rule") else "act-s"
+                for a, b in re.findall(r"(\d+)(?: to (\d+))?", m.group(2)):
+                    ids |= {f"{prefix}{n}" for n in range(int(a), int(b or a) + 1)}
+    return ids
 
 
 def check_ref_slots(slots, law, quoted):                                    # E9
@@ -596,13 +721,49 @@ def check_ref_slots(slots, law, quoted):                                    # E9
                 if _part_text(rec, label) is None:
                     errs.append(f"slot {s['raw']}: {rec['citation']} has no part {part}")
                     continue
-            if s["type"] != "date" and ident not in quoted:
+            if s["type"] == "date":
+                if ident not in quoted and ident not in _named_in_quotes(quoted):
+                    errs.append(f"slot {s['raw']}: {ident} is not cited by a claim or named in a quote")
+            elif ident not in quoted:
                 errs.append(f"slot {s['raw']}: no claim with a quote cites {ident}")
     return errs
 
 
-def check_figure_slots(slots, law, quoted):                                 # E10
+def money(text, rupees):
+    """(value, unit) figures in text: with rupees=True only sums of money (₹, Rs, INR, or
+    followed by 'rupees'); with rupees=False only counts (crore or lakh with no money word)."""
+    out = set()
+    for m in AMOUNT.finditer(text):
+        v = to_number(m.group(1))
+        is_money = bool(re.match(r"\s*(?:₹|Rs|INR)", m.group(0))) or bool(re.match(r"\s*rupees\b", text[m.end():], re.I))
+        if v is not None and is_money == rupees:
+            out.add((v, m.group(2).lower()))
+    if rupees:
+        out |= {x for x in amounts(text) if x[1] == "rupees"}
+    return out
+
+
+def _sentences(pieces):
+    """Slot lists per sentence (split at a full stop in the prose)."""
+    out, cur = [], []
+    for p in pieces:
+        if isinstance(p, dict):
+            cur.append(p)
+        else:
+            for _ in re.finditer(r"[.?!](?=\s|$)", p):
+                out.append(cur)
+                cur = []
+    out.append(cur)
+    return out
+
+
+def check_figure_slots(slots, law, quoted, pieces=()):                      # E10
     errs = []
+    named = {}
+    for sent in _sentences(pieces):
+        ids = {i for s in sent if s["type"] in ("ref", "name") for i, _ in s["targets"]}
+        for s in sent:
+            named[id(s)] = ids
     for s in slots:
         if s["type"] not in VALUE_SLOTS:
             continue
@@ -611,15 +772,19 @@ def check_figure_slots(slots, law, quoted):                                 # E1
             errs.append(f"slot {s['raw']}: unknown provision {ident!r}")
             continue
         pattern = {"period": PERIOD_VALUE, "amount": AMOUNT_VALUE, "count": COUNT_VALUE}[s["type"]]
-        if not pattern.fullmatch(value):
+        if not pattern.fullmatch(value) or (s["type"] == "period" and not _canonical_period(value)):
             errs.append(f"slot {s['raw']}: {value!r} is not a {s['type']} in the house form")
             continue
+        if ident not in named.get(id(s), {ident}):
+            errs.append(f"slot {s['raw']}: no ref or name slot for {ident} in the same sentence")
         quotes = quoted.get(ident, [])
         if s["type"] == "period":
-            want, found = time_limits(value), set().union(*(time_limits(q) for q in quotes)) if quotes else set()
+            want = time_limits(value)
+            found = set().union(*(time_limits(q) for q in quotes)) if quotes else set()
         else:
-            want, found = amounts(value), set().union(*(amounts(q) for q in quotes)) if quotes else set()
-        if len(want) != 1 or not want <= found:
+            want = money(value, True) if s["type"] == "amount" else money(value, False)
+            found = set().union(*(money(q, s["type"] == "amount") for q in quotes)) if quotes else set()
+        if not want or not want <= found:
             errs.append(f"slot {s['raw']}: no quote of a claim citing {ident} contains {value}")
     return errs
 
@@ -766,7 +931,7 @@ def check(example, law, as_of=None):
     for fn in PROSE_CHECKS:                                                  # E3-E7
         errs += fn(prose)
     errs += check_ref_slots(slots, law, quoted)                              # E9
-    errs += check_figure_slots(slots, law, quoted)                           # E10
+    errs += check_figure_slots(slots, law, quoted, pieces)                   # E10
     need, pend_errs = _pending(claims, law, as_of, good)
     errs += pend_errs
     errs += check_date_slots(slots, law, need)                               # E11

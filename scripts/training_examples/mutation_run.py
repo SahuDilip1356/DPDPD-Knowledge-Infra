@@ -67,6 +67,19 @@ MUTANTS = {
     "E13 invented names": lambda m: setattr(m, "check_names", lambda a, law: []),
     "E13 known wrong words": lambda m: setattr(m, "KNOWN_WRONG_WORDS", NEVER),
     "check date validation": lambda m: setattr(m, "valid_date", lambda t: t),
+    # Round 1 review: finer mutants
+    "E13 number cut at quote start": lambda m: setattr(m, "_cuts_number_start", lambda q, p: False),
+    "E13 number cut at quote end": lambda m: setattr(m, "_cuts_number_end", lambda q, n: False),
+    "E2 no part on value slots": lambda m: setattr(m, "NO_PART_SLOTS", set()),
+    "E10 money vs count": lambda m: setattr(m, "money", lambda text, rupees: m.amounts(text)),
+    "E10 canonical period": lambda m: setattr(m, "_canonical_period", lambda v: True),
+    "E10 same-sentence reference": lambda m: setattr(m, "_sentences", lambda pieces: []),
+    "E9 date id named in a quote": lambda m: setattr(m, "_named_in_quotes", lambda q: set(m.LAW_IDS_ALL)),
+    "E5 part markers": lambda m: setattr(m, "PART_MARKER", NEVER),
+    "E7 month names": lambda m: setattr(m, "MONTH_NAMES", NEVER),
+    "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
+    "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
+    "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
 }
 
 

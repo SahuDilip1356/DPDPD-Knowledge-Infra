@@ -95,21 +95,45 @@ def _part_for(rec, iso, quotes):
     return None
 
 
+FLAGS = []   # attributions for the legal read, reset per example
+DATED = {}     # ISO date -> ids named in a sentence that gives that date, set per example
+DATE_RE = re.compile(r"\b\d{1,2} (?:" + MONTHS + r") \d{4}\b")
+
+
+def _local_ids(sentence, e):
+    """Base ids of the provisions the sentence itself names."""
+    ids = set()
+    for m in re.finditer(r"\bSections (\d+) to (\d+)", sentence):
+        ids |= {f"act-s{n}" for n in range(int(m.group(1)), int(m.group(2)) + 1)}
+    for m in re.finditer(r"\b(?:Section|Rule) \d+[A-Z]?", sentence):
+        ids.add(prov_id(m.group(0), e).split("#")[0])
+    for m in re.finditer(r"\b(?:[Tt]he Schedule|(?:First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule)\b", sentence):
+        try:
+            ids.add(sch_id(m.group(0), e))
+        except Unresolved:
+            pass
+    return ids
+
+
 def date_slot(iso, e, sentence):
-    """Every cited provision (or part) that starts on iso; else a notification named in the
-    same sentence with that date."""
-    ids = []
+    """The cited provisions (or parts) named in the same sentence that start on iso. If the
+    sentence names none, every cited provision that starts on iso, flagged for the legal read.
+    Else a notification named in the sentence with that date."""
+    local = _local_ids(sentence, e)
+    ids, fallback = [], []
     for ident in dict.fromkeys(_cites(e)):
         rec = LAW.get(ident)
         if not rec:
             continue
-        if c._date_for(rec, None)[0] == iso:
-            ids.append(ident)
-            continue
         quotes = [c.squash(cl["quote"]) for cl in e.get("claims") or [] if cl["cite"] == ident]
-        part = _part_for(rec, iso, quotes)
-        if part and c._date_for(rec, part)[0] == iso:
-            ids.append(f"{ident}#{part}")
+        part = None if c._date_for(rec, None)[0] == iso else _part_for(rec, iso, quotes)
+        if c._date_for(rec, part)[0] != iso:
+            continue
+        (ids if ident in local else fallback).append(ident + (f"#{part}" if part else ""))
+    extra = [x for x in fallback if x.split("#")[0] not in DATED.get(iso, set())]
+    if extra:
+        ids += extra
+        FLAGS.append(f"date {c._human(iso)} also given to {', '.join(extra)}, named in no dated sentence")
     if ids:
         return "{date:" + ",".join(ids) + "}"
     for m in re.finditer(r"\b(?:G\.S\.R\.|S\.O\.) \d+\(E\)", sentence):
@@ -119,13 +143,24 @@ def date_slot(iso, e, sentence):
     raise Unresolved(f"no cited provision starts on {c._human(iso)}")
 
 
-def figure_slot(kind, value, e):
-    measure = c.time_limits if kind == "period" else c.amounts
+def figure_slot(kind, value, e, sentence):
+    """The claim quoting this figure whose provision the sentence names; flagged when only
+    another provision quotes it or several do."""
+    if kind == "period":
+        measure = c.time_limits
+    else:
+        measure = lambda t: c.money(t, kind == "amount")  # noqa: E731
     want = measure(value)
-    for cl in e.get("claims") or []:
-        if want and want <= measure(c.squash(cl["quote"])):
-            return f"{{{kind}:{cl['cite']}|{value}}}"
-    raise Unresolved(f"no claim quotes {value}")
+    cites = list(dict.fromkeys(cl["cite"] for cl in e.get("claims") or []
+                               if want and want <= measure(c.squash(cl["quote"]))))
+    if not cites:
+        raise Unresolved(f"no claim quotes {value}")
+    local = [x for x in cites if x in _local_ids(sentence, e)]
+    if len(local) == 1:
+        return f"{{{kind}:{local[0]}|{value}}}"
+    FLAGS.append(f"{value} given to {cites[0]}: quoted by {', '.join(cites)}; its sentence names "
+                 + (", ".join(local) if local else "none of them"))
+    return f"{{{kind}:{(local or cites)[0]}|{value}}}"
 
 
 def paren_refs(inner, e):
@@ -167,16 +202,20 @@ def convert_text(text, e, sentence=""):
         elif g == "sch":
             out.append("{name:" + sch_id(tok, e) + "}")
         else:
-            out.append(figure_slot(g, tok, e))
+            out.append(figure_slot(g, tok, e, sentence))
     out.append(text[pos:])
     return "".join(out)
 
 
 def convert(e):
-    """Template for one example, converted a sentence at a time so a date can be matched
-    to a notification named in its own sentence."""
+    """Template for one example, converted a sentence at a time so a date or figure goes to
+    the provision its own sentence names."""
     text = e["answer"]
-    parts = re.split(r"(?<=[.;:])(?<!G\.S\.R\.)(?<!S\.O\.)(\s+)", text)
+    parts = re.split(r"(?<=[.?!])(?<!G\.S\.R\.)(?<!S\.O\.)(\s+)", text)
+    DATED.clear()
+    for p in parts:
+        for m in DATE_RE.finditer(p):
+            DATED.setdefault(_iso(m.group(0)), set()).update(_local_ids(p, e))
     return "".join(p if p.isspace() else convert_text(p, e, p) for p in parts)
 
 
@@ -209,6 +248,7 @@ def main():
             if old not in e["answer"]:
                 sys.exit(f"{e['id']}: rewrite text not found: {old!r}")
             e["answer"] = e["answer"].replace(old, new)
+        FLAGS.clear()
         try:
             tpl = convert(e)
         except Unresolved as err:
@@ -223,10 +263,11 @@ def main():
             if errs:
                 problems += 1
                 print(f"FAIL {e['id']}: " + "; ".join(errs))
-            if e["answer"] != original:
+            if e["answer"] != original or FLAGS:
                 diff = [w for w in difflib.ndiff(original.split(" "), e["answer"].split(" ")) if w[0] in "+-"]
                 report.append(f"### {e['id']}\n\n- v2: {original}\n- v3: {e['answer']}\n- changed words: "
-                              + " ".join(f"`{w}`" for w in diff) + "\n")
+                              + " ".join(f"`{w}`" for w in diff) + "\n"
+                              + "".join(f"- check attribution: {f}\n" for f in FLAGS))
         rows.append(e)
     with open(a.out, "w") as f:
         for e in rows:

@@ -108,21 +108,37 @@ as failing and names the reason.
 
 ## Build notes (2026-11-28)
 
-Four choices made while building, for Dilip to confirm:
+Choices made while building and in review round 1, for Dilip to confirm:
 
 - **One date slot can name several provisions** (`{date:act-s8,rules-r7}`) when they start
-  on the same date. Most answers say "From 13 May 2027" once for several duties; without
-  this, each answer would repeat the date. The slot fails if the dates differ.
-- **A date slot needs no quoting claim.** E9 asks for a quote only behind `ref` and `name`.
-  The date itself always comes from the in-force table. This lets an answer about
-  commencement say "most duties begin on {date:rules-r3}" while quoting Rule 1.
-- **Ordinals are not number words.** "a first description" passes. An ordinal deadline
-  still fails, because it needs a unit word ("the fifth day").
+  on the same date. Most answers say "From 13 May 2027" once for several duties. The slot
+  fails if the dates differ.
+- **A date slot's provision must be cited by a claim or named in a quoted text** (Rule 1's
+  "Rules 3, 5 to 16, 22 and 23 shall come into force" lets an answer date Rule 3). Round 1
+  showed that with no such tie, a refusal answer could give any provision's date.
+- **Ordinals up to "third" are allowed; "fourth" and later, and month names, are not.** "a
+  first description" passes. "the fourteenth of May" and "in January" fail, because a date
+  needs no unit word. "May" at the start of a sentence is the verb and passes.
+- **A figure must sit in the same sentence as a ref or name slot for its provision**, and
+  an `amount` must come from a quote that names rupees, a `count` from one that does not.
+  Period values use the house spelling (72 hours, seventy-two hours, one year).
+- **A part marker in prose fails** ("(q)", "(zz)"), as do "cl", "sec", "sch" and "Part-A".
+  Parts are found by the structure of the text, so (i) under clause (b) is never taken for
+  clause (i).
 - **E6 covers inserted, deleted and swapped letters, not replaced ones.** A replaced letter
-  turns unit words into common words ("years" into "hears", "pounds" into "sounds"), so
-  that check would fail ordinary sentences. "hoyrs" is therefore not caught.
+  turns unit words into common words ("years" into "hears"). "hoyrs" is not caught.
 
-E14: 15 of the 100 rendered answers differ from their v2 text. They are listed in
-`staging/training-examples/batch01_c_changes.md` and `batch02_c_changes.md` for a legal
-re-read. Most swap a banned word ("rule" to "requirement", "item" to "piece"); three name a
-schedule part their claim already cites; one lists Sections 11 to 14 one by one.
+Known gaps, left to the legal read:
+- The Schedule is one provision, so a figure is tied to the Schedule but not to its row:
+  "{amount:act-schedule|₹200 crore}" for the safeguards breach passes, though that row says
+  ₹250 crore. Fixing it needs row-level parts for the Schedule.
+- Tense ("already applies now, since 13 May 2027") and vague periods ("overnight", "a score
+  of fines").
+- The banned words also fail ordinary English: "add a clause to the contract", "as a rule",
+  "annual report", "half of the data", "the two of them".
+
+E14: the converter ties each date and figure to the provision its own sentence names. Where
+a date such as an opening "From 13 May 2027" covers provisions named only in later
+sentences, it is given to them and the example is flagged "check attribution". 44 of the
+100 carry such a flag. Every changed or flagged answer is in
+`staging/training-examples/batch01_c_changes.md` and `batch02_c_changes.md`.
