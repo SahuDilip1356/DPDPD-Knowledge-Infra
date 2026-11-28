@@ -575,7 +575,10 @@ class TestReview3Fake(Base):
             self.bad(ex(t), "month name")
 
 
-REAL_LAW_DIR = "/Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/staging/law-import"
+# The law-import folder is gitignored, so these tests run only where it exists. Point
+# SETU_LAW_DIR at it from another checkout or a worktree; CI skips them.
+REAL_LAW_DIR = os.environ.get("SETU_LAW_DIR") or os.path.join(
+    os.path.dirname(__file__), "..", "..", "staging", "law-import")
 
 
 @unittest.skipUnless(os.path.isdir(REAL_LAW_DIR), "needs the law-import folder")

@@ -9,8 +9,8 @@ never writes through a symlink or hard link planted at the sheet's name.
 L="<main checkout>/staging/law-import"
 python3 scripts/training_examples/check_examples.py --law "$L" staging/training-examples/batch01.jsonl
 python3 scripts/training_examples/make_review_sheet.py --law "$L" staging/training-examples/batch01.jsonl
-python3 -m unittest scripts/training_examples/test_check_examples.py scripts/training_examples/test_convert_to_template.py -v
-python3 scripts/training_examples/mutation_run.py
+SETU_LAW_DIR="$L" python3 -m unittest scripts/training_examples/test_check_examples.py scripts/training_examples/test_convert_to_template.py -v
+SETU_LAW_DIR="$L" python3 scripts/training_examples/mutation_run.py
 ```
 
 ## Structured answers (option C)
@@ -54,7 +54,9 @@ a number phrase. Labels must come from the approved sets, law-answers and compar
 examples need a quote, and refusal lanes need a plain refusal phrase. Capitalised names the
 Act and Rules never use fail.
 
-`mutation_run.py` switches off each check in turn and fails if the tests still pass.
+`mutation_run.py` switches off each check in turn and fails if the tests still pass. The
+tests that read the real law run only when `SETU_LAW_DIR` (default `staging/law-import`)
+exists, so CI, which has no law-import folder, skips them; run them locally.
 
 ## Converting free-text answers
 

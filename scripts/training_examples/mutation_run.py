@@ -1,6 +1,6 @@
 """E15 mutation run: switch off one check at a time; the test suite must fail every time.
 
-Run: python3 scripts/training_examples/mutation_run.py
+Run: SETU_LAW_DIR=<law-import dir> python3 scripts/training_examples/mutation_run.py
 Exits 1 if any mutant survives (the tests stayed green with a check switched off).
 """
 
@@ -109,6 +109,9 @@ def suite_passes():
 
 
 def main():
+    if not os.path.isdir(test_check_examples.REAL_LAW_DIR):
+        sys.exit("Set SETU_LAW_DIR to the law-import folder: without it the real-law tests skip "
+                 "and some mutants would survive unseen.")
     ok, n = suite_passes()
     if not ok:
         sys.exit("The unmutated suite fails; fix it before the mutation run.")
