@@ -120,13 +120,16 @@ UNIT_WORDS.pop("rules")      # "the Rules" names the DPDP Rules; the singular st
 for _w in "cl cls sec secs sch subsec subcl ss art arts reg regs sched twelvemonth twelvemonths".split():
     UNIT_WORDS[_w] = "time" if _w.startswith("twelve") else "reference"
 PER_CENT = re.compile(r"\bper[\s-]*cents?\b", re.I)
-PART_REF = re.compile(r"\b[Pp](?i:arts?)[\s-]+(?:\(\s*\w+\s*\)|(?:[A-Z]|[IVXLCDM]+|one)(?![A-Za-z'’]))")
+PART_REF = re.compile(r"\b[Pp](?i:arts?)[\s-]+(?:\(\s*\w+\s*\)|(?P<tok>[A-Za-z]+)(?![A-Za-z'’]))")
+# Words after "part" that are ordinary English, not a part label: "in part a matter", "parts mix".
+PART_WORDS_OK = {"a", "mi", "mix"}
 # A part marker such as (q), (zz) or (xiv) in prose names a clause outside any slot.
 PART_MARKER = re.compile(r"(?<![A-Za-z])\(\s*(?:[a-z]{1,2}|[ivxlcdm]{1,6}|[IVXLCDM]{1,6})\s*\)"
                          r"|(?<=[A-Za-z])\((?!s\)|es\))\s*\w{1,6}\s*\)")
 
 # E6: real words one letter away from a unit or reference word. Exempt from the fuzzy check.
 FUZZY_EXEMPT = {
+    "parts",
     "annul", "annuls", "scheduler", "schedulers",
     "cause", "causes", "rules", "ruled", "ruler", "rulers", "scheduled", "particle", "particles",
     "sentry", "sentries", "gentry", "acres", "lacks", "laces", "lances", "crest", "crests",
@@ -441,11 +444,12 @@ NO_PART_SLOTS = VALUE_SLOTS | {"notification", "notified"}
 SLOT = re.compile(r"\{([^{}]*)\}")
 ID = r"[a-z][a-z0-9-]*"
 PART = r"\w+(?:\(\w+\))*"
-TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?")
+TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?", re.ASCII)
 _INDIAN = r"(?:\d{1,3}|\d{1,2}(?:,\d{2})*,\d{3})"            # 250, 10,000, 1,00,000
-PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[a-z]+(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)")
-AMOUNT_VALUE = re.compile(r"₹" + _INDIAN + r"(?: (?:crore|lakh))?")
-COUNT_VALUE = re.compile(_INDIAN + r" (?:crore|lakh)")
+# re.ASCII: in Python \d also matches Devanagari and other digits, which float() then reads.
+PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[A-Za-z][a-z]*(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)", re.ASCII)
+AMOUNT_VALUE = re.compile(r"₹" + _INDIAN + r"(?: (?:crore|lakh))?", re.ASCII)
+COUNT_VALUE = re.compile(_INDIAN + r" (?:crore|lakh)", re.ASCII)
 _ONES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
 _TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
 
@@ -463,7 +467,8 @@ def _canonical_period(value):
         n = int(num)
     else:
         n = words_to_int(num)
-        if n is None or n > 99 or number_in_words(n) != num:
+        # The house spelling, or the same with a capital first letter to start a sentence.
+        if n is None or n > 99 or num not in (number_in_words(n), number_in_words(n).capitalize()):
             return False
     return (unit.endswith("s")) == (n != 1)
 
@@ -510,7 +515,7 @@ def parse_template(template):
             continue
         pieces.append({"type": kind, "targets": parsed, "value": value if bar else None, "raw": m.group(0)})
     pieces.append(template[pos:])
-    for i, p in enumerate(pieces):
+    for p in pieces:
         if isinstance(p, str) and ("{" in p or "}" in p):
             errs.append("template has an unclosed or stray brace")
             break
@@ -580,29 +585,101 @@ def _date_for(rec, part):
 
 
 def render(pieces, law):
-    out = []
+    return render_spans(pieces, law)[0]
+
+
+def render_spans(pieces, law):
+    """The rendered answer and the (start, end) span each slot fills in it."""
+    out, spans, pos = [], [], 0
     for p in pieces:
-        if isinstance(p, str):
-            out.append(p)
+        text = p if isinstance(p, str) else _render_slot(p, law)
+        if not isinstance(p, str):
+            spans.append((pos, pos + len(text)))
+        out.append(text)
+        pos += len(text)
+    return "".join(out), spans
+
+
+def _render_slot(p, law):
+    t, (ident, part) = p["type"], p["targets"][0]
+    if t == "ref":
+        labels = [_label(law, i, pt, "ref") for i, pt in p["targets"]]
+        return "(" + ", ".join(x or "?" for x in labels) + ")"
+    if t == "name":
+        return _label(law, ident, part, "name") or "?"
+    if t in VALUE_SLOTS:
+        return p["value"]
+    if t == "date":
+        dates = {_date_for(law[i], pt)[0] if i in law else None for i, pt in p["targets"]}
+        d = dates.pop() if len(dates) == 1 else None
+        return _human(d) if d else "?"
+    if t == "notification":
+        return (KNOWN_NOTIFICATIONS.get(ident) or {}).get("citation") or "?"
+    d = (KNOWN_NOTIFICATIONS.get(ident) or {}).get("date")                 # notified
+    return _human(d) if d else "?"
+
+
+# ---------------------------------------------------------------- whole-render check (E16, E17)
+
+_EDGE = "\"'“”‘’.,;:!?()—–"
+NOTE_CITE = re.compile(r"\b(?:G\.S\.R\.|S\.O\.)")
+REF_WORDS = {"section", "sections", "rule", "schedule", "schedules"}
+
+
+def _figure_word(core):
+    """True if a rendered word carries a figure, date, unit or reference."""
+    if any(unicodedata.category(ch) in ("Nd", "No", "Nl") or ch in "₹$€£§%" for ch in core):
+        return True
+    if NOTE_CITE.search(core):
+        return True
+    for w in re.split(r"[-'’]", core.lower()):
+        if w in UNIT_WORDS or w in REF_WORDS or w in NUMBER_WORDS:
+            return True
+        if MONTH_NAMES.fullmatch(w) and w != "may":
+            return True
+    return False
+
+
+def check_rendered_spans(text, spans):
+    """E17: nothing joins a slot (no letter, digit or hyphen on either side, no two slots
+    touching). E16: every letter and digit of a figure-bearing word of the rendered answer
+    lies inside a slot's span."""
+    errs = []
+    for a, b in spans:
+        left = text[a - 1] if a > 0 else " "
+        right = text[b] if b < len(text) else " "
+        if left.isalnum() or left == "-" or right.isalnum() or right == "-":
+            errs.append(f"rendered answer has {text[max(0, a - 3):b + 3]!r}: text touches a slot")
+            break
+    for (a1, b1), (a2, b2) in zip(spans, spans[1:]):
+        if not _slots_separated(text[b1:a2]):
+            errs.append(f"rendered answer has {text[a1:b2]!r}: two slots touch; only whitespace separates slots")
+            break
+    owner = {}
+    for n, (a, b) in enumerate(spans):
+        owner.update({i: n for i in range(a, b)})
+    for m in re.finditer(r"\S+", text):
+        if not _figure_word(m.group(0).strip(_EDGE)):
             continue
-        t, (ident, part) = p["type"], p["targets"][0]
-        if t == "ref":
-            labels = [_label(law, i, pt, "ref") for i, pt in p["targets"]]
-            out.append("(" + ", ".join(x or "?" for x in labels) + ")")
-        elif t == "name":
-            out.append(_label(law, ident, part, "name") or "?")
-        elif t in VALUE_SLOTS:
-            out.append(p["value"])
-        elif t == "date":
-            dates = {_date_for(law[i], pt)[0] if i in law else None for i, pt in p["targets"]}
-            d = dates.pop() if len(dates) == 1 else None
-            out.append(_human(d) if d else "?")
-        elif t == "notification":
-            out.append((KNOWN_NOTIFICATIONS.get(ident) or {}).get("citation") or "?")
-        elif t == "notified":
-            d = (KNOWN_NOTIFICATIONS.get(ident) or {}).get("date")
-            out.append(_human(d) if d else "?")
-    return "".join(out)
+        chars = [i for i in range(m.start(), m.end()) if text[i].isalnum()]
+        if any(i not in owner for i in chars):
+            errs.append(f"rendered answer has {m.group(0)!r} outside a slot: figures, dates and "
+                        "references enter only through a slot")
+            break
+        if not _in_one_span({owner[i] for i in chars}):
+            errs.append(f"rendered answer has {m.group(0)!r} across more than one slot: a figure, date "
+                        "or reference must lie inside one slot")
+            break
+    return errs
+
+
+def _slots_separated(gap):                                                  # E23
+    """Two slots are separate only if whitespace lies between them."""
+    return any(ch.isspace() for ch in gap)
+
+
+def _in_one_span(owners):                                                   # E24
+    return len(owners) <= 1
 
 
 # ---------------------------------------------------------------- prose checks (E3-E7)
@@ -628,6 +705,19 @@ def check_characters(prose):                                                # E4
     return []
 
 
+def _is_part_label(tok):                                                    # E5, F10
+    """After "part(s)": a letter, a Roman numeral or "one" labels a part; "(b)" always does."""
+    if tok is None:
+        return True
+    if tok.lower() == "one":
+        return True
+    if tok in PART_WORDS_OK:
+        return False
+    if len(tok) == 1:
+        return True
+    return bool(ROMAN.fullmatch(tok) or ROMAN_LOWER.fullmatch(tok))
+
+
 def check_unit_words(prose):                                                # E5
     errs = []
     for w in _tokens(prose):
@@ -639,7 +729,11 @@ def check_unit_words(prose):                                                # E5
         if w in UNIT_WORDS:
             errs.append(f"prose has {w!r} split by hyphens: a {UNIT_WORDS[w]} word may only enter through a slot")
             break
-    for pat, why in ((PER_CENT, "a percentage"), (PART_REF, "a schedule part"), (PART_MARKER, "a part marker")):
+    for m in PART_REF.finditer(prose):
+        if _is_part_label(m.group("tok")):
+            errs.append(f"prose has {m.group(0)!r}: a schedule part may only enter through a slot")
+            break
+    for pat, why in ((PER_CENT, "a percentage"), (PART_MARKER, "a part marker")):
         m = pat.search(prose)
         if m:
             errs.append(f"prose has {m.group(0)!r}: {why} may only enter through a slot")
@@ -670,6 +764,11 @@ def check_fuzzy_units(prose):                                               # E6
     return []
 
 
+def _number_after_may(word):                                               # E18
+    """'May one', 'may third': a number word or ordinal after May makes it a date."""
+    return word in {"first", "second", "third", "one"} or word in NUMBER_WORDS
+
+
 def check_number_words(prose):                                              # E7
     for w in _tokens(prose) + [w.replace("-", "").lower() for w in re.findall(r"[A-Za-z]+(?:-[A-Za-z]+)+", prose)]:
         if w in NUMBER_WORDS or _COMPOUND.fullmatch(w) or _NUMBER_UNIT.fullmatch(w):
@@ -678,7 +777,7 @@ def check_number_words(prose):                                              # E7
         if m.group(0).lower() == "may":
             before = prose[:m.start()].rstrip()
             after = re.match(r"[\W_]*(?:the\s+)?(\w+)", prose[m.end():], re.I)
-            ordinal = after and after.group(1).lower() in {"first", "second", "third"}
+            ordinal = bool(after) and _number_after_may(after.group(1).lower())
             if m.group(0) == "may" and not ordinal and not _MAY_AS_MONTH.search(prose[:m.end()][-20:]):
                 continue          # "the Board may ...": the verb
             if m.group(0) == "May" and (not before or before[-1] in ".?!") and not ordinal:
@@ -785,10 +884,21 @@ def _sentences(pieces):
     return out
 
 
-def check_figure_slots(slots, law, quoted, pieces=()):                      # E10
+def _starts_sentence(pieces, slot):
+    """True if nothing but whitespace, or the end of a sentence, comes before the slot."""
+    before = ""
+    for p in pieces:
+        if p is slot:
+            break
+        before += p if isinstance(p, str) else "x"
+    before = before.rstrip()
+    return not before or before[-1] in ".?!"
+
+
+def check_figure_slots(slots, law, quoted, pieces=(), sentence_rule=True):  # E10
     errs = []
     named = {}
-    for sent in _sentences(pieces):
+    for sent in (_sentences(pieces) if sentence_rule else []):
         ids = {s["targets"][0][0] for s in sent if s["type"] in ("ref", "name") and len(s["targets"]) == 1}
         for s in sent:
             named[id(s)] = ids
@@ -802,6 +912,10 @@ def check_figure_slots(slots, law, quoted, pieces=()):                      # E1
         pattern = {"period": PERIOD_VALUE, "amount": AMOUNT_VALUE, "count": COUNT_VALUE}[s["type"]]
         if not pattern.fullmatch(value) or (s["type"] == "period" and not _canonical_period(value)):
             errs.append(f"slot {s['raw']}: {value!r} is not a {s['type']} in the house form")
+            continue
+        if value[0].isupper() and pieces and not _starts_sentence(pieces, s):
+            errs.append(f"slot {s['raw']}: {value!r} is not a {s['type']} in the house form "
+                        "(a capital is allowed only at the start of a sentence)")
             continue
         if ident not in named.get(id(s), {ident}):
             errs.append(f"slot {s['raw']}: no ref or name slot for {ident} in the same sentence")
@@ -892,9 +1006,91 @@ def check_claims(claims, law):
             errs.append(f"claim {i}: quote starts or ends mid-word in {law[cite]['citation']}")
             continue
         good.append((i, cl))
-        for v, unit in sorted(amounts(cl.get("text", "")) - amounts(quote)):
-            errs.append(f"claim {i}: states {v:g} {unit} but its own quote does not")
+        errs += check_claim_template(i, cl, law, quote)
     return errs, good
+
+
+def check_claim_template(i, cl, law, quote):                                # E28-E31
+    """A claim's text is a template too, checked by the answer's own code: its prose by the
+    prose checks, its rendering by the whole-render checks, and its slots against the law.
+    Every slot names only the claim's own provision, backed by the claim's own quote."""
+    tt = cl.get("text_template")
+    if not isinstance(tt, str) or not tt.strip():
+        return [f"claim {i}: has no text_template"]
+    pieces, parse_errs = parse_template(tt)
+    slots = [p for p in pieces if isinstance(p, dict)]
+    errs = list(parse_errs) + _claim_own_provision(slots, cl["cite"])
+    errs += _claim_prose_errs(tt, pieces, law)
+    errs += _claim_part_holds_quote(slots, law, cl["cite"], quote)
+    own = {cl["cite"]: [quote]}
+    errs += check_ref_slots(slots, law, own)
+    errs += check_figure_slots(slots, law, own, pieces, sentence_rule=False)
+    errs += check_date_slots(slots, law, set())
+    if not parse_errs:
+        text, spans = render_spans(pieces, law)
+        errs += _claim_rendering_errs(cl.get("text"), text)
+        errs += _claim_span_errs(text, spans)
+    return [f"claim {i}: {e}" for e in errs]
+
+
+def _claim_own_provision(slots, cite):                                      # E30, E31
+    errs = []
+    for s in slots:
+        if s["type"] in ("notification", "notified"):
+            errs.append(f"slot {s['raw']}: a claim may not cite a notification")
+            continue
+        for ident, _ in s["targets"]:
+            if ident != cite:
+                errs.append(f"slot {s['raw']}: a claim's slots may name only its own provision, {cite}")
+    return errs
+
+
+def _claim_prose_errs(template, pieces, law):                               # E29
+    prose = prose_of(pieces)
+    errs = []
+    for fn in PROSE_CHECKS:
+        errs += fn(prose)
+    return errs + check_slot_suffix(template) + check_names(prose, law)
+
+
+def _claim_part_holds_quote(slots, law, cite, quote):                       # E30, F9
+    """A part a claim names must be the part its own quote comes from."""
+    errs = []
+    for s in slots:
+        if s["type"] not in ("ref", "name", "date"):
+            continue
+        for ident, part in s["targets"]:
+            if ident != cite or not part or ident not in law:
+                continue
+            rec = law[ident]
+            kind = "rule" if ident.startswith("rules-r") else "section"
+            text = _part_text(rec, f"{kind} {rec.get('number')}" + "".join(f"({x})" for x in _part_labels(part)))
+            if text is not None and quote not in text:
+                errs.append(f"slot {s['raw']}: the claim's quote is not from {rec['citation']}({part})")
+    return errs
+
+
+def _claim_span_errs(text, spans):                                          # E29
+    return check_rendered_spans(text, spans)
+
+
+def _claim_rendering_errs(text, rendered):                                  # E28
+    if text != rendered:
+        return [f"text is not the rendered text_template; expected {rendered!r}"]
+    return []
+
+
+ROW_FIELDS = {"id", "question", "kind", "reader", "lane", "provisions", "answer_template", "answer", "claims",
+              "source", "as_of", "drafted_by", "review", "version"}
+CLAIM_FIELDS = {"text", "text_template", "cite", "quote", "applies_from"}
+
+
+def check_fields(example):                                                  # E20
+    """Training rows carry only fields the checker reads or bookkeeping it ignores."""
+    errs = [f"row has field {k!r}, which the checker does not check" for k in sorted(set(example) - ROW_FIELDS)]
+    for i, cl in enumerate(example.get("claims") or [], 1):
+        errs += [f"claim {i} has field {k!r}, which the checker does not check" for k in sorted(set(cl) - CLAIM_FIELDS)]
+    return errs
 
 
 def check_labels(example):
@@ -939,7 +1135,7 @@ def check(example, law, as_of=None):
     """as_of: the ISO date the answer is read on; defaults to today. The example's own
     `as_of` field is ignored, so an example cannot move its own check date."""
     as_of = valid_date(datetime.date.today().isoformat() if as_of is None else as_of)
-    errs = check_labels(example)
+    errs = check_fields(example) + check_labels(example)
     claims = example.get("claims") or []
     claim_errs, good = check_claims(claims, law)
     errs += claim_errs
@@ -965,9 +1161,10 @@ def check(example, law, as_of=None):
     errs += pend_errs
     errs += check_date_slots(slots, law, need)                               # E11
     errs += check_notification_slots(slots)                                  # E12
-    rendered = render(pieces, law)
+    rendered, spans = render_spans(pieces, law)
     if not parse_errs:
         errs += check_rendered(answer, rendered)                             # E1
+        errs += check_rendered_spans(rendered, spans)                        # E16, E17
     errs += check_lane(example, rendered)                                    # E13
     errs += check_names(prose, law)
     return errs

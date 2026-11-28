@@ -2,13 +2,19 @@
 
 Each figure, date, amount, reference and notification in `answer` becomes a slot tied to a
 cited provision. Optional rewrites (a JSON file of {example id: [[old, new], ...]}) reword
-prose that the new checks ban, such as "rule" or "the next day". The output keeps the old
-text as `answer_v2` and writes a report of every example whose rendered answer differs from
-it, for a legal re-read.
+prose that the new checks ban, such as "rule" or "the next day".
+
+Writes three files into gitignored staging/training-examples/, through scripts/safe_output.py:
+  <name>.jsonl              the training rows, with no unchecked text (E20)
+  <name>_v2_answers.jsonl   the legally reviewed v2 answers, by id; never read for training
+  <name>_c_changes.md       every answer whose rendering differs from v2 or whose date or
+                            figure was attributed across sentences, for a legal re-read
+The v2 answer is read from the input row's `answer_v2`, else from <input>_v2_answers.jsonl
+next to the input, else from `answer`.
 
 Usage:
   python3 scripts/training_examples/convert_to_template.py --law <law-import dir> \
-      [--rewrites rewrites.json] --report diffs.md <in.jsonl> <out.jsonl>
+      [--rewrites rewrites.json] [--as-of YYYY-MM-DD] --name batch01 <in.jsonl>
 """
 
 import argparse
@@ -20,7 +26,12 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import check_examples as c  # noqa: E402
+import safe_output  # noqa: E402
+
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+OUT_REL = ("staging", "training-examples")
 
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 ORD = {"First": 1, "Second": 2, "Third": 3, "Fourth": 4, "Fifth": 5, "Sixth": 6, "Seventh": 7}
@@ -227,31 +238,109 @@ LAW = {}
 
 
 def _iso(human):
-    return datetime.datetime.strptime(human, "%d %B %Y").date().isoformat()
+    try:
+        return datetime.datetime.strptime(human, "%d %B %Y").date().isoformat()
+    except ValueError:
+        raise Unresolved(f"{human} is not a real date")                      # E32
+
+
+def apply_rewrites(e, rewrites):
+    """Rewrites keyed by id change the answer; keyed '<id>#claimN' they change claim N's text.
+    A rewrite already applied is kept as it is. Returns the claim changes, for the report."""
+    targets = [(e["id"], e, "answer")] + [(f"{e['id']}#claim{i}", cl, "text")
+                                          for i, cl in enumerate(e.get("claims") or [], 1)]
+    changed = []
+    for key, obj, field in targets:
+        for old, new in rewrites.get(key, []):
+            if old not in obj[field]:
+                if new not in obj[field]:
+                    sys.exit(f"{key}: rewrite text not found: {old!r}")
+                # already applied on an earlier run (claims are not restored from v2)
+            obj[field] = obj[field].replace(old, new)
+            if "#" in key:
+                changed.append(f"{key.split('#')[1]} text: {old!r} -> {new!r}")
+    return changed
+
+
+def claim_template(cl):
+    """A claim's text as a template whose slots name only the claim's own provision (E35)."""
+    return convert({"answer": cl["text"], "claims": [cl]})
+
+
+def convert_claims(e):
+    """Give every claim a text_template, rebuilt from its text on every run so a claim
+    rewrite never leaves a stale template. Returns (changes, problems) for the report."""
+    changes, problems = [], []
+    for i, cl in enumerate(e.get("claims") or [], 1):
+        before = cl["text"]
+        try:
+            cl["text_template"] = claim_template(cl)
+        except Unresolved as err:
+            problems.append(f"claim{i}: {err}")
+            continue
+        cl["text"] = c.render(c.parse_template(cl["text_template"])[0], LAW)
+        if cl["text"] != before:
+            changes.append(f"claim{i} text: {before!r} -> {cl['text']!r}")
+    return changes, problems
+
+
+def split_v2(rows):
+    """Training rows without `answer_v2` or `claims_v2`, and the v2 text by id: the reviewed
+    v2 answer and each claim's original text, so rewrite chains always start from them."""
+    train, v2 = [], []
+    for e in rows:
+        e = dict(e)
+        if "answer_v2" in e:
+            v2.append({"id": e["id"], "answer_v2": e.pop("answer_v2"), "claims_v2": e.pop("claims_v2", [])})
+        e.pop("claims_v2", None)
+        train.append(e)
+    return train, v2
+
+
+def restore_originals(e, v2row):
+    """Put each claim's original text back before the rewrites run again."""
+    for cl, text in zip(e.get("claims") or [], (v2row or {}).get("claims_v2") or []):
+        cl["text"] = text
+
+
+def _v2_answers(src):
+    path = re.sub(r"\.jsonl$", "", src) + "_v2_answers.jsonl"
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        return {r["id"]: r for r in (json.loads(x) for x in f if x.strip())}
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--law", required=True)
     ap.add_argument("--rewrites")
-    ap.add_argument("--report", required=True)
     ap.add_argument("--as-of", default=None)
+    ap.add_argument("--name", required=True, help="plain output name, e.g. batch01")
     ap.add_argument("src")
-    ap.add_argument("out")
     a = ap.parse_args()
     LAW.update(c.load_law(a.law))
-    rewrites = json.load(open(a.rewrites)) if a.rewrites else {}
+    rewrites = {}
+    if a.rewrites:
+        with open(a.rewrites) as f:
+            rewrites = json.load(f)
+    v2_by_id = _v2_answers(a.src)
     rows, report, problems = [], [], 0
-    for line in open(a.src):
-        if not line.strip():
-            continue
+    with open(a.src) as f:
+        lines = [x for x in f if x.strip()]
+    for line in lines:
         e = json.loads(line)
-        original = e.get("answer_v2", e["answer"])
+        v2row = v2_by_id.get(e["id"]) or {}
+        original = e.get("answer_v2") or v2row.get("answer_v2") or e["answer"]
         e["answer"] = original
-        for old, new in rewrites.get(e["id"], []):
-            if old not in e["answer"]:
-                sys.exit(f"{e['id']}: rewrite text not found: {old!r}")
-            e["answer"] = e["answer"].replace(old, new)
+        restore_originals(e, v2row)
+        claims_v2 = [cl["text"] for cl in e.get("claims") or []]
+        claim_changes = apply_rewrites(e, rewrites)
+        rendered_changes, claim_problems = convert_claims(e)
+        claim_changes += rendered_changes
+        for msg in claim_problems:
+            print(f"UNRESOLVED {e['id']} {msg}")
+            problems += 1
         FLAGS.clear()
         try:
             tpl = convert(e)
@@ -262,24 +351,28 @@ def main():
         if tpl is not None:
             e["answer_template"] = tpl
             e["answer"] = c.render(c.parse_template(tpl)[0], LAW)
-            e["answer_v2"] = original
+            e.pop("answer_v2", None)
             errs = c.check(e, LAW, a.as_of)
             if errs:
                 problems += 1
                 print(f"FAIL {e['id']}: " + "; ".join(errs))
-            if e["answer"] != original or FLAGS:
+            if e["answer"] != original or FLAGS or claim_changes:
                 diff = [w for w in difflib.ndiff(original.split(" "), e["answer"].split(" ")) if w[0] in "+-"]
                 report.append(f"### {e['id']}\n\n- v2: {original}\n- v3: {e['answer']}\n- changed words: "
                               + " ".join(f"`{w}`" for w in diff) + "\n"
-                              + "".join(f"- check attribution: {f}\n" for f in FLAGS))
+                              + "".join(f"- check attribution: {f}\n" for f in FLAGS)
+                              + "".join(f"- {x}\n" for x in claim_changes))
+        e["answer_v2"] = original
+        e["claims_v2"] = claims_v2
         rows.append(e)
-    with open(a.out, "w") as f:
-        for e in rows:
-            f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    with open(a.report, "w") as f:
-        f.write(f"# Option C conversion: answers that changed ({len(report)} of {len(rows)})\n\n"
-                "Each rendered answer below differs from its legally reviewed v2 text. "
-                "Read the changed words for meaning.\n\n" + "\n".join(report))
+    train, v2 = split_v2(rows)
+    dump = lambda rs: "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rs)  # noqa: E731
+    head = (f"# Option C conversion: answers that changed ({len(report)} of {len(rows)})\n\n"
+            "Each rendered answer below differs from its legally reviewed v2 text, or had a date or "
+            "figure attributed across sentences. Read the changed words for meaning.\n\n")
+    safe_output.write_files(REPO_ROOT, OUT_REL, {f"{a.name}.jsonl": dump(train),
+                                                 f"{a.name}_v2_answers.jsonl": dump(v2),
+                                                 f"{a.name}_c_changes.md": head + "\n".join(report)})
     print(f"{len(rows)} examples, {len(report)} changed, {problems} with problems")
     sys.exit(1 if problems else 0)
 
