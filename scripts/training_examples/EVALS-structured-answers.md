@@ -205,3 +205,48 @@ failing.
 structured checker; write the converter's outputs through `scripts/safe_output.py`; remove
 three unused names. PR #17 will be squash-merged, because nine earlier commits carry a home
 path.
+
+## Fail-closed round 3 (draft, waiting for Dilip's approval)
+
+Asked for by Dilip on 2026-11-28 ("Setu: fail-closed round 3") after the PR #19 review at
+afead55. This is the last review round allowed: if round 3 is not Ship, the approach stops
+for a rethink. Two leaks remain. Each was reproduced against the real law, along with its
+neighbours.
+
+**F6. One mark between two slots passes.** Slots count as touching only when nothing lies
+between them, and each letter or digit of a figure only has to sit in *some* slot. All of
+these pass today:
+
+| Between `{name:rules-r7}` and `{period:rules-r7\|72 hours}` | Renders |
+|---|---|
+| `–` `—` `:` `;` `,` `.` `'` `’` `(` `)` `“` `”` `!` `?` | `Rule 7–72 hours`, `Rule 7:72 hours`, `Rule 7,72 hours` ... |
+| after `{date:rules-r7}`: `–` `,` `:` | `13 May 2027–72 hours`, `13 May 2027,72 hours` |
+| between two `ref` slots: , | (Rule 7),(Rule 7) |
+
+**F7. Claim text is checked against a short list of forms.** Anything not on the list
+passes. On a Rule 7 claim, all of these pass today: "48 hrs", "section 9", "rule 9",
+"Rules 7 and 9", "Sec. 9", "S. 9", "Schedule III", "13 Nov 2026", "November 13, 2026",
+"13th November 2026", "2026-11-13", "13 november 2026", "June 2026", "G.S.R. 999(E)",
+"5% of turnover", "clause (b)", and Devanagari digits ("७२ hours").
+
+**Pass/fail checks**
+- E23. Two slots are separate only if whitespace lies between them. Punctuation alone does
+  not separate them. Every F6 template above fails.
+- E24. Each whitespace-separated word of the rendered answer that carries a figure, date,
+  unit, month, reference or notification must have all its letters and digits inside one
+  slot's span. Inside two slots does not count. `Rule 7–72` and `2027,72` fail, while "(Rule
+  7)." and "13 May 2027:" still pass.
+- E25. Claim text is checked fail-closed. First the known forms are checked against the
+  claim's quote and provision (periods, amounts, counts, dates in the house form,
+  references to its own provision). Those that pass are removed. Then the digit (E3), unit
+  and reference word (E5) and number word and month (E7) checks run on whatever is left, and
+  any notification citation fails. Every F7 example above fails. The batch claim texts
+  ("Eighteen months.", "Up to ₹250 crore (The Schedule).", "48 hours' warning.") still pass.
+- E26. Mutation run: switching off the whitespace rule (E23), the one-span rule (E24) or the
+  leftover-text check (E25) makes at least one test fail.
+- E27. Batches 01 and 02 are run again. Any example that now fails is listed by id and
+  reason before anything changes, and fixes go through the rewrites file.
+
+E1 to E22 stay as they are and must stay green. Optional, done in the same change: the
+real-batch field test (E20) reports a skip when the batch files are missing, rather than
+passing silently.
