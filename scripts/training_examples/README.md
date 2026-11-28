@@ -48,6 +48,13 @@ brought into force by a quoted part of Rule 1. A cited provision that is not in 
 on the check date needs a `date` slot for it, or for the part a claim relies on
 (`applies_from`). The check date is `--as-of` or today; an example cannot set its own.
 
+The checks then run again on the rendered answer: every digit, number word, unit word,
+month, reference and notification must lie inside a slot's span, and no letter, digit,
+hyphen or other slot may touch a slot ("Rule 7A", "l72 hours" and "72 hours72 hours"
+fail). Claim text may state only figures its own quote holds, dates its own provision
+starts on, and references to its own provision. A row may carry only fields the checker
+reads, so the old free-text `answer_v2` lives in its own file.
+
 The claim checks are unchanged. A quote is one unbroken run of at least 6 words, in the
 same case, from the cited provision, starting and ending on whole words, and never cutting
 a number phrase. Labels must come from the approved sets, law-answers and comparison
@@ -60,14 +67,17 @@ exists, so CI, which has no law-import folder, skips them; run them locally.
 
 ## Converting free-text answers
 
-`convert_to_template.py` turns a v2 batch into templates. It keeps the old text as
-`answer_v2` and writes a report of every answer whose rendering differs, or whose date or
-figure it had to attribute to a provision named in another sentence ("check attribution"). Rewordings for
-prose the new checks ban go in a JSON file of `{id: [[old, new], ...]}`.
+`convert_to_template.py` turns a v2 batch into templates and writes three files into
+gitignored `staging/training-examples/` through `scripts/safe_output.py`:
+`<name>.jsonl` (the training rows), `<name>_v2_answers.jsonl` (the reviewed v2 answers by
+id, never read for training) and `<name>_c_changes.md` (every answer whose rendering
+differs from v2, whose claim text was changed, or whose date or figure was attributed
+across sentences: "check attribution"). Rewordings go in a JSON file: `{id: [[old, new]]}`
+changes the answer and `{"<id>#claimN": [[old, new]]}` changes claim N's text.
 
 ```bash
 python3 scripts/training_examples/convert_to_template.py --law "$L" --as-of 2026-11-27 \
-  --rewrites staging/training-examples/c_rewrites.json --report changes.md in.jsonl out.jsonl
+  --rewrites staging/training-examples/c_rewrites.json --name batch01 staging/training-examples/batch01.jsonl
 ```
 
 ## What it cannot catch (left to the legal read and Dilip)

@@ -92,6 +92,11 @@ MUTANTS = {
     "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
     "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
     "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
+    # Whole-render check (E21)
+    "E16/E17 whole-render boundary check": lambda m: setattr(m, "check_rendered_spans", lambda text, spans: []),
+    "E19 claim-text check": lambda m: setattr(m, "check_claim_text", lambda i, cl, law, quote: []),
+    "E20 checked fields only": lambda m: setattr(m, "check_fields", lambda e: []),
+    "E18 May before a number word": lambda m: setattr(m, "_number_after_may", lambda w: w in {"first", "second", "third"}),
     # Round 3 review
     "E5 bracket after a slot": lambda m: setattr(m, "check_slot_suffix", lambda t: []),
     # Round 2 review
