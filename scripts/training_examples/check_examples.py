@@ -120,7 +120,9 @@ UNIT_WORDS.pop("rules")      # "the Rules" names the DPDP Rules; the singular st
 for _w in "cl cls sec secs sch subsec subcl ss art arts reg regs sched twelvemonth twelvemonths".split():
     UNIT_WORDS[_w] = "time" if _w.startswith("twelve") else "reference"
 PER_CENT = re.compile(r"\bper[\s-]*cents?\b", re.I)
-PART_REF = re.compile(r"\b[Pp](?i:arts?)[\s-]+(?:\(\s*\w+\s*\)|(?:[A-Z]|[IVXLCDM]+|one)(?![A-Za-z'’]))")
+PART_REF = re.compile(r"\b[Pp](?i:arts?)[\s-]+(?:\(\s*\w+\s*\)|(?P<tok>[A-Za-z]+)(?![A-Za-z'’]))")
+# Words after "part" that are ordinary English, not a part label: "in part a matter", "parts mix".
+PART_WORDS_OK = {"a", "mi", "mix"}
 # A part marker such as (q), (zz) or (xiv) in prose names a clause outside any slot.
 PART_MARKER = re.compile(r"(?<![A-Za-z])\(\s*(?:[a-z]{1,2}|[ivxlcdm]{1,6}|[IVXLCDM]{1,6})\s*\)"
                          r"|(?<=[A-Za-z])\((?!s\)|es\))\s*\w{1,6}\s*\)")
@@ -703,6 +705,19 @@ def check_characters(prose):                                                # E4
     return []
 
 
+def _is_part_label(tok):                                                    # E5, F10
+    """After "part(s)": a letter, a Roman numeral or "one" labels a part; "(b)" always does."""
+    if tok is None:
+        return True
+    if tok.lower() == "one":
+        return True
+    if tok in PART_WORDS_OK:
+        return False
+    if len(tok) == 1:
+        return True
+    return bool(ROMAN.fullmatch(tok) or ROMAN_LOWER.fullmatch(tok))
+
+
 def check_unit_words(prose):                                                # E5
     errs = []
     for w in _tokens(prose):
@@ -714,7 +729,11 @@ def check_unit_words(prose):                                                # E5
         if w in UNIT_WORDS:
             errs.append(f"prose has {w!r} split by hyphens: a {UNIT_WORDS[w]} word may only enter through a slot")
             break
-    for pat, why in ((PER_CENT, "a percentage"), (PART_REF, "a schedule part"), (PART_MARKER, "a part marker")):
+    for m in PART_REF.finditer(prose):
+        if _is_part_label(m.group("tok")):
+            errs.append(f"prose has {m.group(0)!r}: a schedule part may only enter through a slot")
+            break
+    for pat, why in ((PER_CENT, "a percentage"), (PART_MARKER, "a part marker")):
         m = pat.search(prose)
         if m:
             errs.append(f"prose has {m.group(0)!r}: {why} may only enter through a slot")
@@ -865,10 +884,21 @@ def _sentences(pieces):
     return out
 
 
-def check_figure_slots(slots, law, quoted, pieces=()):                      # E10
+def _starts_sentence(pieces, slot):
+    """True if nothing but whitespace, or the end of a sentence, comes before the slot."""
+    before = ""
+    for p in pieces:
+        if p is slot:
+            break
+        before += p if isinstance(p, str) else "x"
+    before = before.rstrip()
+    return not before or before[-1] in ".?!"
+
+
+def check_figure_slots(slots, law, quoted, pieces=(), sentence_rule=True):  # E10
     errs = []
     named = {}
-    for sent in _sentences(pieces):
+    for sent in (_sentences(pieces) if sentence_rule else []):
         ids = {s["targets"][0][0] for s in sent if s["type"] in ("ref", "name") and len(s["targets"]) == 1}
         for s in sent:
             named[id(s)] = ids
@@ -882,6 +912,10 @@ def check_figure_slots(slots, law, quoted, pieces=()):                      # E1
         pattern = {"period": PERIOD_VALUE, "amount": AMOUNT_VALUE, "count": COUNT_VALUE}[s["type"]]
         if not pattern.fullmatch(value) or (s["type"] == "period" and not _canonical_period(value)):
             errs.append(f"slot {s['raw']}: {value!r} is not a {s['type']} in the house form")
+            continue
+        if value[0].isupper() and pieces and not _starts_sentence(pieces, s):
+            errs.append(f"slot {s['raw']}: {value!r} is not a {s['type']} in the house form "
+                        "(a capital is allowed only at the start of a sentence)")
             continue
         if ident not in named.get(id(s), {ident}):
             errs.append(f"slot {s['raw']}: no ref or name slot for {ident} in the same sentence")
@@ -986,10 +1020,11 @@ def check_claim_template(i, cl, law, quote):                                # E2
     pieces, parse_errs = parse_template(tt)
     slots = [p for p in pieces if isinstance(p, dict)]
     errs = list(parse_errs) + _claim_own_provision(slots, cl["cite"])
-    errs += _claim_prose_errs(tt, pieces)
+    errs += _claim_prose_errs(tt, pieces, law)
+    errs += _claim_part_holds_quote(slots, law, cl["cite"], quote)
     own = {cl["cite"]: [quote]}
     errs += check_ref_slots(slots, law, own)
-    errs += check_figure_slots(slots, law, own)
+    errs += check_figure_slots(slots, law, own, pieces, sentence_rule=False)
     errs += check_date_slots(slots, law, set())
     if not parse_errs:
         text, spans = render_spans(pieces, law)
@@ -1010,12 +1045,29 @@ def _claim_own_provision(slots, cite):                                      # E3
     return errs
 
 
-def _claim_prose_errs(template, pieces):                                    # E29
+def _claim_prose_errs(template, pieces, law):                               # E29
     prose = prose_of(pieces)
     errs = []
     for fn in PROSE_CHECKS:
         errs += fn(prose)
-    return errs + check_slot_suffix(template)
+    return errs + check_slot_suffix(template) + check_names(prose, law)
+
+
+def _claim_part_holds_quote(slots, law, cite, quote):                       # E30, F9
+    """A part a claim names must be the part its own quote comes from."""
+    errs = []
+    for s in slots:
+        if s["type"] not in ("ref", "name", "date"):
+            continue
+        for ident, part in s["targets"]:
+            if ident != cite or not part or ident not in law:
+                continue
+            rec = law[ident]
+            kind = "rule" if ident.startswith("rules-r") else "section"
+            text = _part_text(rec, f"{kind} {rec.get('number')}" + "".join(f"({x})" for x in _part_labels(part)))
+            if text is not None and quote not in text:
+                errs.append(f"slot {s['raw']}: the claim's quote is not from {rec['citation']}({part})")
+    return errs
 
 
 def _claim_span_errs(text, spans):                                          # E29

@@ -784,6 +784,46 @@ class TestClaimTemplates(Base):
         self.bad(ex("From 31 February 2027, report {ref:rules-r7} {date:rules-r7}.", [claim("rules-r7")]), "prose has")
 
 
+class TestClaimsRound2(Base):
+    """Slots in claims, review round 2 of af56457 (within E29, E30)."""
+
+    T7 = "From {date:rules-r7}, report {ref:rules-r7}."
+
+    def c7(self, tt, **kw):
+        return ex(self.T7, [dict(claim("rules-r7"), text=tt, **kw)])
+
+    def test_claim_part_must_hold_its_own_quote(self):                      # E30, F9
+        # The test Rule 7's quote sits in (2)(b).
+        self.bad(self.c7("See {ref:rules-r7#1}."), "quote")
+        for part in ("2", "2(b)"):
+            self.ok(self.c7("See {ref:rules-r7#" + part + "}."))
+        e = ex("Consent Managers register {ref:act-s6}, since {date:act-s6#9}.",
+               [dict(claim("act-s6", Q69, applies_from="2026-11-13"), text="From {date:act-s6#1}, register {ref:act-s6#1}.")])
+        self.bad(e, "quote")
+        e = ex("Consent Managers register {ref:act-s6}, since {date:act-s6#9}.",
+               [dict(claim("act-s6", Q69, applies_from="2026-11-13"), text="Since {date:act-s6#9}, register {ref:act-s6#9}.")])
+        self.ok(e)
+
+    def test_lower_case_parts_fail(self):                                   # E29, F10
+        for t in ("Under the Rules, part b.", "Part b applies.", "Part ii applies.", "See part z.",
+                  "See parts b and z.", "See part iv.", "See Part-b.", "See part B.", "See part (b)."):
+            self.bad(self.c7(t), "claim 1")
+            self.bad(ex("From {date:rules-r7}, " + t + " {ref:rules-r7}", [claim("rules-r7")]), "prose has")
+        for t in ("It is in part a matter of design.", "It is part of the duty.", "Other parts follow.",
+                  "Both parts mix."):
+            self.ok(self.c7(t))
+
+    def test_capital_number_word_only_at_sentence_start(self):              # E10 nit
+        self.bad(self.c7("Report within {period:rules-r7|Seventy-two hours}."), "house form")
+        self.bad(ex("From {date:rules-r7}, report within {period:rules-r7|Seventy-two hours} {ref:rules-r7}.",
+                    [claim("rules-r7")]), "house form")
+        self.ok(self.c7("{period:rules-r7|Seventy-two hours} for the full report."))
+        self.ok(self.c7("Report. {period:rules-r7|Seventy-two hours} at most."))
+
+    def test_claim_prose_has_no_invented_names(self):
+        self.bad(self.c7("The Data Protection Authority decides."), "not in the law text")
+
+
 # The law-import folder is gitignored, so these tests run only where it exists. Point
 # SETU_LAW_DIR at it from another checkout or a worktree; CI skips them.
 REAL_LAW_DIR = os.environ.get("SETU_LAW_DIR") or os.path.join(
@@ -837,6 +877,21 @@ class TestRealLaw(unittest.TestCase):
                     if line.strip():
                         row = __import__("json").loads(line)
                         self.assertEqual(c.check_fields(row), [], (name, row.get("id")))
+
+    def test_claim_parts_against_the_real_rule_seven(self):                 # E30, F9
+        q = "within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow"
+
+        def check(tt):
+            cl = {"cite": "rules-r7", "quote": q, "text_template": tt,
+                  "text": c.render(c.parse_template(tt)[0], self.law)}
+            e = {"id": "X", "question": "q", "kind": "when", "reader": "business", "lane": "law_answers",
+                 "answer_template": "From {date:rules-r7}, report {ref:rules-r7}.",
+                 "answer": "From 13 May 2027, report (Rule 7).", "claims": [cl]}
+            return c.check(e, self.law, as_of=AS_OF)
+        for part in ("1", "1(a)", "2(a)", "2(b)(i)"):
+            self.assertTrue(any("quote" in x for x in check("See {ref:rules-r7#" + part + "}.")), part)
+        for part in ("2", "2(b)"):
+            self.assertEqual(check("See {ref:rules-r7#" + part + "}."), [], part)
 
     def test_rules_notification_is_known(self):
         self.assertIn("gsr-846e-2025", c.KNOWN_NOTIFICATIONS)

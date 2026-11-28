@@ -62,6 +62,20 @@ class TestClaims(unittest.TestCase):
             conv.claim_template({"text": "From 31 February 2027.", "cite": "rules-r7", "quote": Q7})
 
 
+class TestRewriteChains(unittest.TestCase):
+    def test_a_chain_of_claim_rewrites_reruns_from_the_original(self):
+        rw = {"X#claim1": [["Under 18.", "Under eighteen."], ["Under eighteen.", "Under eighteen years."]]}
+        e = {"id": "X", "answer": "a", "claims": [{"text": "Under 18.", "cite": "act-s2", "quote": "q"}]}
+        conv.apply_rewrites(e, rw)
+        self.assertEqual(e["claims"][0]["text"], "Under eighteen years.")
+        train, v2 = conv.split_v2([dict(e, answer_v2="a", claims_v2=["Under 18."])])
+        self.assertNotIn("claims_v2", train[0])
+        rerun = dict(train[0], claims=[dict(cl) for cl in train[0]["claims"]])
+        conv.restore_originals(rerun, v2[0])
+        conv.apply_rewrites(rerun, rw)
+        self.assertEqual(rerun["claims"][0]["text"], "Under eighteen years.")
+
+
 class TestOutputs(unittest.TestCase):
     def test_rewrites_reach_the_answer_and_named_claims(self):
         e = {"id": "X", "answer": "a rule here", "claims": [{"text": "Rule 4, one year.", "cite": "rules-r1", "quote": "q"}]}
@@ -77,7 +91,7 @@ class TestOutputs(unittest.TestCase):
         row = {"id": "X", "answer": "a", "answer_v2": "old", "answer_template": "a"}
         train, v2 = conv.split_v2([row])
         self.assertNotIn("answer_v2", train[0])
-        self.assertEqual(v2, [{"id": "X", "answer_v2": "old"}])
+        self.assertEqual(v2, [{"id": "X", "answer_v2": "old", "claims_v2": []}])
 
     def test_outputs_go_through_the_safe_writer(self):
         import inspect

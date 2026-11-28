@@ -285,14 +285,22 @@ def convert_claims(e):
 
 
 def split_v2(rows):
-    """Training rows without `answer_v2`, and the v2 answers by id."""
+    """Training rows without `answer_v2` or `claims_v2`, and the v2 text by id: the reviewed
+    v2 answer and each claim's original text, so rewrite chains always start from them."""
     train, v2 = [], []
     for e in rows:
         e = dict(e)
         if "answer_v2" in e:
-            v2.append({"id": e["id"], "answer_v2": e.pop("answer_v2")})
+            v2.append({"id": e["id"], "answer_v2": e.pop("answer_v2"), "claims_v2": e.pop("claims_v2", [])})
+        e.pop("claims_v2", None)
         train.append(e)
     return train, v2
+
+
+def restore_originals(e, v2row):
+    """Put each claim's original text back before the rewrites run again."""
+    for cl, text in zip(e.get("claims") or [], (v2row or {}).get("claims_v2") or []):
+        cl["text"] = text
 
 
 def _v2_answers(src):
@@ -300,7 +308,7 @@ def _v2_answers(src):
     if not os.path.exists(path):
         return {}
     with open(path) as f:
-        return {r["id"]: r["answer_v2"] for r in (json.loads(x) for x in f if x.strip())}
+        return {r["id"]: r for r in (json.loads(x) for x in f if x.strip())}
 
 
 def main():
@@ -322,8 +330,11 @@ def main():
         lines = [x for x in f if x.strip()]
     for line in lines:
         e = json.loads(line)
-        original = e.get("answer_v2") or v2_by_id.get(e["id"]) or e["answer"]
+        v2row = v2_by_id.get(e["id"]) or {}
+        original = e.get("answer_v2") or v2row.get("answer_v2") or e["answer"]
         e["answer"] = original
+        restore_originals(e, v2row)
+        claims_v2 = [cl["text"] for cl in e.get("claims") or []]
         claim_changes = apply_rewrites(e, rewrites)
         rendered_changes, claim_problems = convert_claims(e)
         claim_changes += rendered_changes
@@ -352,6 +363,7 @@ def main():
                               + "".join(f"- check attribution: {f}\n" for f in FLAGS)
                               + "".join(f"- {x}\n" for x in claim_changes))
         e["answer_v2"] = original
+        e["claims_v2"] = claims_v2
         rows.append(e)
     train, v2 = split_v2(rows)
     dump = lambda rs: "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rs)  # noqa: E731

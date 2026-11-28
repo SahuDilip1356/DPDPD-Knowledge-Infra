@@ -312,3 +312,17 @@ first letter is now allowed, though "Seventy-Two hours" still fails. "parts" fai
 letter from "arts"; it is now exempt. 95 checker tests pass, and the mutation run kills 62
 of 62. E35: the claims in batches 01 to 03 convert with no change in wording and no new
 failure, so no claim needs a legal re-read. All three batches report 0 failing.
+
+**Review round 2 (af56457), fixed within E29 and E30:**
+- F9: a part a claim names must hold that claim's own quote. A Section 6(9) quote can no
+  longer back "{ref:act-s6#1}", and a Rule 7(2)(b) quote can no longer back Rule 7(1),
+  7(1)(a), 7(2)(a) or 7(2)(b)(i).
+- F10: a lower-case letter or Roman numeral after "part(s)" is a part label ("part b",
+  "parts b and z", "Part ii"), with "a" and "mix" exempt as ordinary words.
+- A capitalised number word in a period value is allowed only at the start of a sentence.
+- Claim prose now gets the invented-names check. Five claim texts written as title-case
+  shorthand were reworded and listed in the changes reports.
+- The converter keeps each claim's original text with the v2 answer, so a chain of
+  rewrites reruns from the original.
+
+112 tests pass, and the mutation run kills 66 of 66. Batches 01 to 03 report 0 failing.

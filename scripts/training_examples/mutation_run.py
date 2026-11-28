@@ -92,9 +92,15 @@ MUTANTS = {
     "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
     "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
     "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
+    # Slots in claims, review round 2
+    "E30 claim part holds its quote": lambda m: setattr(m, "_claim_part_holds_quote", lambda slots, law, cite, quote: []),
+    "E5 lower-case part labels": lambda m: setattr(m, "_is_part_label", lambda tok: tok is None or tok.lower() == "one" or (len(tok) == 1 and tok.isupper()) or bool(m.ROMAN.fullmatch(tok or ""))),
+    "E10 capital only at sentence start": lambda m: setattr(m, "_starts_sentence", lambda pieces, slot: True),
+    "E29 invented names in claims": lambda m: setattr(m, "_claim_prose_errs", (lambda f: lambda t, pieces, law: [
+        e for e in f(t, pieces, law) if "not in the law text" not in e])(m._claim_prose_errs)),
     # Slots in claims (E34); E19 and E25 are retired by E33
     "E28 claim rendering": lambda m: setattr(m, "_claim_rendering_errs", lambda text, rendered: []),
-    "E29 claim prose checks": lambda m: setattr(m, "_claim_prose_errs", lambda t, pieces: []),
+    "E29 claim prose checks": lambda m: setattr(m, "_claim_prose_errs", lambda t, pieces, law: []),
     "E29 claim whole-render": lambda m: setattr(m, "_claim_span_errs", lambda text, spans: []),
     "E30 claim slots own provision": lambda m: setattr(m, "_claim_own_provision", lambda slots, cite: []),
     # Fail-closed round 3 (E26)
