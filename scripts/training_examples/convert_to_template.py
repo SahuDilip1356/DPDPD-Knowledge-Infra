@@ -130,6 +130,10 @@ def date_slot(iso, e, sentence):
         if c._date_for(rec, part)[0] != iso:
             continue
         (ids if ident in local else fallback).append(ident + (f"#{part}" if part else ""))
+    wrong = sorted(x for x in local if x in _cites(e) and not any(i.split("#")[0] == x for i in ids))
+    if wrong:
+        FLAGS.append(f"sentence gives {c._human(iso)} and names {', '.join(wrong)}, which "
+                     f"{'does' if len(wrong) == 1 else 'do'} not start then")
     extra = [x for x in fallback if x.split("#")[0] not in DATED.get(iso, set())]
     if extra:
         ids += extra

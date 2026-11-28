@@ -117,12 +117,13 @@ for _group, _words in _UNIT_BASES.items():
 for _w in _HINGLISH_UNITS.split():
     UNIT_WORDS[_w] = "time" if not _w.startswith("rup") else "money or count"
 UNIT_WORDS.pop("rules")      # "the Rules" names the DPDP Rules; the singular stays banned
-for _w in "cl cls sec secs sch subsec subcl r s ss art arts reg regs sched twelvemonth twelvemonths".split():
+for _w in "cl cls sec secs sch subsec subcl ss art arts reg regs sched twelvemonth twelvemonths".split():
     UNIT_WORDS[_w] = "time" if _w.startswith("twelve") else "reference"
 PER_CENT = re.compile(r"\bper[\s-]*cents?\b", re.I)
 PART_REF = re.compile(r"\b[Pp](?i:arts?)[\s-]+(?:\(\s*\w+\s*\)|(?:[A-Z]|[IVXLCDM]+|one)(?![A-Za-z'’]))")
 # A part marker such as (q), (zz) or (xiv) in prose names a clause outside any slot.
-PART_MARKER = re.compile(r"\(\s*(?:[A-Za-z]{1,2}|[ivxlcdmIVXLCDM]{1,6})\s*\)")
+PART_MARKER = re.compile(r"(?<![A-Za-z])\(\s*(?:[a-z]{1,2}|[ivxlcdm]{1,6}|[IVXLCDM]{1,6})\s*\)"
+                         r"|(?<=[A-Za-z])\((?!s\)|es\))\s*\w{1,6}\s*\)")
 
 # E6: real words one letter away from a unit or reference word. Exempt from the fuzzy check.
 FUZZY_EXEMPT = {
@@ -146,7 +147,10 @@ HINGLISH_NUMBER_WORDS = set((
 # "do" (two) is left out: it is the English "do" in "do not".
 NUMBER_WORDS = ENGLISH_NUMBER_WORDS | HINGLISH_NUMBER_WORDS
 _COMPOUND = re.compile(r"(?:" + "|".join(sorted(WORD_NUM, key=len, reverse=True)) + r"){2,}")
-MONTH_NAMES = re.compile(r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\b")
+MONTH_NAMES = re.compile(r"\b(?i:january|february|march|april|may|june|july|august|september|october|november|december|"
+                         r"jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b")
+_MAY_AS_MONTH = re.compile(r"\b(?i:in|of|on|by|until|till|since|from|mid|during|early|late|next|last|this|before|after)"
+                           r"[\s-]+may\b")
 HIGH_ORDINAL = re.compile(r"\b(?i:fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|\w+teenth|\w+tieth|"
                           r"hundredth|thousandth|(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)-?(?:first|second|third))\b")
 ROMAN = re.compile(r"M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})")
@@ -303,6 +307,8 @@ def _part_text(record, label):
         return None
     subs = re.findall(r"\((\w+)\)", m.group(1))
     lines = (record.get("text") or "").split("\n")
+    if not subs[0].isdigit() and _segment(lines, "1", "num", skip_first=False) is not None:
+        return None               # the text has numbered sub-sections: a clause needs one first
     seg, parent = lines, None
     for depth, sub in enumerate(subs):
         kind = _marker_kind(sub, parent)
@@ -669,9 +675,14 @@ def check_number_words(prose):                                              # E7
         if w in NUMBER_WORDS or _COMPOUND.fullmatch(w) or _NUMBER_UNIT.fullmatch(w):
             return [f"prose has {w!r}: number words other than 'one' may only enter through a slot"]
     for m in MONTH_NAMES.finditer(prose):
-        before = prose[:m.start()].rstrip()
-        if m.group(0) == "May" and (not before or before[-1] in ".?!"):
-            continue              # "May the Board ...": the verb, at the start of a sentence
+        if m.group(0).lower() == "may":
+            before = prose[:m.start()].rstrip()
+            after = re.match(r"[\s,]*(\w+)", prose[m.end():])
+            ordinal = after and after.group(1).lower() in {"first", "second", "third"}
+            if m.group(0) == "may" and not _MAY_AS_MONTH.search(prose[:m.end()][-20:]):
+                continue          # "the Board may ...": the verb
+            if m.group(0) == "May" and (not before or before[-1] in ".?!") and not ordinal:
+                continue          # "May the Board ...": the verb, at the start of a sentence
         return [f"prose has {m.group(0)!r}: a month name (dates enter only through a slot)"]
     m = HIGH_ORDINAL.search(prose)
     if m:
@@ -690,15 +701,18 @@ PROSE_CHECKS = [check_digits, check_characters, check_unit_words, check_fuzzy_un
 LAW_IDS_ALL = {f"act-s{n}" for n in range(1, 45)} | {f"rules-r{n}" for n in range(1, 24)}
 
 
+COMMENCEMENT = re.compile(r"\bRules? (\d+(?:(?:, | and | to )\d+)*),? shall come into force\b")
+
+
 def _named_in_quotes(quoted):
-    """Ids a verified quote names, as 'Rules 3, 5 to 16, 22 and 23' or 'section 18'."""
+    """Rules a verified quote of the Rules' commencement rule (Rule 1) brings into force,
+    as 'Rules 3, 5 to 16, 22 and 23 shall come into force'. Cross-references in other
+    provisions ('under section 8') do not count."""
     ids = set()
-    for cite, qs in quoted.items():
-        for q in qs:
-            for m in re.finditer(r"\b(Rules?|rules?|Sections?|sections?) (\d+(?:(?:, | and | to )\d+)*)", q):
-                prefix = "rules-r" if m.group(1).lower().startswith("rule") else "act-s"
-                for a, b in re.findall(r"(\d+)(?: to (\d+))?", m.group(2)):
-                    ids |= {f"{prefix}{n}" for n in range(int(a), int(b or a) + 1)}
+    for q in quoted.get("rules-r1", []):
+        for m in COMMENCEMENT.finditer(q):
+            for a, b in re.findall(r"(\d+)(?: to (\d+))?", m.group(1)):
+                ids |= {f"rules-r{n}" for n in range(int(a), int(b or a) + 1)}
     return ids
 
 
@@ -735,7 +749,9 @@ def money(text, rupees):
     out = set()
     for m in AMOUNT.finditer(text):
         v = to_number(m.group(1))
-        is_money = bool(re.match(r"\s*(?:₹|Rs|INR)", m.group(0))) or bool(re.match(r"\s*rupees\b", text[m.end():], re.I))
+        is_money = (bool(re.match(r"\s*(?:₹|Rs|INR)", m.group(0)))
+                    or bool(re.match(r"\s*(?:of\s+)?rupees\b", text[m.end():], re.I))
+                    or bool(re.search(r"\brupees\s*$", text[:m.start()], re.I)))
         if v is not None and is_money == rupees:
             out.add((v, m.group(2).lower()))
     if rupees:
@@ -761,7 +777,7 @@ def check_figure_slots(slots, law, quoted, pieces=()):                      # E1
     errs = []
     named = {}
     for sent in _sentences(pieces):
-        ids = {i for s in sent if s["type"] in ("ref", "name") for i, _ in s["targets"]}
+        ids = {s["targets"][0][0] for s in sent if s["type"] in ("ref", "name") and len(s["targets"]) == 1}
         for s in sent:
             named[id(s)] = ids
     for s in slots:

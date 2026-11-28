@@ -26,6 +26,18 @@ def _all_claims_good(claims, law):
     return [], [(i, cl) for i, cl in enumerate(claims, 1) if cl.get("cite") in law]
 
 
+def _any_reference_in_quotes(quoted):
+    """The round 1 rule: any section or rule a quote mentions, even of another Act."""
+    ids = set()
+    for qs in quoted.values():
+        for q in qs:
+            for m in re.finditer(r"\b(Rules?|rules?|Sections?|sections?) (\d+(?:(?:, | and | to )\d+)*)", q):
+                prefix = "rules-r" if m.group(1).lower().startswith("rule") else "act-s"
+                for a, b in re.findall(r"(\d+)(?: to (\d+))?", m.group(2)):
+                    ids |= {f"{prefix}{n}" for n in range(int(a), int(b or a) + 1)}
+    return ids
+
+
 def _prose_check(i):
     def apply(m):
         m.PROSE_CHECKS[i] = lambda prose: []
@@ -80,6 +92,11 @@ MUTANTS = {
     "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
     "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
     "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
+    # Round 2 review
+    "E9 commencement quote only": lambda m: setattr(m, "_named_in_quotes", _any_reference_in_quotes),
+    "E7 lowercase may as a month": lambda m: setattr(m, "_MAY_AS_MONTH", NEVER),
+    "E10 single-id reference": lambda m: setattr(m, "_sentences", lambda pieces: [[p for p in pieces if isinstance(p, dict)]]),
+    "E5 attached part marker": lambda m: setattr(m, "PART_MARKER", re.compile(r"(?<![A-Za-z])\(\s*(?:[a-z]{1,2}|[ivxlcdm]{1,6}|[IVXLCDM]{1,6})\s*\)")),
 }
 
 

@@ -113,18 +113,23 @@ Choices made while building and in review round 1, for Dilip to confirm:
 - **One date slot can name several provisions** (`{date:act-s8,rules-r7}`) when they start
   on the same date. Most answers say "From 13 May 2027" once for several duties. The slot
   fails if the dates differ.
-- **A date slot's provision must be cited by a claim or named in a quoted text** (Rule 1's
-  "Rules 3, 5 to 16, 22 and 23 shall come into force" lets an answer date Rule 3). Round 1
-  showed that with no such tie, a refusal answer could give any provision's date.
-- **Ordinals up to "third" are allowed; "fourth" and later, and month names, are not.** "a
-  first description" passes. "the fourteenth of May" and "in January" fail, because a date
-  needs no unit word. "May" at the start of a sentence is the verb and passes.
-- **A figure must sit in the same sentence as a ref or name slot for its provision**, and
+- **A date slot's provision must be cited by a claim, or brought into force by a quoted part
+  of Rule 1** ("Rules 3, 5 to 16, 22 and 23 shall come into force" lets an answer date Rule
+  3). Round 1 showed that with no such tie, a refusal answer could give any provision's
+  date; round 2 showed that cross-references ("under section 14 of the TRAI Act") must not
+  count.
+- **Ordinals up to "third" are allowed; "fourth" and later, and month names in any case or
+  short form ("november", "Nov"), are not.** "a first description" passes. "the fourteenth
+  of May" and "in January" fail, because a date needs no unit word. "May" passes only as the
+  verb: at the start of a sentence and not followed by "first", "second" or "third", or as
+  lowercase "may" not after a word like "in" or "since".
+- **A figure must sit in the same sentence as a ref or name slot naming only its provision**, and
   an `amount` must come from a quote that names rupees, a `count` from one that does not.
   Period values use the house spelling (72 hours, seventy-two hours, one year).
-- **A part marker in prose fails** ("(q)", "(zz)"), as do "cl", "sec", "sch" and "Part-A".
-  Parts are found by the structure of the text, so (i) under clause (b) is never taken for
-  clause (i).
+- **A part marker in prose fails** ("(q)", "(zz)", "Act(q)"), as do "cl", "sec", "sch" and
+  "Part-A". "(EU)" and "person(s)" pass. Parts are found by the structure of the text, so (i)
+  under clause (b) is never taken for clause (i), and a clause cannot skip a numbered
+  sub-section ("Rule 7(a)" fails; it is 7(1)(a)).
 - **E6 covers inserted, deleted and swapped letters, not replaced ones.** A replaced letter
   turns unit words into common words ("years" into "hears"). "hoyrs" is not caught.
 
@@ -139,6 +144,7 @@ Known gaps, left to the legal read:
 
 E14: the converter ties each date and figure to the provision its own sentence names. Where
 a date such as an opening "From 13 May 2027" covers provisions named only in later
-sentences, it is given to them and the example is flagged "check attribution". 44 of the
-100 carry such a flag. Every changed or flagged answer is in
+sentences, it is given to them and the example is flagged "check attribution". It also
+flags a sentence that names a provision which does not start on the date it gives. 47 of
+the 100 carry a flag. Every changed or flagged answer is in
 `staging/training-examples/batch01_c_changes.md` and `batch02_c_changes.md`.

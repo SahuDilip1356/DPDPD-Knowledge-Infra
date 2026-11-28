@@ -9,7 +9,7 @@ never writes through a symlink or hard link planted at the sheet's name.
 L="<main checkout>/staging/law-import"
 python3 scripts/training_examples/check_examples.py --law "$L" staging/training-examples/batch01.jsonl
 python3 scripts/training_examples/make_review_sheet.py --law "$L" staging/training-examples/batch01.jsonl
-python3 -m unittest scripts/training_examples/test_check_examples.py -v
+python3 -m unittest scripts/training_examples/test_check_examples.py scripts/training_examples/test_convert_to_template.py -v
 python3 scripts/training_examples/mutation_run.py
 ```
 
@@ -38,13 +38,13 @@ The prose between the slots may not contain:
   clause, Part A, per cent, ghante, saal and the rest), or a word one inserted, deleted or
   swapped letter away from one ("hourss", "yeras", "secton");
 - a number word other than "one", in English or Hinglish, or a Roman numeral;
-- a month name, or an ordinal past "third";
+- a month name in any case or short form, or an ordinal past "third";
 - a part marker such as "(q)", or "cl", "sec", "sch", "Part-A".
 
 "the Rules" is allowed; the singular "rule" is not. A figure slot must share its sentence
 with a ref or name slot for the same provision; an amount must come from a quote that names
 rupees, a count from one that does not. A date slot's provision must be cited by a claim or
-named in a quote. A cited provision that is not in force
+brought into force by a quoted part of Rule 1. A cited provision that is not in force
 on the check date needs a `date` slot for it, or for the part a claim relies on
 (`applies_from`). The check date is `--as-of` or today; an example cannot set its own.
 

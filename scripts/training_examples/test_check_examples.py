@@ -513,6 +513,53 @@ class TestReview1Fake(Base):
         self.bad(ex("From {date:act-schedule}, keep safeguards {ref:act-schedule}.", [end]), "mid-word")
 
 
+class TestReview2Fake(Base):
+    """PR review round 2 of 20f5713."""
+
+    def test_part_may_not_skip_a_numbered_level(self):
+        self.bad(ex("From {date:rules-r7}, report {ref:rules-r7#b}.", [claim("rules-r7")]), "no part")
+        self.ok(ex("From {date:rules-r7}, report {ref:rules-r7#2(b)}.", [claim("rules-r7")]))
+
+    def test_only_commencement_quotes_name_a_date(self):
+        other = claim("act-s2", "means the individual to whom the personal data relates")
+        law = dict(LAW)
+        law["act-s2"] = dict(LAW["act-s2"], text=LAW["act-s2"]["text"] + " established under section 8 of the Telecom Act")
+        e = ex("Rights start {date:act-s8} {ref:act-s2}.",
+               [claim("act-s2", "means the individual to whom the personal data relates established under section 8")])
+        errs = c.check(e, law, as_of=AS_OF)
+        self.assertTrue(any("not cited" in x for x in errs), errs)
+
+    def test_month_names_any_case_and_abbreviations(self):
+        for w in ("in november", "in AUGUST", "in mid-Nov", "by Sept", "in may", "since may"):
+            self.bad(ex(f"From {{date:act-s8}}, tell the Board {w} {{ref:act-s8}}."), "prose has")
+
+    def test_may_followed_by_an_ordinal_fails(self):
+        for t in ("Tell the Board {ref:act-s8} {date:act-s8}. May third was when.",
+                  "Tell the Board {ref:act-s8} {date:act-s8}? May first, yes.",
+                  "Tell the Board {date:act-s8}. {ref:act-s8} May second it was."):
+            self.bad(ex(t), "prose has")
+        self.ok(ex("May the Board ask? From {date:act-s8}, it may {ref:act-s8}."))
+
+    def test_figure_needs_its_own_single_reference(self):
+        e = ex("From {date:rules-r7}, report within {period:rules-r7|72 hours} {ref:act-s2,rules-r7}.",
+               [claim("rules-r7"), claim("act-s2")])
+        self.bad(e, "same sentence")
+
+    def test_money_worded_around_the_figure(self):
+        self.assertEqual(c.money("a sum of one crore of rupees", False), set())
+        self.assertEqual(c.money("a sum of one crore of rupees", True), {(1.0, "crore")})
+        self.assertEqual(c.money("rupees two crore", True), {(2.0, "crore")})
+        self.assertEqual(c.money("two crore registered users", True), set())
+
+    def test_house_text_with_brackets_and_letters(self):
+        for t in ("From {date:act-s8}, firms in Europe (EU) must also tell the Board {ref:act-s8}.",
+                  "From {date:act-s8}, the person(s) affected must be told {ref:act-s8}.",
+                  "From {date:act-s8}, R and D teams must tell the Board {ref:act-s8}."):
+            self.ok(ex(t))
+        for t in ("From {date:act-s8}, see the Act(q) {ref:act-s8}.", "From {date:act-s8}, see (IV) {ref:act-s8}."):
+            self.bad(ex(t), "prose has")
+
+
 REAL_LAW_DIR = "/Users/sahudilip/Desktop/Product Dev/DPDPD Knowldge Infra/staging/law-import"
 
 
