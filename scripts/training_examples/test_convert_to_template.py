@@ -47,6 +47,21 @@ class TestAttribution(unittest.TestCase):
         self.assertTrue(any("72 hours" in f for f in conv.FLAGS), conv.FLAGS)
 
 
+class TestClaims(unittest.TestCase):
+    def setUp(self):
+        conv.LAW.clear()
+        conv.LAW.update(LAW)
+        conv.FLAGS.clear()
+
+    def test_claim_text_becomes_a_template_with_its_own_provision(self):   # E35
+        cl = {"text": "Full report within 72 hours (Rule 7).", "cite": "rules-r7", "quote": Q7}
+        self.assertEqual(conv.claim_template(cl), "Full report within {period:rules-r7|72 hours} {ref:rules-r7}.")
+
+    def test_invalid_date_is_unresolved_not_a_crash(self):                # E32
+        with self.assertRaises(conv.Unresolved):
+            conv.claim_template({"text": "From 31 February 2027.", "cite": "rules-r7", "quote": Q7})
+
+
 class TestOutputs(unittest.TestCase):
     def test_rewrites_reach_the_answer_and_named_claims(self):
         e = {"id": "X", "answer": "a rule here", "claims": [{"text": "Rule 4, one year.", "cite": "rules-r1", "quote": "q"}]}

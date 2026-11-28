@@ -260,7 +260,7 @@ newly failed and were reworded through the rewrites file. Q-00036 had "Under 18.
 had "with two exceptions" and N2-008 had "Eighth Schedule languages". Batches 01 and 02 then
 report 0 failing.
 
-## Slots in claims (draft, waiting for Dilip's approval)
+## Slots in claims (approved by Dilip on 2026-11-28)
 
 Asked for by Dilip on 2026-11-28 ("Slots in claims too") after the PR #19 review at f8491a4
 returned Rethink. Since the whole-render check, the rendered answer has held. Every leak
@@ -303,3 +303,12 @@ So claim text becomes a template too, checked by the same code as the answer.
   rewrite. Each such claim gets a legal re-read, so the batches stay Ready.
 
 E1 to E18 and E20 to E27 stay as they are and must stay green.
+
+**Build result (2026-11-28).** Every row of the table above fails, along with its
+neighbours, and an invalid date now fails the row instead of crashing the run. E19 and E25
+are retired. Building turned up two false fails in house text, both now fixed. A number
+word starting a sentence ("Eighteen months.") was refused in a period value; a capital
+first letter is now allowed, though "Seventy-Two hours" still fails. "parts" failed as one
+letter from "arts"; it is now exempt. 95 checker tests pass, and the mutation run kills 62
+of 62. E35: the claims in batches 01 to 03 convert with no change in wording and no new
+failure, so no claim needs a legal re-read. All three batches report 0 failing.

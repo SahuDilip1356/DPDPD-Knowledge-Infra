@@ -92,15 +92,18 @@ MUTANTS = {
     "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
     "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
     "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
+    # Slots in claims (E34); E19 and E25 are retired by E33
+    "E28 claim rendering": lambda m: setattr(m, "_claim_rendering_errs", lambda text, rendered: []),
+    "E29 claim prose checks": lambda m: setattr(m, "_claim_prose_errs", lambda t, pieces: []),
+    "E29 claim whole-render": lambda m: setattr(m, "_claim_span_errs", lambda text, spans: []),
+    "E30 claim slots own provision": lambda m: setattr(m, "_claim_own_provision", lambda slots, cite: []),
     # Fail-closed round 3 (E26)
     "E23 whitespace separates slots": lambda m: setattr(m, "_slots_separated", lambda gap: True),
     "E24 one slot per figure word": lambda m: setattr(m, "_in_one_span", lambda owners: True),
-    "E25 leftover claim text": lambda m: setattr(m, "check_claim_leftover", lambda i, text: []),
     "E10 ASCII digits in values": lambda m: setattr(m, "PERIOD_VALUE", re.compile(m.PERIOD_VALUE.pattern)),
     "E2 ASCII slot targets": lambda m: setattr(m, "TARGET", re.compile(m.TARGET.pattern)),
     # Whole-render check (E21)
     "E16/E17 whole-render boundary check": lambda m: setattr(m, "check_rendered_spans", lambda text, spans: []),
-    "E19 claim-text check": lambda m: setattr(m, "check_claim_text", lambda i, cl, law, quote: []),
     "E20 checked fields only": lambda m: setattr(m, "check_fields", lambda e: []),
     "E18 May before a number word": lambda m: setattr(m, "_number_after_may", lambda w: w in {"first", "second", "third"}),
     # Round 3 review

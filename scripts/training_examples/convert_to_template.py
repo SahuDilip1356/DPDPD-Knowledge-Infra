@@ -238,7 +238,10 @@ LAW = {}
 
 
 def _iso(human):
-    return datetime.datetime.strptime(human, "%d %B %Y").date().isoformat()
+    try:
+        return datetime.datetime.strptime(human, "%d %B %Y").date().isoformat()
+    except ValueError:
+        raise Unresolved(f"{human} is not a real date")                      # E32
 
 
 def apply_rewrites(e, rewrites):
@@ -257,6 +260,28 @@ def apply_rewrites(e, rewrites):
             if "#" in key:
                 changed.append(f"{key.split('#')[1]} text: {old!r} -> {new!r}")
     return changed
+
+
+def claim_template(cl):
+    """A claim's text as a template whose slots name only the claim's own provision (E35)."""
+    return convert({"answer": cl["text"], "claims": [cl]})
+
+
+def convert_claims(e):
+    """Give every claim a text_template, rebuilt from its text on every run so a claim
+    rewrite never leaves a stale template. Returns (changes, problems) for the report."""
+    changes, problems = [], []
+    for i, cl in enumerate(e.get("claims") or [], 1):
+        before = cl["text"]
+        try:
+            cl["text_template"] = claim_template(cl)
+        except Unresolved as err:
+            problems.append(f"claim{i}: {err}")
+            continue
+        cl["text"] = c.render(c.parse_template(cl["text_template"])[0], LAW)
+        if cl["text"] != before:
+            changes.append(f"claim{i} text: {before!r} -> {cl['text']!r}")
+    return changes, problems
 
 
 def split_v2(rows):
@@ -300,6 +325,11 @@ def main():
         original = e.get("answer_v2") or v2_by_id.get(e["id"]) or e["answer"]
         e["answer"] = original
         claim_changes = apply_rewrites(e, rewrites)
+        rendered_changes, claim_problems = convert_claims(e)
+        claim_changes += rendered_changes
+        for msg in claim_problems:
+            print(f"UNRESOLVED {e['id']} {msg}")
+            problems += 1
         FLAGS.clear()
         try:
             tpl = convert(e)

@@ -66,9 +66,17 @@ def claim(cite, quote=None, **kw):
     return d
 
 
-def ex(template, claims=None, answer=None, **kw):
-    """An example whose answer is the rendering of its template (unless answer is given)."""
+def ex(template, claims=None, answer=None, raw_claims=False, **kw):
+    """An example whose answer is the rendering of its template (unless answer is given).
+    Each claim's `text` is taken as its text_template and rendered (E28), unless the claim
+    already has a text_template or raw_claims is set."""
     claims = [claim("act-s8")] if claims is None else claims
+    if not raw_claims:
+        claims = [dict(cl) for cl in claims]
+        for cl in claims:
+            if "text_template" not in cl:
+                cl["text_template"] = cl.get("text", "x")
+                cl["text"] = c.render(c.parse_template(cl["text_template"])[0], LAW)
     e = {"id": "E-001", "question": "q", "kind": "who", "reader": "business", "lane": "law_answers",
          "provisions": sorted({x["cite"] for x in claims}), "answer_template": template, "claims": claims}
     if answer is None:
@@ -358,8 +366,8 @@ class TestE13Quotes(Base):
 
     def test_claim_text_amount_must_be_in_its_quote(self):
         e = ex("From {date:act-schedule}, pay up to {amount:act-schedule|₹250 crore} {ref:act-schedule}.",
-               [claim("act-schedule", text="Up to ₹300 crore.")])
-        self.bad(e, "its own quote")
+               [claim("act-schedule", text="Up to {amount:act-schedule|₹300 crore}.")])
+        self.bad(e, "no quote")
 
 
 class TestE13LabelsLanes(Base):
@@ -468,7 +476,8 @@ class TestReview1Fake(Base):
     def test_date_slot_needs_a_cited_or_quoted_provision(self):
         e = ex("The Act does not say. The Board starts work on {date:act-s8}. Ask a lawyer.", [], lane="needs_lawyer")
         self.bad(e, "not cited")
-        named = {"text": "x", "cite": "rules-r1", "quote": "Rules 3, 5 to 16, 22 and 23 shall come into force"}
+        named = {"text": "x", "text_template": "x", "cite": "rules-r1",
+                 "quote": "Rules 3, 5 to 16, 22 and 23 shall come into force"}
         law = dict(LAW, **{"rules-r1": {"id": "rules-r1", "citation": "Rule 1", "number": "1",
                                         "text": "1. (4) Rules 3, 5 to 16, 22 and 23 shall come into force eighteen months after",
                                         "in_force": [{"provision": "rule 1", "from": "2025-11-13"}]},
@@ -622,9 +631,9 @@ class TestWholeRender(Base):
              "rules-sch3": "From {date:rules-sch3}, big sites {ref:rules-sch3}."}
         for cl in bad:
             self.bad(ex(t[cl["cite"]], [cl]), "claim 1")
-        good = [dict(claim("rules-r7"), text="Report within 72 hours from 13 May 2027 (Rule 7)."),
-                dict(claim("act-schedule"), text="Up to ₹250 crore (The Schedule)."),
-                dict(claim("rules-sch3"), text="Sites with 2 crore users.")]
+        good = [dict(claim("rules-r7"), text="Report within {period:rules-r7|72 hours} from {date:rules-r7} {ref:rules-r7}."),
+                dict(claim("act-schedule"), text="Up to {amount:act-schedule|₹250 crore} {ref:act-schedule}."),
+                dict(claim("rules-sch3"), text="Sites with {count:rules-sch3|2 crore} users.")]
         for cl in good:
             self.ok(ex(t[cl["cite"]], [cl]))
 
@@ -688,16 +697,91 @@ class TestFailClosedRound3(Base):
                      "malformed target")
 
     def test_house_claim_text_passes(self):
-        for cite, t in (("rules-r7", "Within 72 hours under Rule 7, from 13 May 2027."),
-                        ("rules-r7", "Report within seventy-two hours (Rule 7)."),
-                        ("rules-r8", "At least one year for data and logs."),
-                        ("act-schedule", "Up to ₹250 crore (The Schedule)."),
-                        ("rules-sch3", "Sites with 2 crore users.")):
+        for cite, t in (("rules-r7", "Within {period:rules-r7|72 hours} under {name:rules-r7}, from {date:rules-r7}."),
+                        ("rules-r7", "Report within {period:rules-r7|seventy-two hours} {ref:rules-r7}."),
+                        ("rules-r8", "At least {period:rules-r8|one year} for data and logs."),
+                        ("act-schedule", "Up to {amount:act-schedule|₹250 crore} {ref:act-schedule}."),
+                        ("rules-sch3", "Sites with {count:rules-sch3|2 crore} users.")):
             tpl = {"rules-r7": "From {date:rules-r7}, report {ref:rules-r7}.",
                    "rules-r8": "From {date:rules-r8}, keep logs {ref:rules-r8}.",
                    "act-schedule": "From {date:act-schedule}, pay {ref:act-schedule}.",
                    "rules-sch3": "From {date:rules-sch3}, big sites {ref:rules-sch3}."}[cite]
             self.ok(ex(tpl, [dict(claim(cite), text=t)]))
+
+
+class TestClaimTemplates(Base):
+    """Slots in claims, E28-E32 (approved 2026-11-28)."""
+
+    T7 = "From {date:rules-r7}, report {ref:rules-r7}."
+
+    def c7(self, text_template, **kw):
+        return ex(self.T7, [dict(claim("rules-r7"), text=text_template, **kw)])
+
+    def test_claim_needs_a_template_and_its_rendering(self):               # E28
+        self.bad(ex(self.T7, [claim("rules-r7")], raw_claims=True), "text_template")
+        self.bad(ex(self.T7, [dict(claim("rules-r7"), text_template="Full report in {period:rules-r7|72 hours}.",
+                                   text="Full report in 48 hours.")]), "rendered")
+        self.ok(self.c7("Full report in {period:rules-r7|72 hours}."))
+
+    def test_figures_outside_slots_fail_in_claims(self):                   # E29 (F8 and neighbours)
+        for t in ("Within 72 hours under Rule 7(9).", "Rule 7(2)(z).", "Rule 7(b).", "Rule 7 (9).",
+                  "From 13 May 2027 (Rule 7(9)).", "Under the First Schedule, Part B.", "Third Schedule, Part B.",
+                  "7,2 hours.", "7,,2 hours.", "072 hours.", "seventy two hours.", "₹2,50 crore.", "₹0250 crore.",
+                  "From 31 February 2027.", "Report in 48 hrs.", "section 9.", "June.", "Two duties."):
+            self.bad(self.c7(t), "claim 1")
+
+    def test_prose_only_checks_apply_to_claims(self):                      # E29: fuzzy units, characters
+        self.bad(self.c7("Report within the hourss."), "one letter away")
+        self.bad(self.c7("Report to the Board & people."), "prose has")
+
+    def test_whole_render_rules_apply_to_claims(self):                     # E29
+        for t in ("Within {period:rules-r7|72 hours}x.", "Under {name:rules-r7}A.",
+                  "See {name:rules-r7}–{period:rules-r7|72 hours}."):
+            self.bad(self.c7(t), "claim 1")
+
+    def test_claim_slots_name_only_their_own_provision(self):              # E30
+        for t in ("See {ref:rules-r7#9}.", "See {ref:rules-r7#2(z)}.", "See {ref:rules-r7#b}.",
+                  "See {ref:act-s8}.", "Within {period:act-s8|72 hours}.", "See {ref:rules-r7,act-s8}."):
+            self.bad(self.c7(t), "claim 1")
+        for v in ("7,2 hours", "072 hours", "seventy two hours", "48 hours"):
+            self.bad(self.c7("Within {period:rules-r7|" + v + "}."), "claim 1")
+        sch = "From {date:act-schedule}, pay {ref:act-schedule}."
+        for v in ("₹2,50 crore", "₹0250 crore", "₹200 crore"):
+            self.bad(ex(sch, [dict(claim("act-schedule"), text="Up to {amount:act-schedule|" + v + "}.")]), "claim 1")
+        self.ok(self.c7("See {ref:rules-r7#2(b)}."))
+
+    def test_schedule_parts_are_separate_provisions(self):                 # E30
+        law = dict(LAW)
+        law["rules-sch1-a"] = {"id": "rules-sch1-a", "citation": "First Schedule, Part A", "number": None,
+                               "text": "Conditions for registration. The applicant is a company incorporated in India",
+                               "in_force": [{"provision": "First Schedule", "from": "2026-11-13"}]}
+        law["rules-sch1-b"] = dict(law["rules-sch1-a"], id="rules-sch1-b", citation="First Schedule, Part B")
+        cl = {"cite": "rules-sch1-a", "quote": "The applicant is a company incorporated in India"}
+
+        def run_sch(tt):
+            row = dict(cl, text_template=tt, text=c.render(c.parse_template(tt)[0], law))
+            e = {"id": "X", "question": "q", "kind": "who", "reader": "business", "lane": "law_answers",
+                 "answer_template": "Consent Managers are Indian companies {ref:rules-sch1-a}.",
+                 "answer": "Consent Managers are Indian companies (First Schedule, Part A).", "claims": [row]}
+            return c.check(e, law, as_of=AS_OF)
+        self.assertTrue(any("claim 1" in x for x in run_sch("Under {name:rules-sch1-b}.")))
+        self.assertEqual(run_sch("Under {name:rules-sch1-a}."), [])
+
+    def test_claim_dates_and_notifications(self):                          # E31
+        self.ok(self.c7("From {date:rules-r7}."))
+        self.bad(self.c7("From {date:act-s8}."), "claim 1")
+        self.bad(self.c7("Under {notification:gsr-843e-2025}."), "claim 1")
+
+    def test_sentence_initial_number_word_and_parts_pass(self):            # false fails found by E35
+        self.ok(self.c7("{period:rules-r7|Seventy-two hours} for the full report."))
+        self.bad(self.c7("{period:rules-r7|Seventy-Two hours} for the full report."), "house form")
+        self.ok(self.c7("Other parts follow."))
+        self.ok(ex("From {date:rules-r7}, the Rules come in parts {ref:rules-r7}.", [claim("rules-r7")]))
+
+    def test_invalid_dates_fail_without_crashing(self):                    # E32
+        for t in ("From 31 February 2027.", "From 30 February 2027 (Rule 7)."):
+            self.bad(self.c7(t), "claim 1")
+        self.bad(ex("From 31 February 2027, report {ref:rules-r7} {date:rules-r7}.", [claim("rules-r7")]), "prose has")
 
 
 # The law-import folder is gitignored, so these tests run only where it exists. Point
@@ -763,7 +847,7 @@ class TestRealLaw(unittest.TestCase):
              "answer_template": "From {date:rules-r7}: send the full report within {period:rules-r7|72 hours} "
                                 "of finding out {ref:rules-r7}.",
              "answer": "From 13 May 2027: send the full report within 72 hours of finding out (Rule 7).",
-             "claims": [{"text": "x", "cite": "rules-r7",
+             "claims": [{"text": "x", "text_template": "x", "cite": "rules-r7",
                          "quote": "within seventy-two hours of becoming aware of the breach, or within such longer period as the Board may allow"}]}
         self.assertEqual(c.check(e, self.law, as_of=AS_OF), [])
 

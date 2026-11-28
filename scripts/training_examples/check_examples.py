@@ -127,6 +127,7 @@ PART_MARKER = re.compile(r"(?<![A-Za-z])\(\s*(?:[a-z]{1,2}|[ivxlcdm]{1,6}|[IVXLC
 
 # E6: real words one letter away from a unit or reference word. Exempt from the fuzzy check.
 FUZZY_EXEMPT = {
+    "parts",
     "annul", "annuls", "scheduler", "schedulers",
     "cause", "causes", "rules", "ruled", "ruler", "rulers", "scheduled", "particle", "particles",
     "sentry", "sentries", "gentry", "acres", "lacks", "laces", "lances", "crest", "crests",
@@ -444,7 +445,7 @@ PART = r"\w+(?:\(\w+\))*"
 TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?", re.ASCII)
 _INDIAN = r"(?:\d{1,3}|\d{1,2}(?:,\d{2})*,\d{3})"            # 250, 10,000, 1,00,000
 # re.ASCII: in Python \d also matches Devanagari and other digits, which float() then reads.
-PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[a-z]+(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)", re.ASCII)
+PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[A-Za-z][a-z]*(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)", re.ASCII)
 AMOUNT_VALUE = re.compile(r"₹" + _INDIAN + r"(?: (?:crore|lakh))?", re.ASCII)
 COUNT_VALUE = re.compile(_INDIAN + r" (?:crore|lakh)", re.ASCII)
 _ONES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
@@ -464,7 +465,8 @@ def _canonical_period(value):
         n = int(num)
     else:
         n = words_to_int(num)
-        if n is None or n > 99 or number_in_words(n) != num:
+        # The house spelling, or the same with a capital first letter to start a sentence.
+        if n is None or n > 99 or num not in (number_in_words(n), number_in_words(n).capitalize()):
             return False
     return (unit.endswith("s")) == (n != 1)
 
@@ -970,70 +972,65 @@ def check_claims(claims, law):
             errs.append(f"claim {i}: quote starts or ends mid-word in {law[cite]['citation']}")
             continue
         good.append((i, cl))
-        errs += check_claim_text(i, cl, law, quote)
+        errs += check_claim_template(i, cl, law, quote)
     return errs, good
 
 
-def _ref_ids(text):
-    """(label, id) for each Section, Rule or schedule a free text names."""
-    out = []
-    for m in re.finditer(r"\b(Section|Rule)s? (\d+[A-Z]?)", text):
-        out.append((m.group(0), ("act-s" if m.group(1) == "Section" else "rules-r") + m.group(2).lower()))
-    for m in re.finditer(r"\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule\b", text):
-        n = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh"].index(m.group(1)) + 1
-        out.append((m.group(0), f"rules-sch{n}"))
-    for m in re.finditer(r"\b[Tt]he Schedule\b", text):
-        out.append((m.group(0), "act-schedule"))
-    return out
+def check_claim_template(i, cl, law, quote):                                # E28-E31
+    """A claim's text is a template too, checked by the answer's own code: its prose by the
+    prose checks, its rendering by the whole-render checks, and its slots against the law.
+    Every slot names only the claim's own provision, backed by the claim's own quote."""
+    tt = cl.get("text_template")
+    if not isinstance(tt, str) or not tt.strip():
+        return [f"claim {i}: has no text_template"]
+    pieces, parse_errs = parse_template(tt)
+    slots = [p for p in pieces if isinstance(p, dict)]
+    errs = list(parse_errs) + _claim_own_provision(slots, cl["cite"])
+    errs += _claim_prose_errs(tt, pieces)
+    own = {cl["cite"]: [quote]}
+    errs += check_ref_slots(slots, law, own)
+    errs += check_figure_slots(slots, law, own)
+    errs += check_date_slots(slots, law, set())
+    if not parse_errs:
+        text, spans = render_spans(pieces, law)
+        errs += _claim_rendering_errs(cl.get("text"), text)
+        errs += _claim_span_errs(text, spans)
+    return [f"claim {i}: {e}" for e in errs]
 
 
-def check_claim_text(i, cl, law, quote):                                    # E19
-    """A claim's own text may state only what its quote and its provision support."""
-    errs, text, cite = [], cl.get("text", ""), cl["cite"]
-    for v, unit in sorted(amounts(text) - amounts(quote)):
-        errs.append(f"claim {i}: states {v:g} {unit} but its own quote does not")
-    for kind in (True, False):
-        for v, unit in sorted(money(text, kind) - money(quote, kind)):
-            errs.append(f"claim {i}: states {v:g} {unit} {'rupees' if kind else 'as a count'} but its own quote does not")
-    for v, unit in sorted(time_limits(text) - time_limits(quote)):
-        errs.append(f"claim {i}: states {v:g} {unit}s but its own quote does not")
-    for m in re.finditer(r"\b\d{1,2} (?:" + "|".join(MONTHS) + r") \d{4}\b", text):
-        iso = datetime.datetime.strptime(m.group(0), "%d %B %Y").date().isoformat()
-        if iso not in _in_force(law[cite]):
-            errs.append(f"claim {i}: gives {m.group(0)}, which is not a start date of {law[cite]['citation']}")
-    for label, ident in _ref_ids(text):
-        if not (ident == cite or cite.startswith(ident + "-")):
-            errs.append(f"claim {i}: names {label}, but the claim cites {law[cite]['citation']}")
-    return errs + check_claim_leftover(i, text)
+def _claim_own_provision(slots, cite):                                      # E30, E31
+    errs = []
+    for s in slots:
+        if s["type"] in ("notification", "notified"):
+            errs.append(f"slot {s['raw']}: a claim may not cite a notification")
+            continue
+        for ident, _ in s["targets"]:
+            if ident != cite:
+                errs.append(f"slot {s['raw']}: a claim's slots may name only its own provision, {cite}")
+    return errs
 
 
-CLAIM_FORMS = [AMOUNT, RUPEES, WORD_RUPEES, TIME,
-               re.compile(r"\b\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|"
-                          r"November|December) \d{4}\b"),
-               re.compile(r"\b(?:Section|Rule)s? \d+[A-Z]?(?:\(\w+\))*"),
-               re.compile(r"\b(?:First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule(?:, Part [AB])?\b|\b[Tt]he Schedule\b")]
+def _claim_prose_errs(template, pieces):                                    # E29
+    prose = prose_of(pieces)
+    errs = []
+    for fn in PROSE_CHECKS:
+        errs += fn(prose)
+    return errs + check_slot_suffix(template)
 
 
-def check_claim_leftover(i, text):                                          # E25
-    """Fail-closed: after the known forms (checked above against the quote and provision)
-    are taken out, nothing figure-, date- or reference-like may be left in claim text."""
-    odd = [ch for ch in text if unicodedata.category(ch) in ("Nd", "No", "Nl") and ch not in "0123456789"]
-    if odd:
-        return [f"claim {i}: prose has {odd[0]!r}: only ASCII digits may state a figure"]
-    rest = text
-    for pat in CLAIM_FORMS:
-        rest = pat.sub(lambda m: " " * len(m.group(0)), rest)
-    errs = check_digits(rest) + check_unit_words(rest) + check_number_words(rest)
-    if NOTE_CITE.search(rest):
-        errs.append("prose has a notification citation")
-    return [f"claim {i}: {e}" for e in errs[:1]]
+def _claim_span_errs(text, spans):                                          # E29
+    return check_rendered_spans(text, spans)
 
 
-MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",
-          "October", "November", "December"]
+def _claim_rendering_errs(text, rendered):                                  # E28
+    if text != rendered:
+        return [f"text is not the rendered text_template; expected {rendered!r}"]
+    return []
+
+
 ROW_FIELDS = {"id", "question", "kind", "reader", "lane", "provisions", "answer_template", "answer", "claims",
               "source", "as_of", "drafted_by", "review", "version"}
-CLAIM_FIELDS = {"text", "cite", "quote", "applies_from"}
+CLAIM_FIELDS = {"text", "text_template", "cite", "quote", "applies_from"}
 
 
 def check_fields(example):                                                  # E20

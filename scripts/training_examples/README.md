@@ -52,10 +52,11 @@ The checks then run again on the rendered answer: every digit, number word, unit
 month, reference and notification must lie inside a slot's span, and no letter, digit,
 hyphen or other slot may touch a slot ("Rule 7A", "l72 hours" and "72 hours72 hours"
 fail). Only whitespace separates two slots, and each figure-bearing word must lie inside
-one slot. Claim text may state only figures its own quote holds, dates its own provision
-starts on, and references to its own provision; after those forms are taken out, any digit,
-unit or reference word, number word, month or notification left fails. Slot values, slot
-targets and claim text take ASCII digits only. A row may carry only fields the checker
+one slot. Slot values and targets take ASCII digits only.
+
+Claim text is a template too (`text_template`, rendered into `text`), checked by the same
+prose and whole-render code as the answer. A claim's slots may name only that claim's own
+provision, and its own quote must back each figure; a claim may not cite a notification. A row may carry only fields the checker
 reads, so the old free-text `answer_v2` lives in its own file.
 
 The claim checks are unchanged. A quote is one unbroken run of at least 6 words, in the
