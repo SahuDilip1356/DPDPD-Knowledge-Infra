@@ -164,7 +164,7 @@ real law, and must fail:
 | `within O{period:rules-r7\|72 hours}` | within O72 hours |
 | `{period:rules-r7\|72 hours}{period:rules-r7\|72 hours}` | 72 hours72 hours |
 
-The new rule: render the whole answer, with every slot filled from the law data, and scan
+The fix is to render the whole answer, with every slot filled from the law data, and scan
 the rendered text instead of the blanked prose.
 
 **Pass/fail checks**
