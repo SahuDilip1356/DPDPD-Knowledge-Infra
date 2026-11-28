@@ -639,6 +639,67 @@ class TestWholeRender(Base):
         self.ok(e)
 
 
+SEPARATORS = ["–", "—", ":", ";", ",", ".", "'", "’", "(", ")", "“", "”", "!", "?"]
+CLAIM_LEAKS = ["Report in 48 hrs.", "Report under section 9.", "Report under rule 9.", "Rules 7 and 9 apply.",
+               "Sec. 9 applies.", "S. 9 applies.", "Schedule III applies.", "From 13 Nov 2026.",
+               "From November 13, 2026.", "From 13th November 2026.", "From 2026-11-13.", "From 13 november 2026.",
+               "From June 2026.", "Per G.S.R. 999(E).", "Up to 5% of turnover.", "See clause (b).",
+               "Report in ७२ hours.", "Report in 7२ hours.", "Up to ₹२५० crore.", "From June.", "Two duties apply."]
+
+
+class TestFailClosedRound3(Base):
+    """Fail-closed round 3, E23-E25 (approved 2026-11-28)."""
+
+    def test_punctuation_does_not_separate_slots(self):                    # E23, E24
+        for sep in SEPARATORS:
+            self.bad(ex("From {date:rules-r7}, report under {name:rules-r7}" + sep +
+                        "{period:rules-r7|72 hours} {ref:rules-r7}.", [claim("rules-r7")]), "slot")
+        for sep in ("–", ",", ":"):
+            self.bad(ex("From {date:rules-r7}" + sep + "{period:rules-r7|72 hours} {ref:rules-r7}.",
+                        [claim("rules-r7")]), "slot")
+        self.bad(ex("From {date:rules-r7}, see {ref:rules-r7},{ref:rules-r7}.", [claim("rules-r7")]),
+                 "only whitespace separates slots")
+
+    def test_spaced_slots_and_trailing_punctuation_pass(self):
+        self.ok(ex("From {date:rules-r7}: report within {period:rules-r7|72 hours} {ref:rules-r7}.", [claim("rules-r7")]))
+        self.ok(ex("Report {ref:rules-r7}, from {date:rules-r7}.", [claim("rules-r7")]))
+
+    def test_one_span_rule(self):                                          # E24
+        text, spans = "Rule 7–72 hours (Rule 7).", [(0, 6), (7, 15), (16, 24)]
+        self.assertTrue(any("one slot" in e for e in c.check_rendered_spans(text, spans)))
+
+    def test_claim_text_is_fail_closed(self):                              # E25
+        for t in CLAIM_LEAKS:
+            self.bad(ex("From {date:rules-r7}, report {ref:rules-r7}.", [dict(claim("rules-r7"), text=t)]), "claim 1")
+
+    def test_slot_values_take_ascii_digits_only(self):                     # E10 house form, found probing E25
+        for v in ("7२ hours", "７２ hours", "७२ hours"):
+            self.bad(ex("From {date:rules-r7}, report within {period:rules-r7|" + v + "} {ref:rules-r7}.",
+                        [claim("rules-r7")]), "house form")
+        for v in ("₹२५० crore", "₹2५0 crore"):
+            self.bad(ex("From {date:act-schedule}, pay {amount:act-schedule|" + v + "} {ref:act-schedule}.",
+                        [claim("act-schedule")]), "house form")
+        self.bad(ex("From {date:rules-sch3}, sites with {count:rules-sch3|२ crore} users {ref:rules-sch3}.",
+                    [claim("rules-sch3")]), "house form")
+
+    def test_slot_parts_take_ascii_only(self):
+        for part in ("٢(b)", "२(b)", "2(ｂ)"):
+            self.bad(ex("From {date:rules-r7}, report {ref:rules-r7#" + part + "}.", [claim("rules-r7")], answer="x"),
+                     "malformed target")
+
+    def test_house_claim_text_passes(self):
+        for cite, t in (("rules-r7", "Within 72 hours under Rule 7, from 13 May 2027."),
+                        ("rules-r7", "Report within seventy-two hours (Rule 7)."),
+                        ("rules-r8", "At least one year for data and logs."),
+                        ("act-schedule", "Up to ₹250 crore (The Schedule)."),
+                        ("rules-sch3", "Sites with 2 crore users.")):
+            tpl = {"rules-r7": "From {date:rules-r7}, report {ref:rules-r7}.",
+                   "rules-r8": "From {date:rules-r8}, keep logs {ref:rules-r8}.",
+                   "act-schedule": "From {date:act-schedule}, pay {ref:act-schedule}.",
+                   "rules-sch3": "From {date:rules-sch3}, big sites {ref:rules-sch3}."}[cite]
+            self.ok(ex(tpl, [dict(claim(cite), text=t)]))
+
+
 # The law-import folder is gitignored, so these tests run only where it exists. Point
 # SETU_LAW_DIR at it from another checkout or a worktree; CI skips them.
 REAL_LAW_DIR = os.environ.get("SETU_LAW_DIR") or os.path.join(
@@ -686,7 +747,7 @@ class TestRealLaw(unittest.TestCase):
         for name in ("batch01.jsonl", "batch02.jsonl"):
             path = os.path.join(folder, name)
             if not os.path.exists(path):
-                continue
+                self.skipTest(f"{name} is not here (gitignored batch)")
             with open(path) as f:
                 for line in f:
                     if line.strip():

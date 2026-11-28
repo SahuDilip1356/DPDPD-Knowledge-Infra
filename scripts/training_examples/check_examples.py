@@ -441,11 +441,12 @@ NO_PART_SLOTS = VALUE_SLOTS | {"notification", "notified"}
 SLOT = re.compile(r"\{([^{}]*)\}")
 ID = r"[a-z][a-z0-9-]*"
 PART = r"\w+(?:\(\w+\))*"
-TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?")
+TARGET = re.compile(r"(" + ID + r")(?:#(" + PART + r"))?", re.ASCII)
 _INDIAN = r"(?:\d{1,3}|\d{1,2}(?:,\d{2})*,\d{3})"            # 250, 10,000, 1,00,000
-PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[a-z]+(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)")
-AMOUNT_VALUE = re.compile(r"₹" + _INDIAN + r"(?: (?:crore|lakh))?")
-COUNT_VALUE = re.compile(_INDIAN + r" (?:crore|lakh)")
+# re.ASCII: in Python \d also matches Devanagari and other digits, which float() then reads.
+PERIOD_VALUE = re.compile(r"(?:[1-9]\d*|[a-z]+(?:-[a-z]+)?) (?:hours?|days?|weeks?|months?|years?)", re.ASCII)
+AMOUNT_VALUE = re.compile(r"₹" + _INDIAN + r"(?: (?:crore|lakh))?", re.ASCII)
+COUNT_VALUE = re.compile(_INDIAN + r" (?:crore|lakh)", re.ASCII)
 _ONES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
 _TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
 
@@ -647,21 +648,34 @@ def check_rendered_spans(text, spans):
             errs.append(f"rendered answer has {text[max(0, a - 3):b + 3]!r}: text touches a slot")
             break
     for (a1, b1), (a2, b2) in zip(spans, spans[1:]):
-        if b1 == a2:
-            errs.append(f"rendered answer has {text[a1:b2]!r}: two slots touch")
+        if not _slots_separated(text[b1:a2]):
+            errs.append(f"rendered answer has {text[a1:b2]!r}: two slots touch; only whitespace separates slots")
             break
-    covered = set()
-    for a, b in spans:
-        covered.update(range(a, b))
+    owner = {}
+    for n, (a, b) in enumerate(spans):
+        owner.update({i: n for i in range(a, b)})
     for m in re.finditer(r"\S+", text):
         if not _figure_word(m.group(0).strip(_EDGE)):
             continue
-        loose = [i for i in range(m.start(), m.end()) if text[i].isalnum() and i not in covered]
-        if loose:
+        chars = [i for i in range(m.start(), m.end()) if text[i].isalnum()]
+        if any(i not in owner for i in chars):
             errs.append(f"rendered answer has {m.group(0)!r} outside a slot: figures, dates and "
                         "references enter only through a slot")
             break
+        if not _in_one_span({owner[i] for i in chars}):
+            errs.append(f"rendered answer has {m.group(0)!r} across more than one slot: a figure, date "
+                        "or reference must lie inside one slot")
+            break
     return errs
+
+
+def _slots_separated(gap):                                                  # E23
+    """Two slots are separate only if whitespace lies between them."""
+    return any(ch.isspace() for ch in gap)
+
+
+def _in_one_span(owners):                                                   # E24
+    return len(owners) <= 1
 
 
 # ---------------------------------------------------------------- prose checks (E3-E7)
@@ -990,7 +1004,29 @@ def check_claim_text(i, cl, law, quote):                                    # E1
     for label, ident in _ref_ids(text):
         if not (ident == cite or cite.startswith(ident + "-")):
             errs.append(f"claim {i}: names {label}, but the claim cites {law[cite]['citation']}")
-    return errs
+    return errs + check_claim_leftover(i, text)
+
+
+CLAIM_FORMS = [AMOUNT, RUPEES, WORD_RUPEES, TIME,
+               re.compile(r"\b\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|"
+                          r"November|December) \d{4}\b"),
+               re.compile(r"\b(?:Section|Rule)s? \d+[A-Z]?(?:\(\w+\))*"),
+               re.compile(r"\b(?:First|Second|Third|Fourth|Fifth|Sixth|Seventh) Schedule(?:, Part [AB])?\b|\b[Tt]he Schedule\b")]
+
+
+def check_claim_leftover(i, text):                                          # E25
+    """Fail-closed: after the known forms (checked above against the quote and provision)
+    are taken out, nothing figure-, date- or reference-like may be left in claim text."""
+    odd = [ch for ch in text if unicodedata.category(ch) in ("Nd", "No", "Nl") and ch not in "0123456789"]
+    if odd:
+        return [f"claim {i}: prose has {odd[0]!r}: only ASCII digits may state a figure"]
+    rest = text
+    for pat in CLAIM_FORMS:
+        rest = pat.sub(lambda m: " " * len(m.group(0)), rest)
+    errs = check_digits(rest) + check_unit_words(rest) + check_number_words(rest)
+    if NOTE_CITE.search(rest):
+        errs.append("prose has a notification citation")
+    return [f"claim {i}: {e}" for e in errs[:1]]
 
 
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September",

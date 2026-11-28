@@ -206,7 +206,7 @@ structured checker; write the converter's outputs through `scripts/safe_output.p
 three unused names. PR #17 will be squash-merged, because nine earlier commits carry a home
 path.
 
-## Fail-closed round 3 (draft, waiting for Dilip's approval)
+## Fail-closed round 3 (approved by Dilip on 2026-11-28)
 
 Asked for by Dilip on 2026-11-28 ("Setu: fail-closed round 3") after the PR #19 review at
 afead55. This is the last review round allowed: if round 3 is not Ship, the approach stops
@@ -250,3 +250,12 @@ passes. On a Rule 7 claim, all of these pass today: "48 hrs", "section 9", "rule
 E1 to E22 stay as they are and must stay green. Optional, done in the same change: the
 real-batch field test (E20) reports a skip when the batch files are missing, rather than
 passing silently.
+
+**Build result (2026-11-28).** Every F6 and F7 example above fails. Probing the
+neighbours found one more hole, now closed. In Python, `\d` matches Devanagari and other
+digits, and `float()` reads them, so "{period:rules-r7|7२ hours}" and "₹२५० crore" passed
+as 72 hours and ₹250 crore. Slot values, slot targets and claim text now take ASCII digits
+only. 86 checker tests pass, and the mutation run kills 60 of 60. E27: three claim texts
+newly failed and were reworded through the rewrites file. Q-00036 had "Under 18.", Q-00047
+had "with two exceptions" and N2-008 had "Eighth Schedule languages". Batches 01 and 02 then
+report 0 failing.

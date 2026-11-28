@@ -92,6 +92,12 @@ MUTANTS = {
     "E7 high ordinals": lambda m: setattr(m, "HIGH_ORDINAL", NEVER),
     "E7 number+unit joined": lambda m: setattr(m, "_NUMBER_UNIT", NEVER),
     "E9 part structure": lambda m: setattr(m, "_marker_kind", lambda mk, parent: "num" if mk.isdigit() else "letter"),
+    # Fail-closed round 3 (E26)
+    "E23 whitespace separates slots": lambda m: setattr(m, "_slots_separated", lambda gap: True),
+    "E24 one slot per figure word": lambda m: setattr(m, "_in_one_span", lambda owners: True),
+    "E25 leftover claim text": lambda m: setattr(m, "check_claim_leftover", lambda i, text: []),
+    "E10 ASCII digits in values": lambda m: setattr(m, "PERIOD_VALUE", re.compile(m.PERIOD_VALUE.pattern)),
+    "E2 ASCII slot targets": lambda m: setattr(m, "TARGET", re.compile(m.TARGET.pattern)),
     # Whole-render check (E21)
     "E16/E17 whole-render boundary check": lambda m: setattr(m, "check_rendered_spans", lambda text, spans: []),
     "E19 claim-text check": lambda m: setattr(m, "check_claim_text", lambda i, cl, law, quote: []),
